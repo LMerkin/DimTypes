@@ -1,5 +1,5 @@
 //===========================================================================//
-//                             "Bits/FracPower.hpp":                         //
+//                       "DimTypes/Bits/FracPower.hpp":                      //
 //               Compile-Time Reduction of Fractional Powers                 //
 //===========================================================================//
 // NB: This header is typically to be included from "Dimensions.h" but can also

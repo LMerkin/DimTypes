@@ -1,6 +1,6 @@
 // vim:ts=2
 //===========================================================================//
-//                             "Bits/Encodings.hpp":                         //
+//                        "DimTypes/Bits/Encodings.hpp":                     //
 //         Encoding/Decoding of Dimension Exponents and Unit Vectors         //
 //===========================================================================//
 #pragma  once

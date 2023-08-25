@@ -1,6 +1,6 @@
 // vim:ts=2:et
 //===========================================================================//
-//                                 "DimTypes.hpp":                           //
+//                          "DimTypes/DimTypes.hpp":                         //
 //          Types for Physical Dimensions and Dimensioned Quantities         //
 //===========================================================================//
 #pragma  once
