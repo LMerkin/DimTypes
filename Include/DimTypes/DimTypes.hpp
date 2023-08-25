@@ -8,6 +8,7 @@
 #include "Bits/FracPower.hpp"
 #include "Bits/Encodings.hpp"
 #include <complex>
+#include <cassert>
 
 namespace DimTypes
 {
@@ -172,11 +173,11 @@ namespace DimTypes
     //
     template<unsigned long F, unsigned long V>
     constexpr DimQ<AddExp(E,F),
-         CleanUpUnits(AddExp (E,F),  UnifyUnits<E,F,U,V>()), RepT>
+                   CleanUpUnits(AddExp(E,F), UnifyUnits(E,F,U,V)), RepT>
     operator* (DimQ<F,V,RepT> a_right) const
     {
       return DimQ<AddExp(E,F),
-                  CleanUpUnits(AddExp(E,F), UnifyUnits<E,F,U,V>()), RepT>
+                  CleanUpUnits(AddExp(E,F),  UnifyUnits(E,F,U,V)), RepT>
              (m_val * a_right.Magnitude());
     }
   
@@ -184,11 +185,11 @@ namespace DimTypes
     // Dimension exponents are subtracted. Same treatment of units as for mult:
     template<unsigned long F, unsigned long V>
     constexpr DimQ<SubExp(E,F),
-         CleanUpUnits(SubExp(E,F), UnifyUnits<E,F,U,V>()), RepT>
+                   CleanUpUnits(SubExp(E,F), UnifyUnits(E,F,U,V)), RepT>
     operator/ (DimQ<F,V,RepT> a_right) const
     {
       return DimQ<SubExp(E,F),
-                  CleanUpUnits(SubExp(E,F), UnifyUnits<E,F,U,V>()), RepT>
+                  CleanUpUnits(SubExp(E,F),  UnifyUnits(E,F,U,V)), RepT>
              (m_val / a_right.Magnitude());
     }
   
@@ -229,7 +230,8 @@ namespace DimTypes
             (FracPower<M,N,RepT>(m_val));
     }
 
-    // Shortcuts: "SqRt" and "CbRt". Here M==1, so "CleanUpUnits" is not requird:
+    // Shortcuts: "SqRt" and "CbRt". Here M==1, so "CleanUpUnits" is not
+    // required:
     constexpr DimQ<DivExp(E,2),U,RepT> SqRt() const { return RPow<1,2>(); }
     constexpr DimQ<DivExp(E,3),U,RepT> CbRt() const { return RPow<1,3>(); }
 
@@ -314,7 +316,7 @@ namespace DimTypes
     { return a_right.template IPow<M>(); }
 
   template<int M, int N, unsigned long E, unsigned long U, typename RepT>
-  constexpr DimQ<DivExp(Bits::MultExp(E,M),N),
+  constexpr DimQ<DivExp(MultExp(E,M),N),
                  CleanUpUnits(DivExp(MultExp(E,M),N), U), RepT>
   RPow(DimQ<E,U,RepT> a_right)
     { return a_right.template RPow<M,N>(); }
@@ -448,14 +450,16 @@ namespace DimTypes
     constexpr unsigned Dim     = unsigned(DimsE::DimName); \
     constexpr unsigned OldUnit = DimTypes::Bits::GetFld     (U, Dim);     \
     constexpr unsigned NewUnit = unsigned(DimName##UnitsE::UnitName);     \
+    constexpr auto     NumDen  = \
+      DimTypes::Bits::GetNumerAndDenom(DimTypes::Bits::GetFld(E, Dim));   \
+    constexpr int      Numer   = NumDen.first;  \
+    constexpr unsigned Denom   = NumDen.second; \
     return \
-      DimTypes::DimQ<E, DimTypes::Bits::SetUnit(U, Dim, NewUnit), RepT>   \
+      DimTypes::DimQ<E, DimTypes::Bits::SetUnit(U, Dim, NewUnit),  RepT>  \
       ( \
         a_dimq.Magnitude() * \
-        DimTypes::Bits::FracPower      \
-          <DimTypes::Bits::Numer(DimTypes::Bits::GetFld(E, Dim)),         \
-           DimTypes::Bits::Denom(DimTypes::Bits::GetFld(E, Dim)),  RepT>  \
-          /* OldScale / NewScale: */               \
+        DimTypes::Bits::FracPower<Numer, Denom, RepT> \
+          /* OldScale / NewScale: */                  \
           (UnitScale<Dim, OldUnit, RepT> / UnitScale<Dim, NewUnit, RepT>) \
       ); \
   }
@@ -472,10 +476,14 @@ namespace DimTypes
 #undef  PUT_UNIT_STR
 #endif
 #define PUT_UNIT_STR(Dim) \
-  curr += DimTypes::Bits::UnitStr \
-            <DimTypes::Bits::Numer  (DimTypes::Bits::GetFld(E,Dim)),      \
-             DimTypes::Bits::Denom  (DimTypes::Bits::GetFld(E,Dim))>::put \
-            (curr,     UnitImage<Dim,DimTypes::Bits::GetFld(U,Dim)>);
+  { \
+    constexpr auto NumDen  = \
+      DimTypes::Bits::GetNumerAndDenom (DimTypes::Bits::GetFld(E,Dim));   \
+    constexpr int     Numer  = NumDen.first;  \
+    constexpr unsigned Denom = NumDen.second; \
+    curr += DimTypes::Bits::UnitStr<Numer, Denom>::put \
+            (curr, UnitImage<Dim,DimTypes::Bits::GetFld(U,Dim)>);  \
+  }
 
 #ifdef  DECLARE_DIM_STR
 #undef  DECLARE_DIM_STR
@@ -515,8 +523,6 @@ namespace DimTypes
     PUT_UNIT_STR(4) \
     PUT_UNIT_STR(5) \
     PUT_UNIT_STR(6) \
-    PUT_UNIT_STR(7) \
-    PUT_UNIT_STR(8) \
     assert(curr < buff + N && *curr == '\0'); \
     return buff;    \
   }

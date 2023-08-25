@@ -1,10 +1,9 @@
-// vim:ts=2
+// vim:ts=2:et
 //===========================================================================//
 //                        "DimTypes/Bits/Encodings.hpp":                     //
 //         Encoding/Decoding of Dimension Exponents and Unit Vectors         //
 //===========================================================================//
-#pragma  once
-#include <cassert>
+#pragma once
 
 namespace DimTypes
 {
@@ -16,31 +15,24 @@ namespace Bits
   // Dimension Exponents are monomials over Fundamental Dims with Rational pows.
   // They will be represented as "unsigned long" integers in which bit flds  of
   // "PBits" will be allocated for each dimension. Bit fields encode a rational
-  // powers in the Zp format where p = PMod below. Thus, 9 dims must fit into a
-  // 64-bit format -- so PBits = 7 and PMod = 127 (the largest prime which fits
-  // in 7 bits):
+  // powers in the Zp format where p = PMod below. Thus, 7 dims must fit into a
+  // 64-bit format -- so PBits = 9 and PMod = 509 (the largest prime which fits
+  // into 9 bits, ie is smaller than 2^9=512):
   // All Unit enums must be encodeable in the "PBits" format; but this is not a
   // real constraint at the moment (can create up to "PMod" different units per
   // dim), so the number of units is not checked.
   //
   using                   ULong = unsigned long;  // To avoid warnings in CLang
-  constexpr unsigned long PMod  = 127;
+  constexpr unsigned long PMod  = 509;
   constexpr int IPMod           = int(PMod);
 
-  constexpr unsigned      NDims = 9;
-  constexpr unsigned      PBits = 7;
+  constexpr unsigned      NDims = 7;
+  constexpr unsigned      PBits = 9;
   constexpr unsigned long PMask = (1UL << PBits) - 1;
   static_assert(PMod <= PMask, "Insufficient bits for PMod");
 
   static_assert(PBits * NDims <= sizeof(unsigned long) * 8,
                 "Exp Vector does not fit into unsigned long");
-
-  // It turns out that the maximum height of a fraction respresentable in the
-  // mod IPMod format is much less than IPMod.   XXX: the following fugure is
-  // obtained empirically; it will change when "PMod" changes. For Heights in
-  // 1..13, there are no clashes; for 14..15, partial clashes; from 16 on, on-
-  // clashes (so heights >= 16 are not used):
-  constexpr int MaxHeight = 15;
 
   // Exponents for Fundamental Dimensions: Each exponent is 1 for the corresp
   // Dim:
@@ -55,145 +47,157 @@ namespace Bits
   // the valid range (0..NDims-1), but generating proper compile-time err msgs
   // is difficult, so we don't do it at the moment:
   //
-  constexpr unsigned long GetFld    (unsigned long from, unsigned dim)
+  constexpr unsigned long GetFld(unsigned long From, unsigned dim)
   {
     // Move the selected bit field to the right and zero-out all other bits:
-    return (from >> (dim * PBits)) & PMask;
+    return (From >> (dim * PBits)) & PMask;
   }
 
-  constexpr unsigned long PutFld    (unsigned long from, unsigned dim)
+  constexpr unsigned long PutFld(unsigned long From, unsigned dim)
   {
-    // Zero out the upper bits and move lower ones to the required position:
-    return (from & PMask) << (dim * PBits);
-  }
-
-  constexpr unsigned long ZeroOutFld(unsigned long from, unsigned dim)
-  {
-    // All other flds are preserved:
-    return from & ~(PMask << (dim * PBits));
-  }
-
-  constexpr unsigned long AddFldsModP
-    (unsigned long left, unsigned long right, unsigned dim)
-  {
-    return PutFld((GetFld(left, dim) + GetFld(right, dim)) % PMod, dim);
-  }
-
-  constexpr unsigned long SubFldsModP
-    (unsigned long left, unsigned long right, unsigned dim)
-  {
-    // NB: "PMod" is added to make sure no negative values occur; it is then
-    // removed by the "%" operator anyway:
-    return
-    PutFld(((PMod + GetFld(left, dim)) - GetFld(right, dim)) % PMod, dim);
+    // Zero out the upper bits and move lower ones to the left into the
+    // required position:
+    return (From & PMask) << (dim * PBits);
   }
 
   // Normalising a quantity (positive or negative) modulo PMod.
   // The result is always in [0 .. PMod-1]:
-  constexpr int Normalise(int x)
+  constexpr unsigned Normalise(int x)
     { return (x >= 0) ? (x % IPMod) : (x % IPMod + IPMod); }
-
-  constexpr unsigned long MultFldsModP(unsigned long left, int m, unsigned dim)
-  {
-    // NB: "m" may be negative, so first reduce it to a non-negative value
-    // modulo "PMod":
-    return PutFld((GetFld(left, dim) * ULong(Normalise(m))) % PMod, dim);
-  }
 
   // Zp inverse using the Extended GCD algorithm.
   // The following function returns 
   // coeffs "c" such that
   // GCD(x,y) = 1 = c*x + d*y, c >= 0.
   // Pre-condition: 0 <= x && x < y  :
-  constexpr int InverseModP(int x, int a, int b, int y, int c, int d)
+  // Result:     in [0 .. PMod-1]:
+  //
+  constexpr unsigned InverseModP(int n)
   {
-    return
-      (x == 0)
-    ? Normalise(c)
-    : InverseModP(y % x, c - (y/x) * a, d - (y/x) * b, x, a, b);
-  }
+    if (n % IPMod == 0)
+      throw "DimTypes::Bits::InverseModP: ERROR: UnInvertible arg";
 
-  constexpr int InverseModP(int n)
-    { return InverseModP(Normalise(n), 1, 0, IPMod, 0, 1); }
+    int x = int(Normalise(n));
+    int a = 1;
+    int b = 0;
+    int y = IPMod;
+    int c = 0;
+    int d = 1;
+    // Check failure will result in type error at compile time:
+    if (!(0 <= x && x < y))
+      throw "DimTypes::Bits::InverseModP: LOGIC ERROR (1)";
 
-  constexpr unsigned long DivFldsModP(unsigned long left, int n, unsigned dim)
-    { return PutFld((GetFld(left, dim) * ULong(InverseModP(n))) % PMod, dim); }
-
-  constexpr unsigned long AddExpRec
-    (unsigned long E, unsigned long F, unsigned long curr, unsigned dim)
-  {
-    return
-      (dim >= NDims)
-    ? curr
-    : AddExpRec(E, F, curr | AddFldsModP(E, F, dim), dim + 1);
+    while (x != 0)
+    {
+      int q = y / x;
+      int r = y % x;
+      y = x;
+      x = r;
+      if (!(0 <= x && x < y))  // As above
+        throw "DimTypes::Bits::InverseModP: LOGIC ERROR (2)";
+      int a1 = c - q * a;
+      int b1 = d - q * b;
+      c = a;
+      d = b;
+      a = a1;
+      b = b1;
+    }
+    return Normalise(c);
   }
 
   constexpr unsigned long AddExp(unsigned long E, unsigned long F)
   {
     // Adding up bit flds of the exponents "E" and "F" modulo "PMod":
-    return
-      (E == 0UL)  // First, trivial cases for efficiency:
-    ? F
-    : (F == 0UL)
-    ? E
-    : AddExpRec(E, F, 0UL, 0);
-  }
+    if (E == 0)
+      return F;
+    if (F == 0)
+      return E;
 
-  constexpr unsigned long SubExpRec
-    (unsigned long E, unsigned long F, unsigned long curr, unsigned dim)
-  {
-    return
-      (dim >= NDims)
-    ? curr
-    : SubExpRec(E, F, curr | SubFldsModP(E, F, dim), dim + 1);
+    unsigned long res = 0UL;
+    for (unsigned dim = 0;  dim < NDims;  ++dim)
+      res |= PutFld((GetFld(E, dim) + GetFld(F, dim)) % PMod, dim);
+    return res;
   }
 
   constexpr unsigned long SubExp(unsigned long E, unsigned long F)
   {
     // Subtracting bit flds of the exponents "E" and "F" modulo "PMod":
-    return
-      (F == 0UL)  // First, trivial case for efficiency:
-    ? E
-    : SubExpRec(E, F, 0UL, 0);
-  }
+    if (F == 0)
+      return E;
 
-  constexpr unsigned long MultExpRec
-    (unsigned long E, int m, unsigned long curr, unsigned dim)
-  {
-    return
-      (dim >= NDims)
-    ? curr
-    : MultExpRec(E, m, curr | MultFldsModP(E, m, dim), dim + 1);
+    unsigned long res = 0UL;
+    for (unsigned dim = 0;  dim < NDims;  ++dim)
+      // NB: First, add "PMod" to the LHS to avoid negative vals:
+      res |= PutFld(((PMod + GetFld(E, dim)) - GetFld(F, dim)) % PMod, dim);
+    return res;
   }
 
   constexpr unsigned long MultExp(unsigned long E, int m)
   {
     // Multiplying bit flds of the exponent "E" by "m" modulo "PMod":
-    return
-      (m == 0)  // First, trivial cases for efficiency:
-    ? 0UL
-    : (m == 1)
-    ? E
-    : MultExpRec(E, m, 0UL, 0);
+    if (m == 1)
+      return E;
+
+    unsigned long res = 0UL;
+    for (unsigned dim = 0;  dim < NDims;  ++dim)
+      res |= PutFld((GetFld(E, dim) * ULong(Normalise(m))) % PMod, dim);
+    return res;
   }
 
-  constexpr unsigned long DivExpRec
-    (unsigned long E, int n, unsigned long curr, unsigned dim)
+  constexpr unsigned long DivExp(unsigned long E, unsigned n)
   {
-    return
-      (dim >= NDims)
-    ? curr
-    : DivExpRec(E, n, curr | DivFldsModP(E, n, dim), dim + 1);
+    // Dividing bit flds of the exponent "E" by "n" modulo "PMod":
+    if (n == 0)
+      throw "DimTypes::Bits::DivExp: LOGIC ERROR";
+    if (n == 1)
+      return E;
+
+    unsigned long res = 0UL;
+    for (unsigned dim = 0;  dim < NDims;  ++dim)
+      res |= PutFld((GetFld(E, dim) * ULong(InverseModP(n))) % PMod, dim);
+    return res;
   }
 
-  constexpr unsigned long DivExp(unsigned long E, int n)
+  //=========================================================================//
+  // "MaxHeight", "FindMaxHeight":                                           //
+  //=========================================================================//
+  // It turns out that the maximum height of a fraction respresentable in the
+  // mod IPMod format (without collisions) is much less than IPMod:
+  //
+  constexpr unsigned FindMaxHeight()
   {
-    // Dividing bit flds of the exponent "E" by "m" modulo "PMod":
-    return
-      (n == 1)
-    ? E
-    : DivExpRec(E, n, 0UL, 0);
+    bool taken[IPMod];
+    for (int i = 0; i < IPMod; ++i)
+      taken[i] = false;
+
+    for (int height = 2;  height < IPMod;  ++height)
+    for (int denom  = 1;  denom  < height; ++denom)
+    {
+      unsigned invDenom = InverseModP(denom);      // XXX: Repeated computations
+      int      numerP   = height - denom;          // Pos numer
+
+      // However, consider only irreducible fractions:
+      if (GCD(numerP, denom) != 1)
+        continue;
+
+      int      numerC   = IPMod  - numerP;         // Complement of Neg numer
+        if (!(numerP > 0 && numerC > 0))
+          throw "DimTypes::Bits::FindMaxHeight: LOGIC ERROR";
+
+      unsigned repP     = (unsigned(numerP) * invDenom) % PMod;
+      unsigned repC     = (unsigned(numerC) * invDenom) % PMod;
+
+      if (taken[repP] || taken[repC])
+        return height-1; // Clash encountered at "height"!
+
+      taken[repP] = true;
+      taken[repC] = true;
+    }
+    return PMod-1;       // We will not really get here...
   }
+
+  // So:
+  constexpr unsigned MaxHeight = FindMaxHeight();
 
   //=========================================================================//
   // Extraction of Numer and Denom from Zp-Encodings:                        //
@@ -201,39 +205,35 @@ namespace Bits
   // Find the Numer and Denom of the minimal total height corresponding to the
   // given Zp representation. Currently this is done just by direct search:
   //
-  constexpr int NumerRec(int rep, int height, int denom, int invDenom)
+  constexpr std::pair<int, unsigned> GetNumerAndDenom(unsigned long rep)
   {
     // Numer is +-(height - denom):
-    return
-      (((height - denom) * invDenom) % IPMod == rep)
-    ? (height - denom)
-    : (((IPMod - height + denom) * invDenom) % IPMod == rep)
-    ? (denom - height)
-    : (denom < height - 1)                                     // Nxt numer != 0
-    ? NumerRec(rep, height, denom + 1, InverseModP(denom + 1)) // Rec wrt Denom
-    : NumerRec(rep, height + 1, 1, 1);                         // Rec wrt Height
+    if (rep == 0UL)
+      return std::make_pair(0, 1);
+
+    // Generic case: Traverse all heights. Typically, the result is nearby:
+    // height == |numer| + denom, where denom >= 1 and numer != 0:
+    for (int height = 2; height < int(MaxHeight); ++height)
+    {
+      for (int denom = 1; denom < height; ++denom)
+      {
+        int invDenom = InverseModP(unsigned(denom));
+        int numerP   = height - denom;          // Positive numer
+        int numerC   = IPMod  - numerP;         // Complement of Negative numer
+
+        if (!(numerP > 0 && numerC > 0))
+          throw "DimTypes::Bits::GetNumerAndDenom: LOGIC ERROR";
+
+        if (unsigned(numerP * invDenom) % IPMod == rep)
+          return std::make_pair(numerP,   unsigned(denom));
+        if (unsigned(numerC * invDenom) % IPMod == rep)
+          return std::make_pair(-numerP,  unsigned(denom));
+      }
+    }
+    // XXX: Can we get here without a success. Throwing an exception will
+    // result in a type error at compile time:
+    throw "ERROR: DimTypes::Bits::GetNumerAndDenom: Rep Not Matched";
   }
-
-  constexpr int Numer(unsigned long rep)
-    // Check for 0, if not, start recursion from height=2, denom=1:
-    { return (rep == 0UL) ? 0 : NumerRec(int(rep), 2, 1, 1); }
-
-  constexpr int DenomRec(int rep, int height, int denom, int invDenom)
-  {
-    // Numer is +-(height - denom):
-    return
-      ((((height - denom) * invDenom) % IPMod == rep) ||
-       (((IPMod - height + denom) * invDenom) % IPMod == rep))
-    ? denom
-    : (denom < height - 1)                                     // Nxt numer != 0
-    ? DenomRec(rep, height, denom + 1, InverseModP(denom + 1)) // Rec wrt Denom
-    : DenomRec(rep, height + 1, 1, 1);                         // Rec wrt Height
-  }
-
-  constexpr int Denom(unsigned long rep)
-    // Check for 0, if not, start recursion from height=2, denom=1:
-    { return (rep == 0UL) ? 1 : DenomRec(int(rep), 2, 1, 1); }
-
 
   //=========================================================================//
   // Compile-Time Operations on Unit Vectors:                                //
@@ -257,84 +257,75 @@ namespace Bits
   //-------------------------------------------------------------------------//
   // Unification of Units:                                                   //
   //-------------------------------------------------------------------------//
-  // Units corresponding to non-0 Exponent Bit Flds must be the same. This is
-  // implemented over templates rather than "constexpr" funcs because we need
-  // to provide a clear error message if the units do not unify:
+  // See the implementation for the exact semantics. Unifies the units in (E,U)
+  // and (F,V) operands of "*" or "/":
   //
-  template<unsigned long e, unsigned long f, unsigned long u, unsigned long v>
-  struct UnifyUnitFlds
+  constexpr  unsigned long UnifyUnits
+    (unsigned long E, unsigned long F, unsigned long U, unsigned long V)
   {
-    static_assert
-      (e == 0UL || f == 0UL || u == v, "ERROR: Units do not unify");
+    unsigned long res = 0UL;
+    for (unsigned dim = 0; dim < NDims; ++dim)
+    {
+      unsigned long e = GetFld(E, dim);
+      unsigned long f = GetFld(F, dim);
+      unsigned long u = GetFld(U, dim);
+      unsigned long v = GetFld(V, dim);
 
-    constexpr static unsigned long res =
+      // Unified Units:
+      unsigned long unified =
         (e == 0UL)
-      ? v      // "e" is unset, "u" does not matter            -> the res is "v"
-      :  u;    // "f" is unset ("v" does not matter) or u == v -> the res is "u"
-  };
-
-  template<unsigned long E, unsigned long F, unsigned long U, unsigned long V,
-           unsigned long curr, unsigned dim>
-  struct UnifyUnitsRec
-  {
-    constexpr static unsigned long unified =
-      UnifyUnitFlds<GetFld(E, dim), GetFld(F, dim),
-                    GetFld(U, dim), GetFld(V, dim)>::res;
-      
-    constexpr static unsigned long res =
-      UnifyUnitsRec<E, F, U, V, curr | PutFld(unified, dim), dim + 1>::res;
-  };
-
-  template<unsigned long E, unsigned long F, unsigned long U, unsigned long V,
-           unsigned long curr>
-  struct UnifyUnitsRec<E, F, U, V, curr, NDims>
-  {
-    constexpr static unsigned long res = curr;
-  };
-
-  template<unsigned long E, unsigned long F, unsigned long U, unsigned long V>
-  constexpr unsigned long UnifyUnits()
-    { return UnifyUnitsRec<E, F, U, V, 0UL, 0>::res; };
-
-  // "UnitsOK": Similar for "UnifyUnits" but for one Exponent Vector. Returns a
-  // boolean used in external static assertions, so don't need template recurs-
-  // ion here -- can use a recursive constexpr function:
-  //
-  constexpr bool UnitsOKRec
-    (unsigned long E, unsigned long U, unsigned long V, unsigned dim)
-  {
-    return
-      (dim >= NDims)
-    ? true                          // All checks finished
-    : (GetFld(E,dim) == 0UL || GetFld(U,dim) == GetFld(V,dim))
-    ? UnitsOKRec(E, U, V, dim + 1)  // This dim is OK, check next
-    : false;                        // This dim failed
+        ? // "e" is dimension-less:
+          ((f == 0UL)
+           ? // "f" is dimension-less as well, so both units are reset:
+             0L
+           : // Use the unit of "f":
+             v
+          )
+        : // "e" is non-trivial:
+          ((f == 0UL)
+           ? // "f" is dimension-less, so use the unit of "e":
+             u
+           : // Both "e" and "f" are non-trivial, so their units must be same:
+             (u == v)
+             ? u
+             : throw "ERROR: DimTypes::Bits::UnifyUnits: Unification Failed"
+          );
+      // Put the unified units into the "res":
+      res |= PutFld(unified, dim);
+    }
+    return res;
   }
 
+  // "UnitsOK": Similar for "UnifyUnits" but for one Exponent Vector. Returns a
+  // boolean used in external static assertions:
+  //
   constexpr bool UnitsOK(unsigned long E, unsigned long U, unsigned long V)
-    { return UnitsOKRec(E, U, V, 0); }
+  {
+    for (unsigned dim = 0; dim < NDims; ++dim)
+      if (GetFld(E,dim) != 0UL && GetFld(U,dim) != GetFld(V,dim))
+        // Failed units unification: Exp != 0, and units differ:
+        return false;
+    // If we got here:
+    return true;
+  }
 
   //-------------------------------------------------------------------------//
   // Clean-Up (Re-Setting to the default 0) of unused units:                 //
   //-------------------------------------------------------------------------//
-  constexpr unsigned long CleanUpFld
-    (unsigned long e, unsigned long u, unsigned dim)
-  {
-    return PutFld((e == 0UL) ? 0UL : u, dim);
-  }
-
-  constexpr unsigned long CleanUpUnitsRec
-    (unsigned long E, unsigned long U, unsigned long curr, unsigned dim)
-  {
-    return
-      (dim >= NDims)
-    ? curr
-    : CleanUpUnitsRec
-        (E, U, curr | CleanUpFld(GetFld(E,dim), GetFld(U,dim), dim), dim + 1);
-  }
-
   constexpr unsigned long CleanUpUnits(unsigned long E, unsigned long U)
-    { return CleanUpUnitsRec(E, U, 0UL, 0); }
+  {
+    unsigned long res = 0UL;
+    for (unsigned dim = 0; dim < NDims; ++dim)
+    {
+      unsigned long u =
+        (GetFld(E, dim) != 0)
+        ? // This dim's Exp is non-trivial, so the Units are indeed required:
+          GetFld(U, dim)
+        : 0UL;
+      res |= PutFld(u, dim);
+    }
+    return res;
+  }
 
   //=========================================================================//
   // Misc:                                                                   //
@@ -369,7 +360,7 @@ namespace Bits
       { return sprintf(buff, " %s", unit); }
   };
 
-  template<int Numer, int Denom>
+  template<int Numer, unsigned Denom>
   struct UnitStr
   {
     // General rational case:

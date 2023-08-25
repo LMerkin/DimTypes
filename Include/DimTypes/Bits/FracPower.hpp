@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <complex>
+#include <cassert>
 
 namespace DimTypes
 {
@@ -120,21 +121,20 @@ namespace Bits
   //=========================================================================//
   // Compile-Time GCD and Normalisation Functions:                           //
   //=========================================================================//
-  constexpr int GCDrec(int p, int q)
+  constexpr int GCDrec(unsigned p, unsigned q)
   {
-    // 0 <= p <= q
+    assert (p <= q);
     return (p == 0) ? q : GCDrec(q % p, p);
   }
 
   constexpr int GCD(int m, int n)
   {
-    // XXX: "abs" is NOT "constexpr" in CLang, so emulate the cond
-    // (abs(m) <= abs(n)):
-    int am = (m >= 0) ? m : (-m);
-    int an = (n >= 0) ? n : (-n);
-    return (am <= an)
-            ? GCDrec(am, an)
-            : GCDrec(an, am);
+		// Normalise both "m" and "n" first; GCD will always be > 0:
+    unsigned p = unsigned((m >= 0) ? m : (-m));
+    unsigned q = unsigned((n >= 0) ? n : (-n));
+    return  (p <= q)
+             ? GCDrec(p, q)
+             : GCDrec(q, p);
   }
 
   constexpr int NormaliseNumer(int m, int n)
@@ -148,7 +148,6 @@ namespace Bits
 
   constexpr int NormaliseDenom(int m, int n)
   {
-    // XXX: Again, "abs" is NOT "constexpr" in CLang:
     int    an = (n >= 0) ? n : (-n);
     return an / GCD(m, n);
   }
@@ -226,7 +225,7 @@ namespace Bits
   // multiple of 2 -- if so, rewriting the power expr via "SqRt".
   //
   // Generic case: N != 1 and N is NOT a multiple of 2: use "pow":
-  template<typename T, int M, int N, bool IsSqrt = (N % 2 == 0)>
+  template<typename T, int M, unsigned N, bool IsSqrt = (N % 2 == 0)>
   struct SqRtPower
   {
     static_assert(N >= 3 && !IsSqrt, "SqRtPower: Degree not normalised");
@@ -243,7 +242,7 @@ namespace Bits
   };
 
   // "Sqrt" case: NB: "N" is indeed a multiple of 2:
-  template<typename T, int M, int N>
+  template<typename T, int M, unsigned N>
   struct SqRtPower<T, M, N, true>
   {
     static_assert(N >= 2 && N % 2 == 0, "SqRtPower: Case match error");
@@ -260,7 +259,7 @@ namespace Bits
   //
   // Generic case: N is NOT a multiple of 3, or inappropritate type "T":   Fall
   // back to "SqRtPower":
-  template<typename T, int M, int N, bool IsCbrt = (N % 3 == 0)>
+  template<typename T, int M, unsigned N, bool IsCbrt = (N % 3 == 0)>
   struct CbRtPower
   {
     static T res(T base)
@@ -268,15 +267,15 @@ namespace Bits
   };
 
   // The following types allow us to use "CbRt":
-  template<int M, int N>
-  struct CbRtPower<float, M, N, true>
+  template<int M, unsigned N>
+  struct CbRtPower<float,  M, N, true>
   {
     static_assert(N >= 3 && N % 3 == 0, "CbRtPower: Case match error");
     static float res(float base)
       { return CbRtPower<float, M, N/3>::res(CbRt(base)); }
   };
 
-  template<int M, int N>
+  template<int M, unsigned N>
   struct CbRtPower<double, M, N, true>
   {
     static_assert(N >= 3 && N % 3 == 0, "CbRtPower: Case match error");
@@ -284,7 +283,7 @@ namespace Bits
       { return CbRtPower<double, M, N/3>::res(CbRt(base)); }
   };
 
-  template<int M, int N>
+  template<int M, unsigned N>
   struct CbRtPower<long double, M, N, true>
   {
     static_assert(N >= 3 && N % 3 == 0, "CbRtPower: Case match error");
@@ -297,7 +296,7 @@ namespace Bits
   //-------------------------------------------------------------------------//
   // NB: This is a template function, not a struct -- it has no partial specs.
   // First attempt "CbRtPower", then it gets reduced further:
-  template<int M, int N, typename T>
+  template<int M, unsigned N, typename T>
   inline T FracPower(T base)
   {
     static_assert(N != 0, "Zero denom in fractional degree");

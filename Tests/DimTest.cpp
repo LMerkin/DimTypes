@@ -27,6 +27,8 @@ int main()
 {
   using namespace std;
 
+  printf("MaxHeight=%d\n\n", DimTypes::Bits::MaxHeight);
+
   //=========================================================================//
   // Astronomical Constants (from DE423):                                    //
   //=========================================================================//
@@ -91,6 +93,5 @@ int main()
   printf("1/x  = %s\n",   ToStr(z));
   printf("x/x  = %s\n",   ToStr(dl));
   printf("c-x  = %s\n",   ToStr(cmx));
-
   return 0;
 }
