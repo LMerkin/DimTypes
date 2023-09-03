@@ -4,6 +4,7 @@
 //         Encoding/Decoding of Dimension Exponents and Unit Vectors         //
 //===========================================================================//
 #pragma once
+#include <complex>
 
 namespace DimTypes
 {
@@ -68,7 +69,7 @@ namespace Bits
   // Zp inverse using the Extended GCD algorithm.
   // The following function returns 
   // coeffs "c" such that
-  // GCD(x,y) = 1 = c*x + d*y, c >= 0.
+  // GCD(x,y) = 1 = c*x + d*y, c >= 0, where y = IPMod
   // Pre-condition: 0 <= x && x < y  :
   // Result:     in [0 .. PMod-1]:
   //
@@ -330,12 +331,21 @@ namespace Bits
   //=========================================================================//
   // Misc:                                                                   //
   //=========================================================================//
-  //-------------------------------------------------------------------------//
-  // Support for Printing Out Exponents and Units:                           //
-  //-------------------------------------------------------------------------//
-  // FIXME: Make the following functions "constexpr", as they really depend on
-  // template params only. For the moment, they require run-time evaluation:
+  // Whether a given type "T" is a complex type:
   //
+  template<typename T>
+  constexpr bool IsComplex = false;
+
+  template<typename T>
+  constexpr bool IsComplex<std::complex<T>> = true;
+
+  /*
+  //=========================================================================//
+  // "Put":                                                                  //
+  //=========================================================================//
+  template<unsigned long E>
+  char* OutputUnits();
+
   template<int Numer, bool IsPos = (Numer > 0) >
   struct UnitStrInt
   {
@@ -381,6 +391,7 @@ namespace Bits
     constexpr static int put(char*, char const*)
       { return 0; }  // Nothing to output
   };
+  */
 }
 // End namespace Bits
 }

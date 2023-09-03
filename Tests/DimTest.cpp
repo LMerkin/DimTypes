@@ -10,6 +10,7 @@ namespace
   //=========================================================================//
   // Type Declarations:                                                      //
   //=========================================================================//
+  /*
   DECLARE_DIMS(     Len,  Time,   Mass)
 
   DECLARE_DIM_UNITS(Len,  double, km,  AU)
@@ -21,6 +22,13 @@ namespace
   DECLARE_DIM_UNITS(Mass, double, kg)
 
   DECLARE_DIM_STR
+  */
+  DECLARE_DIMS(
+    double,
+    (Len,  m,   (km,  1000.0),  (AU, 1.495978706996262e+11)),
+    (Time, sec, (day, 86400.0)),
+    (Mass, kg)
+  )
 }
 
 int main()
