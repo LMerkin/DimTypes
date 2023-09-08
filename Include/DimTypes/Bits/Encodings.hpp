@@ -5,6 +5,8 @@
 //===========================================================================//
 #pragma once
 #include <complex>
+#include <cstdio>
+#include <cmath>
 
 namespace DimTypes
 {
@@ -331,67 +333,30 @@ namespace Bits
   //=========================================================================//
   // Misc:                                                                   //
   //=========================================================================//
-  // Whether a given type "T" is a complex type:
+  //-------------------------------------------------------------------------//
+  // "PutMagnitude":                                                         //
+  //-------------------------------------------------------------------------//
+  // Outputs a Real or Complex magnitude to the given buffer:
   //
+  // Generic Case:  A Real Value: convert it to "double":
   template<typename T>
-  constexpr bool IsComplex = false;
+  inline char* PutMagnitude(char* a_buff, int a_n, T const& a_val)
+  {
+    assert(a_buff != nullptr && a_n > 0);
+    return a_buff +  snprintf(a_buff, size_t(a_n), "%.16e", double(a_val));
+  }
 
+  // Special Case:  A Complex Value:
   template<typename T>
-  constexpr bool IsComplex<std::complex<T>> = true;
-
-  /*
-  //=========================================================================//
-  // "Put":                                                                  //
-  //=========================================================================//
-  template<unsigned long E>
-  char* OutputUnits();
-
-  template<int Numer, bool IsPos = (Numer > 0) >
-  struct UnitStrInt
+  inline char* PutMagnitude(char* a_buff, int a_n, std::complex<T> const& a_val)
   {
-    // Positive integral exponent:
-    static int put(char* buff, char const* unit)
-      { return sprintf(buff, " %s^%d", unit, Numer); }
-  };
+    assert(a_buff != nullptr && a_n > 0);
+    double  magRe  = double(a_val.real());
+    double  magIm  = double(a_val.imag());
 
-  template<int Numer>
-  struct UnitStrInt<Numer,false>
-  {
-    // Negative integral exponent:
-    static int put(char* buff, char const* unit)
-      { return sprintf(buff, " %s^(%d)", unit, Numer); }
-  };
-
-  template<>
-  struct UnitStrInt<1,true>
-  {
-    // Exponent is 1:
-    static int put(char* buff, char const* unit)
-      { return sprintf(buff, " %s", unit); }
-  };
-
-  template<int Numer, unsigned Denom>
-  struct UnitStr
-  {
-    // General rational case:
-    static int put(char* buff, char const*  unit)
-      { return sprintf(buff, " %s^(%d/%d)", unit, Numer, Denom); }
-  };
-
-  template<int Numer>
-  struct UnitStr<Numer,1>
-  {
-    static int put(char* buff, char const*  unit)
-      { return UnitStrInt<Numer>::put(buff, unit); }
-  };
-
-  template<>
-  struct UnitStr<0,1>
-  {
-    constexpr static int put(char*, char const*)
-      { return 0; }  // Nothing to output
-  };
-  */
+    return a_buff +  snprintf(a_buff, size_t(a_n), "(%.16e %c %.16e * I)",
+                     magRe, (magIm < 0.0) ? '-' : '+', fabs(magIm));
+  }
 }
 // End namespace Bits
 }
