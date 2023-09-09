@@ -75,6 +75,7 @@ int main()
 
   printf("GMS1 = %s\n",   ToStr(GMS1).data());
   printf("GME1 = %s\n",   ToStr(GME1).data());
+  printf("SqRt = %s\n",   ToStr(SqRt(GME1)).data());
 
   auto x       = 10.0 * Len_km / Time_sec;
   auto y       = To_Len_AU(To_Time_day(x));

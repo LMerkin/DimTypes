@@ -494,15 +494,15 @@
       /* Output the Exponent, unless it is 1: */ \
       if constexpr(!(Numer == 1 && Denom == 1))  \
       { \
-        curr += snprintf(curr, size_t(N), (Numer < 0) ? "^(%d" : "^%d", \
-                         Numer); \
+        constexpr bool brackets =  Numer < 0 || Denom != 1; \
+        curr += snprintf(curr, size_t(N), brackets ? "^(%d" : "^%d", Numer); \
         CHECK_N \
         if constexpr(Denom != 1) \
         { \
           curr += snprintf(curr, size_t(N), "/%u", Denom); \
           CHECK_N \
         } \
-        if constexpr(Numer < 0)  \
+        if constexpr(brackets)   \
         { \
           *curr = ')'; \
           ++curr; \
