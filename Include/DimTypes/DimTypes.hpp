@@ -4,8 +4,6 @@
 //          Types for Physical Dimensions and Dimensioned Quantities         //
 //===========================================================================//
 #pragma  once
-
-#include "Bits/FracPower.hpp"
 #include "Bits/Encodings.hpp"
 #include "Bits/Macros.h"
 
@@ -210,7 +208,7 @@ namespace DimTypes
     {
       return
         DimQ<MultExp(E,M), CleanUpUnits(MultExp(E,M), U), RepT>
-            (IntPower<RepT, M>::res(m_val));
+            (IntPower<RepT, M>(m_val));
     }
 
     // "RPow": (General) Rational Power:

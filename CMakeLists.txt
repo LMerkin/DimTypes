@@ -24,34 +24,7 @@ PROJECT(${PROJ_NAME} LANGUAGES CXX)
 SET (CMAKE_EXPORT_COMPILE_COMMANDS ON)
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
 
-# Generate identity string for this build:
-#EXECUTE_PROCESS(
-#  COMMAND bash -c "cd ${CMAKE_SOURCE_DIR} && git rev-parse HEAD"
-#  OUTPUT_VARIABLE COMMIT)
-#STRING(STRIP ${COMMIT} COMMIT_NAME)
-
-#EXECUTE_PROCESS(
-#  COMMAND bash -c "cd ${CMAKE_SOURCE_DIR} && git rev-parse --abbrev-ref HEAD"
-#  OUTPUT_VARIABLE BRANCH)
-#STRING(STRIP ${BRANCH} BRANCH_NAME)
-
-#EXECUTE_PROCESS(
-#  COMMAND bash -c "cd ${CMAKE_SOURCE_DIR} && git config --get remote.origin.url"
-#  OUTPUT_VARIABLE REMOTE)
-#STRING(STRIP ${REMOTE} REMOTE_NAME)
-
-#STRING(TIMESTAMP DATE "%Y-%m-%d %H-%M-%S" UTC)
-
-#ADD_COMPILE_DEFINITIONS(REMOTE_NAME="${REMOTE_NAME}"
-#                        BRANCH_NAME="${BRANCH_NAME}"
-#                        COMPILE_DATE="${DATE}"
-#                        COMMIT_NAME="${COMMIT_NAME}")
-#
-#MESSAGE("Remote\t${REMOTE_NAME}\nBranch\t${BRANCH_NAME}\n\
-#Commit\t${COMMIT_NAME}\nTime\t${DATE}\n")
-
 # NB: The following vars are normally provided via the command-line params:
-#
 IF (LIB_DIR)
   SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${LIB_DIR}")
   SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${LIB_DIR}")
@@ -128,7 +101,7 @@ IF("${TOOL_CHAIN}" STREQUAL "GCC")
                 -Winit-self              -Wwrite-strings  -Wmissing-braces \
                 -Wdisabled-optimization  -Wconversion  \
                 -Wno-stringop-truncation -Wno-dangling-pointer \
-                -std=gnu++20 \
+                -std=gnu++23 \
                 -Wctor-dtor-privacy  -Wnon-virtual-dtor -Woverloaded-virtual \
                 -Wno-class-memaccess -Wno-double-promotion")
 
@@ -159,7 +132,7 @@ ELSEIF("${TOOL_CHAIN}" STREQUAL "CLang")
                 -Wno-c99-extensions      -Wno-zero-length-array  \
                 -Wno-packed              -Wno-undefined-func-template \
                 -Wno-gnu-statement-expression \
-                -std=gnu++20 \
+                -std=gnu++23 \
                 -Wno-c++98-compat        -Wno-c++98-compat-pedantic    \
                 -Wno-weak-vtables        -Wno-double-promotion         \
                 -Wno-weak-template-vtables    \
@@ -184,7 +157,7 @@ ELSEIF("${TOOL_CHAIN}" STREQUAL "NVHPC")
   SET(CXXFLAGS "${CXXFLAGS} -march=native  -mtune=native  \
                 -Wno-switch-enum         -Wno-float-equal \
                 -Wno-missing-prototypes  -Wno-vla         \
-                -std=c++20")
+                -std=c++23")
 #-----------------------------------------------------------------------------#
 ELSE()
   MESSAGE(FATAL_ERROR  "UnSupported UNIX ToolChain: ${TOOL_CHAIN}")
@@ -243,6 +216,7 @@ LINK_DIRECTORIES   ("${PROJECT_BINARY_DIR}"
                     "${ENV_PREFIX}/lib")
 
 #=============================================================================#
-# Srcs and Targets:                                                           #
+# Tests:                                                                      #
 #=============================================================================#
-ADD_SUBDIRECTORY(Tests)
+ADD_EXECUTABLE(DimTest Tests/DimTest.cpp)
+

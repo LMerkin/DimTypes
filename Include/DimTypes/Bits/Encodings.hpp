@@ -7,6 +7,7 @@
 #include <complex>
 #include <cstdio>
 #include <cmath>
+#include <cassert>
 
 namespace DimTypes
 {
@@ -43,24 +44,33 @@ namespace Bits
     { return 1UL << (dim * PBits); }
 
   //=========================================================================//
-  // Compile-Time Monomial Operations on Dimension Exponents:                //
+  // Compile-Time GCD and Normalisation Functions:                           //
   //=========================================================================//
-  // Addition, Subtraction, Multiplication by Rationals:
-  // XXX: in the functions below, it would be better to check that "dim" is in
-  // the valid range (0..NDims-1), but generating proper compile-time err msgs
-  // is difficult, so we don't do it at the moment:
-  //
-  constexpr unsigned long GetFld(unsigned long From, unsigned dim)
+  constexpr int GCDrec(unsigned p, unsigned q)
   {
-    // Move the selected bit field to the right and zero-out all other bits:
-    return (From >> (dim * PBits)) & PMask;
+    assert (p <= q);
+    return (p == 0) ? q : GCDrec(q % p, p);
   }
 
-  constexpr unsigned long PutFld(unsigned long From, unsigned dim)
+  constexpr int GCD(int m, int n)
   {
-    // Zero out the upper bits and move lower ones to the left into the
-    // required position:
-    return (From & PMask) << (dim * PBits);
+    // Normalise both "m" and "n" first; GCD will always be > 0:
+    unsigned p = unsigned((m >= 0) ? m : (-m));
+    unsigned q = unsigned((n >= 0) ? n : (-n));
+    return  (p <= q)
+             ? GCDrec(p, q)
+             : GCDrec(q, p);
+  }
+
+  constexpr std::pair<int, unsigned> NormaliseFrac(int m, int n)
+  {
+    assert(n != 0);
+    // NB: GCD is always >= 0. Compile-time error occurs if GCD == 0 (which can
+    // happen only if m == n == 0):
+    int gcd = GCD(m, n);
+    int m1  = (n > 0 ? m : (-m)) / gcd;
+    int n1  = (n > 0 ? n : (-n)) / gcd;
+    return std::make_pair(m1, unsigned(n1));
   }
 
   // Normalising a quantity (positive or negative) modulo PMod.
@@ -68,12 +78,11 @@ namespace Bits
   constexpr unsigned Normalise(int x)
     { return (x >= 0) ? (x % IPMod) : (x % IPMod + IPMod); }
 
-  // Zp inverse using the Extended GCD algorithm.
-  // The following function returns 
-  // coeffs "c" such that
-  // GCD(x,y) = 1 = c*x + d*y, c >= 0, where y = IPMod
-  // Pre-condition: 0 <= x && x < y  :
-  // Result:     in [0 .. PMod-1]:
+  // "InverseModP":
+  // Zp inverse using the Extended GCD algorithm. Returns the coeff "c" s.t.
+  // GCD(x,P) = 1 = c*x + d*P, c >= 0, where P = IPMod
+  // Pre-condition: 0 <= x && x < y ;
+  // Result:    in [0 .. PMod-1]    :
   //
   constexpr unsigned InverseModP(int n)
   {
@@ -106,6 +115,27 @@ namespace Bits
       b = b1;
     }
     return Normalise(c);
+  }
+
+  //=========================================================================//
+  // Compile-Time Monomial Operations on Dimension Exponents:                //
+  //=========================================================================//
+  // Addition, Subtraction, Multiplication by Rationals:
+  // XXX: in the functions below, it would be better to check that "dim" is in
+  // the valid range (0..NDims-1), but generating proper compile-time err msgs
+  // is difficult, so we don't do it at the moment:
+  //
+  constexpr unsigned long GetFld(unsigned long From, unsigned dim)
+  {
+    // Move the selected bit field to the right and zero-out all other bits:
+    return (From >> (dim * PBits)) & PMask;
+  }
+
+  constexpr unsigned long PutFld(unsigned long From, unsigned dim)
+  {
+    // Zero out the upper bits and move lower ones to the left into the
+    // required position:
+    return (From & PMask) << (dim * PBits);
   }
 
   constexpr unsigned long AddExp(unsigned long E, unsigned long F)
@@ -331,6 +361,180 @@ namespace Bits
   }
 
   //=========================================================================//
+  // Overloaded / templated functions on representation types:               //
+  //=========================================================================//
+// { return std::pow(z, T(1.0)/T(3.0)); }
+
+  //-------------------------------------------------------------------------//
+  // "Abs":                                                                  //
+  //-------------------------------------------------------------------------//
+  inline float  Abs(float  a_x)
+    { return ::fabsf(a_x); }
+
+  inline double Abs(double a_x)
+    { return ::fabs (a_x); }
+
+  inline long double Abs(long double a_x)
+    { return ::fabsl(a_x); }
+
+  template<typename T>
+  inline T Abs(std::complex<T> a_z)
+    { return   std::complex<T>(Abs(a_z)); }
+
+  //-------------------------------------------------------------------------//
+  // "Floor":                                                                //
+  //-------------------------------------------------------------------------//
+  inline float  Floor(float a_x)
+    { return ::floorf(a_x); }
+
+  inline double Floor(double a_x)
+    { return ::floor (a_x); }
+
+  inline long double Floor(long double a_x)
+    { return ::floorl(a_x); }
+
+  // XXX: For "complex" types, "Floor" is applied to both Re and Im parts:
+  template<typename T>
+  inline std::complex<T>      Floor(std::complex<T>  a_z)
+    { return  std::complex<T>(Floor(a_z.real()), Floor(a_z.imag())); }
+
+  //-------------------------------------------------------------------------//
+  // "Ceil":                                                                 //
+  //-------------------------------------------------------------------------//
+  inline float  Ceil(float  a_x)
+    { return ::ceilf(a_x); }
+
+  inline double Ceil(double a_x)
+    { return ::ceil (a_x); }
+
+  inline long double Ceil(long double a_x)
+    { return ::ceill(a_x); }
+
+  // XXX: For "complex" types, "Ceil" is applied to both Re and Im parts:
+  template<typename T>
+  inline std::complex<T>      Ceil(std::complex<T> a_z)
+    { return  std::complex<T>(Ceil(a_z.real()), Ceil(a_z.imag())); }
+
+  //-------------------------------------------------------------------------//
+  // "Round":                                                                //
+  //-------------------------------------------------------------------------//
+  inline float  Round (float  a_x)
+    { return ::roundf(a_x); }
+
+  inline double Round (double a_x)
+    { return ::round (a_x); }
+
+  inline long double Round(long double a_x)
+    { return ::roundl(a_x); }
+
+  // NB: For "complex" types, "Round" is applied to both Re and Im parts:
+  template<typename T>
+  inline std::complex<T>      Round(std::complex<T> a_z)
+    { return  std::complex<T>(Round(a_z.real()), Round(a_z.imag())); }
+
+  //=========================================================================//
+  // Power Templated Functions:                                              //
+  //=========================================================================//
+  //-------------------------------------------------------------------------//
+  // Power Expr with a Natural Degree:                                       //
+  //-------------------------------------------------------------------------//
+  template<typename T, int M>
+  constexpr T IntPower(T a_x)
+  {
+    if constexpr(M <  0)
+      return IntPower<T, -M>(a_x);
+
+    if constexpr(M == 0)
+      return T(1.0);  // For optimisation only
+
+    if constexpr(M == 1)
+      return a_x;
+
+    T halfPow  = IntPower<T, M/2>(a_x);
+    T halfPow2 = halfPow * halfPow;
+    if constexpr(M % 2 == 1)
+      return halfPow2 * a_x;
+    else
+      return halfPow2;
+  }
+
+  //-------------------------------------------------------------------------//
+  // "FracPower23":                                                          //
+  //-------------------------------------------------------------------------//
+  // "N" is assumed to consist of 2 and 3 multiples only:
+  //
+  template<typename  T, int M, unsigned N>
+  inline T FracPower23(T a_x)
+  {
+    static_assert(M != 0 && N != 0, "FracPower23: Invalid Frac");
+
+    if constexpr(N == 1)
+      return IntPower<T, M>(a_x);
+    else
+    if constexpr(N % 2 == 0)
+      return FracPow23<T, M, N/2>(std::sqrt(a_x));
+    else
+    {
+      static_assert(N % 3 == 0, "FracPower23: N != Mults(2,3)");
+      return FracPow23<T, M, N/3>(std::cbrt(a_x));
+    }
+  }
+
+  //-------------------------------------------------------------------------//
+  // "Only2and3":                                                            //
+  //-------------------------------------------------------------------------//
+  constexpr bool Only2and3(unsigned a_n)
+  {
+    return
+      (a_n == 0)
+      ? true :
+      (a_n % 2 == 0)
+      ? Only2and3(a_n / 2) :
+      (a_n % 3 == 0)
+      ? Only2and3(a_n / 3)
+      : false;
+  }
+
+  //-------------------------------------------------------------------------//
+  // "IsComplex":                                                            //
+  //-------------------------------------------------------------------------//
+  template<typename T>
+  constexpr bool IsComplex = false;
+
+  template<typename T>
+  constexpr bool IsComplex<std::complex<T>> = true;
+
+  //-------------------------------------------------------------------------//
+  // Power Expr with a General Fractional Degree:                            //
+  //-------------------------------------------------------------------------//
+  // NB: It is not a "constexpr" (because "sqrt", "cbrt" and "pow" are not such
+  // in C++ < 26):
+  //
+  template<int M, unsigned N, typename T>
+  inline T FracPower(T a_x)
+  {
+    constexpr auto     nFrac = NormaliseFrac(M, N);
+    constexpr int      M1    = nFrac.first;
+    constexpr unsigned N1    = nFrac.second;
+
+    // Integral power?
+    if constexpr(M1 == 0)
+      return T(1.0);
+    if constexpr(N1 == 1)
+      return IntPower<T, M1>(a_x);
+
+    // If the power is indeed fractional, we check whether "N1" only consists of
+    // 2 and 3 multiples, in which case simplications based on "SqRt" and "CbRt"
+    // are possible. XXX: However, we currently don't do that for "complex" typ-
+    // es, because "cbrt" is not defined for them:
+    if constexpr(Only2and3(N1) && !IsComplex<T>)
+      return FracPower23<T, M1, N1>(a_x);
+    else
+      // Otherwise, use the generic "pow":
+      return std::pow(a_x, T(M1)/T(N1));
+  }
+
+  //=========================================================================//
   // Misc:                                                                   //
   //=========================================================================//
   //-------------------------------------------------------------------------//
@@ -355,7 +559,7 @@ namespace Bits
     double  magIm  = double(a_val.imag());
 
     return a_buff +  snprintf(a_buff, size_t(a_n), "(%.16e %c %.16e * I)",
-                     magRe, (magIm < 0.0) ? '-' : '+', fabs(magIm));
+                     magRe, (magIm < 0.0) ? '-' : '+', Abs(magIm));
   }
 }
 // End namespace Bits
