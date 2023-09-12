@@ -320,7 +320,7 @@ namespace DimTypes
 
   template<unsigned long E, unsigned long U, typename RepT>
   constexpr DimQ<MultExp(E,2), CleanUpUnits(MultExp(E,2),U), RepT>
-  IPow(DimQ<E,U,RepT> a_right)
+  Sqr(DimQ<E,U,RepT> a_right)
     { return a_right.Sqr(); }
 
   template<int M, int N, unsigned long E, unsigned long U, typename RepT>
