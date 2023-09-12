@@ -347,10 +347,10 @@ namespace DimTypes
 
   template<unsigned long E, unsigned long U, typename RepT>
   constexpr bool IsNeg   (DimQ<E,U,RepT> a_right)
-    { return a_right.IsNegative(); }
+    { return a_right.IsNeg(); }
 
   template<unsigned long E, unsigned long U, typename RepT>
   constexpr bool IsPos   (DimQ<E,U,RepT> a_right)
-    { return a_right.IsPositive(); }
+    { return a_right.IsPos(); }
 }
 // End namespace DimTypes
