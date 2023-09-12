@@ -4,12 +4,8 @@
 # Paths:                                                                      #
 #-----------------------------------------------------------------------------#
 AbsPath0=$(realpath $0)
-LSATop=$(dirname $AbsPath0)
-Appl=$(basename $LSATop)
-DevTop=$(dirname $LSATop)
-
-# Top-level installation prefix:
-TopInstallPrefix=/opt
+TopDir=$(dirname $AbsPath0)
+Appl=$(basename $TopDir)
 
 #-----------------------------------------------------------------------------#
 # Command-Line Params:                                                        #
@@ -17,7 +13,6 @@ TopInstallPrefix=/opt
 ConfigMake=0
 CleanUp=0
 Build=0
-Install=0
 Verbose=0
 DebugMode=0
 ReleaseMode=0
@@ -33,7 +28,6 @@ function usage
   echo "-c       : Configure"
   echo "-C       : as above, but with full clean-up"
   echo "-b       : Build"
-  echo "-i       : Install"
   echo "-j Jobs  : Number of concurrent jobs in make (default:  auto)"
   echo "-d: (use with -c|-C): Configure in the Debug     mode"
   echo "-r: (use with -c|-C): Configure in the Release   mode (default)"
@@ -50,7 +44,6 @@ do
     c) ConfigMake=1;;
     C) ConfigMake=1;    CleanUp=1;;
     b) Build=1;;
-    i) Install=1;;
     d) DebugMode=1;;
     r) ReleaseMode=1;;
     u) UnCheckedMode=1;;
@@ -70,7 +63,7 @@ done
 # (*) UnCheckedMode can    be combined with ReleaseMode (the former is a stron-
 #     ger version of the latter); only in this case BuildType=Release  is diff-
 #     erent from BuildMode=UnChecked;
-# (*) Release and Debug Models can be  combined:
+# (*) Release and Debug Model can be combined:
 #
 BuildType="Release"
 
@@ -114,14 +107,11 @@ esac
 #-----------------------------------------------------------------------------#
 # Go Ahead:                                                                   #
 #-----------------------------------------------------------------------------#
-# XXX: "bin", "build" and "lib" are currently under the "LSATop":
-#
 BldSub="$Appl/$ToolChain-$BuildMode"
-BldTop="$DevTop/__BUILD__/$BldSub"
+BldTop="$TopDir/__BUILD__/$BldSub"
 BldDir="$BldTop/build"
 BinDir="$BldTop/bin"
 LibDir="$BldTop/lib"
-InstallPrefix="$TopInstallPrefix/$BldSub"
 
 # Create dirs if they don't exist:
 mkdir -p $BldDir
@@ -152,13 +142,12 @@ then
     -D TOOL_CHAIN="$ToolChain"   \
     -D CMAKE_BUILD_TYPE="$BuildType"      \
     -D UNCHECKED_MODE="$UnCheckedMode"    \
-    -D CMAKE_INSTALL_PREFIX="$InstallPrefix" \
     -D CMAKE_EXPORT_COMPILE_COMMANDS="ON" \
     -D ENV_PREFIX="$EnvPrefix" \
     -D PROJECT_NAME="$Appl"  \
     -D LIB_DIR="$LibDir"     \
     -D BIN_DIR="$BinDir"     \
-    -S "$LSATop" \
+    -S "$TopDir" \
     -B "$BldDir"
 fi
 
@@ -173,18 +162,5 @@ then
   if [ $Verbose -eq 1 ]; then MVerbose="VERBOSE=1"; else MVerbose=""; fi
 
   cmake --build $BldDir -- -j $Jobs $MVerbose
-fi
-
-#-----------------------------------------------------------------------------#
-# Install:                                                                    #
-#-----------------------------------------------------------------------------#
-if [ $Install -eq 1 ]
-then
-  # Create that dir, and make it accessible for the current user:
-  sudo mkdir -p $InstallPrefix
-  sudo chown $(id -nu):$(id -ng) $InstallPrefix
-
-  if [ $Verbose -eq 1 ]; then MVerbose="-- VERBOSE=1"; else MVerbose=""; fi
-  cmake --build $BldDir --target install $MVerbose
 fi
 exit 0
