@@ -17,9 +17,7 @@ ENDIF()
 #=============================================================================#
 # Project Settings:                                                           #
 #=============================================================================#
-SET(PROJ_NAME           "AstroDyn")
-SET(PROJ_LIB_NAME     ${PROJ_NAME})
-PROJECT(${PROJ_NAME} LANGUAGES CXX)
+PROJECT("DimTypes" LANGUAGES CXX)
 
 SET (CMAKE_EXPORT_COMPILE_COMMANDS ON)
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
@@ -50,26 +48,6 @@ IF (NOT CMAKE_INSTALL_PREFIX)
   SET(CMAKE_INSTALL_PREFIX
       "${ENV_PREFIX}/${PROJECT_NAME}-${TOOL_CHAIN}-${CMAKE_BUILD_TYPE}")
 ENDIF()
-
-#=============================================================================#
-# Check for Dependencies:                                                     #
-#=============================================================================#
-# Extend the PkgConfig search path (for *.pc files) -- useful for those modules
-# which can be found via PkgConfig:
-SET(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${ENV_PREFIX}/lib/pkgconfig")
-
-# Boost (no specific version checks):
-FIND_PACKAGE(Boost  REQUIRED)
-
-# OpenMP support:
-# OpenMP is required for compiling some applications (but not the core libs).
-# OpenMP flags and linker options are specified here, but NOT included by defa-
-# ult into the main configuration; enable them for OpenMP-dependent targets:
-# "libgomp" should work for both NCHPC and GCC:
-#
-FIND_PACKAGE(OpenMP REQUIRED)
-SET(OPENMP_FLAGS "-fopenmp")
-SET(OPENMP_LIBS  "gomp")
 
 #=============================================================================#
 # Compiler Settings:                                                          #
@@ -180,11 +158,8 @@ SET(CMAKE_CXX_FLAGS_DEBUG          "")
 #-----------------------------------------------------------------------------#
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXXFLAGS}")
 
-ADD_DEFINITIONS(-DBOOST_SYSTEM_NO_DEPRECATED
-                -UBOOST_CB_ENABLE_DEBUG
-                -DBOOST_CB_DISABLE_DEBUG
-                -DUNCHECKED_MODE=${UNCHECKED_MODE})
 
+ADD_DEFINITIONS(-DUNCHECKED_MODE=${UNCHECKED_MODE})
 # Ignore warnings in system headers:
 ADD_DEFINITIONS(-isystem "${ENV_PREFIX}/include")
 

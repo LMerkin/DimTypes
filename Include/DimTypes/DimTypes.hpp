@@ -211,6 +211,11 @@ namespace DimTypes
             (IntPower<RepT, M>(m_val));
     }
 
+    // "Sqr" is a particularly-important case of "IPow":
+    constexpr DimQ<MultExp(E,2), CleanUpUnits(MultExp(E,2), U), RepT>
+    Sqr() const
+      { return IPow<2>(); }
+
     // "RPow": (General) Rational Power:
     template<int M, int N>
     DimQ<DivExp(MultExp(E,M),N),
@@ -312,6 +317,11 @@ namespace DimTypes
   constexpr DimQ<MultExp(E,M), CleanUpUnits(MultExp(E,M),U), RepT>
   IPow(DimQ<E,U,RepT> a_right)
     { return a_right.template IPow<M>(); }
+
+  template<unsigned long E, unsigned long U, typename RepT>
+  constexpr DimQ<MultExp(E,2), CleanUpUnits(MultExp(E,2),U), RepT>
+  IPow(DimQ<E,U,RepT> a_right)
+    { return a_right.Sqr(); }
 
   template<int M, int N, unsigned long E, unsigned long U, typename RepT>
   constexpr DimQ<DivExp(MultExp(E,M),N),
