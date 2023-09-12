@@ -17,7 +17,7 @@ ENDIF()
 #=============================================================================#
 # Project Settings:                                                           #
 #=============================================================================#
-PROJECT("DimTypes" LANGUAGES CXX)
+PROJECT(${PROJECT_NAME} LANGUAGES CXX)
 
 SET (CMAKE_EXPORT_COMPILE_COMMANDS ON)
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
@@ -110,7 +110,7 @@ ELSEIF("${TOOL_CHAIN}" STREQUAL "CLang")
                 -Wno-c99-extensions      -Wno-zero-length-array  \
                 -Wno-packed              -Wno-undefined-func-template \
                 -Wno-gnu-statement-expression \
-                -std=gnu++23 \
+                -std=gnu++20 \
                 -Wno-c++98-compat        -Wno-c++98-compat-pedantic    \
                 -Wno-weak-vtables        -Wno-double-promotion         \
                 -Wno-weak-template-vtables    \

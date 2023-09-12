@@ -46,13 +46,13 @@ namespace Bits
   //=========================================================================//
   // Compile-Time GCD and Normalisation Functions:                           //
   //=========================================================================//
-  constexpr int GCDrec(unsigned p, unsigned q)
+  constexpr unsigned GCDrec(unsigned p, unsigned q)
   {
     assert (p <= q);
     return (p == 0) ? q : GCDrec(q % p, p);
   }
 
-  constexpr int GCD(int m, int n)
+  constexpr unsigned GCD(int m, int n)
   {
     // Normalise both "m" and "n" first; GCD will always be > 0:
     unsigned p = unsigned((m >= 0) ? m : (-m));
@@ -67,16 +67,21 @@ namespace Bits
     assert(n != 0);
     // NB: GCD is always >= 0. Compile-time error occurs if GCD == 0 (which can
     // happen only if m == n == 0):
-    int gcd = GCD(m, n);
+    int gcd = int(GCD(m, n));
     int m1  = (n > 0 ? m : (-m)) / gcd;
     int n1  = (n > 0 ? n : (-n)) / gcd;
+    assert(n1 > 0);
     return std::make_pair(m1, unsigned(n1));
   }
 
   // Normalising a quantity (positive or negative) modulo PMod.
   // The result is always in [0 .. PMod-1]:
   constexpr unsigned Normalise(int x)
-    { return (x >= 0) ? (x % IPMod) : (x % IPMod + IPMod); }
+  {
+    int    res = (x >= 0) ? (x % IPMod) : (x % IPMod + IPMod);
+    assert(res >= 0);
+    return unsigned(res);
+  }
 
   // "InverseModP":
   // Zp inverse using the Extended GCD algorithm. Returns the coeff "c" s.t.
@@ -187,7 +192,7 @@ namespace Bits
 
     unsigned long res = 0UL;
     for (unsigned dim = 0;  dim < NDims;  ++dim)
-      res |= PutFld((GetFld(E, dim) * ULong(InverseModP(n))) % PMod, dim);
+      res |= PutFld((GetFld(E, dim) * ULong(InverseModP(int(n)))) % PMod, dim);
     return res;
   }
 
@@ -221,7 +226,7 @@ namespace Bits
       unsigned repC     = (unsigned(numerC) * invDenom) % PMod;
 
       if (taken[repP] || taken[repC])
-        return height-1; // Clash encountered at "height"!
+        return unsigned(height-1); // Clash encountered at "height"!
 
       taken[repP] = true;
       taken[repC] = true;
@@ -250,16 +255,16 @@ namespace Bits
     {
       for (int denom = 1; denom < height; ++denom)
       {
-        int invDenom = InverseModP(unsigned(denom));
-        int numerP   = height - denom;          // Positive numer
-        int numerC   = IPMod  - numerP;         // Complement of Negative numer
+        unsigned invDenom = InverseModP(denom);
+        int      numerP   = height - denom;     // Positive numer
+        int      numerC   = IPMod  - numerP;    // Complement of Negative numer
 
         if (!(numerP > 0 && numerC > 0))
           throw "DimTypes::Bits::GetNumerAndDenom: LOGIC ERROR";
 
-        if (unsigned(numerP * invDenom) % IPMod == rep)
+        if ((unsigned(numerP) * invDenom) % PMod == rep)
           return std::make_pair(numerP,   unsigned(denom));
-        if (unsigned(numerC * invDenom) % IPMod == rep)
+        if ((unsigned(numerC) * invDenom) % PMod == rep)
           return std::make_pair(-numerP,  unsigned(denom));
       }
     }
