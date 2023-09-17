@@ -29,13 +29,13 @@ int main()
   //-------------------------------------------------------------------------//
   // Speed of light:                                                         //
   //-------------------------------------------------------------------------//
-  constexpr auto c = 299792.458 * Len_km / Time_sec;
+  constexpr auto c = 299792.458 * Len_km_1 / Time_sec_1;
 
   //-------------------------------------------------------------------------//
   // Heliocentric Gravitational Constant:                                    //
   //-------------------------------------------------------------------------//
   constexpr auto GMS  =
-    2.959122082855911e-4 * IPow<3>(Len_AU) / IPow<2>(Time_day);
+    2.959122082855911e-4 * IPow<3>(Len_AU_1) / IPow<2>(Time_day_1);
 
   //-------------------------------------------------------------------------//
   // Earth / Moon Mass Ratio: dimension-less:                                //
@@ -47,9 +47,9 @@ int main()
   //-------------------------------------------------------------------------//
   constexpr auto GME  =
     8.997011408268049e-10  / (1.0 + 1.0 / EMRat) *
-    IPow<3>(Len_AU) / IPow<2>(Time_day);
+    IPow<3>(Len_AU_1) / IPow<2>(Time_day_1);
 
-  auto tonne = Mass_kg_T(1000.0);
+  auto tonne = Mass_kg(1000.0);
   auto tn1   = CbRt(tonne);
   printf("CbRt(tonne) = %s\n", ToStr(tn1).data());
 
@@ -57,16 +57,18 @@ int main()
   auto tn3 = Abs(tn2);
   printf("tn3  = %s\n",   ToStr(tn3).data());
 
-  auto AU1     = Len_AU_T(1.0);
-  auto AU2     = 1.0 * Len_AU;
-  auto AU3     = To_Len_km(AU1);
-  auto AU4     = To_Len_km(AU2);
+  auto AU1     = Len_AU(1.0);
+  auto AU2     = Len_AU_1;
+  auto AU3     = 1.0  * Len_AU_1;
+  auto AU4     = To_Len_km(AU1);
+  auto AU5     = To_Len_km(AU2);
   printf("AU1  = %s\n",   ToStr(AU1).data());
   printf("AU2  = %s\n",   ToStr(AU2).data());
   printf("AU3  = %s\n",   ToStr(AU3).data());
   printf("AU4  = %s\n",   ToStr(AU4).data());
-  printf("c    = %s\n",   ToStr(c)  .data());
+  printf("AU5  = %s\n",   ToStr(AU5).data());
 
+  printf("c    = %s\n",   ToStr(c)  .data());
   printf("GMS  = %s\n",   ToStr(GMS).data());
   printf("GME  = %s\n",   ToStr(GME).data());
 
@@ -77,7 +79,7 @@ int main()
   printf("GME1 = %s\n",   ToStr(GME1).data());
   printf("SqRt = %s\n",   ToStr(SqRt(GME1)).data());
 
-  auto x       = 10.0 * Len_km / Time_sec;
+  auto x       = Len_km(10.0) / Time_sec_1;
   auto y       = To_Len_AU(To_Time_day(x));
   auto z       = 1.0 / y;
   auto dl      = y * z;
