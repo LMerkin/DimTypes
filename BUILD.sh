@@ -107,8 +107,7 @@ esac
 #-----------------------------------------------------------------------------#
 # Go Ahead:                                                                   #
 #-----------------------------------------------------------------------------#
-BldSub="$Appl/$ToolChain-$BuildMode"
-BldTop="$TopDir/__BUILD__/$BldSub"
+BldTop="$TopDir/__BUILD__/$ToolChain-$BuildMode"
 BldDir="$BldTop/build"
 BinDir="$BldTop/bin"
 LibDir="$BldTop/lib"
