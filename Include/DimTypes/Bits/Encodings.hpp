@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cmath>
 #include <cassert>
+#include <cstdint>
 
 namespace DimTypes
 {
@@ -17,30 +18,29 @@ namespace Bits
   // Zp Representation of Rationals:                                         //
   //=========================================================================//
   // Dimension Exponents are monomials over Fundamental Dims with Rational pows.
-  // They will be represented as "unsigned long" integers in which bit flds  of
-  // "PBits" will be allocated for each dimension. Bit fields encode a rational
-  // powers in the Zp format where p = PMod below. Thus, 7 dims must fit into a
-  // 64-bit format -- so PBits = 9 and PMod = 509 (the largest prime which fits
-  // into 9 bits, ie is smaller than 2^9=512):
+  // They will be represented as "uint64_t" in which bit flds of "PBits" will be
+  // allocated for each dimension. Bit fields encode a rational powers in the Zp
+  // format where p = PMod below. Thus, 7 dims must fit into a 64-bit format --
+  // so PBits = 9 and PMod = 509  (the largest prime which fits into 9 bits, ie
+  // is smaller than 2^9=512):
   // All Unit enums must be encodeable in the "PBits" format; but this is not a
   // real constraint at the moment (can create up to "PMod" different units per
   // dim), so the number of units is not checked.
   //
-  using                   ULong = unsigned long;  // To avoid warnings in CLang
-  constexpr unsigned long PMod  = 509;
-  constexpr int IPMod           = int(PMod);
+  constexpr uint64_t PMod  = 509;
+  constexpr int      IPMod = int(PMod);
 
-  constexpr unsigned      NDims = 7;
-  constexpr unsigned      PBits = 9;
-  constexpr unsigned long PMask = (1UL << PBits) - 1;
+  constexpr unsigned NDims = 7;
+  constexpr unsigned PBits = 9;
+  constexpr uint64_t PMask = (1UL << PBits) - 1;
   static_assert(PMod <= PMask, "Insufficient bits for PMod");
 
-  static_assert(PBits * NDims <= sizeof(unsigned long) * 8,
-                "Exp Vector does not fit into unsigned long");
+  static_assert(PBits * NDims <= sizeof(uint64_t) * 8,
+                "Exp Vector does not fit into uint64_t");
 
   // Exponents for Fundamental Dimensions: Each exponent is 1 for the corresp
   // Dim:
-  constexpr unsigned long DimExp(unsigned dim)
+  constexpr uint64_t DimExp(unsigned dim)
     { return 1UL << (dim * PBits); }
 
   //=========================================================================//
@@ -130,20 +130,20 @@ namespace Bits
   // the valid range (0..NDims-1), but generating proper compile-time err msgs
   // is difficult, so we don't do it at the moment:
   //
-  constexpr unsigned long GetFld(unsigned long From, unsigned dim)
+  constexpr uint64_t GetFld(uint64_t From, unsigned dim)
   {
     // Move the selected bit field to the right and zero-out all other bits:
     return (From >> (dim * PBits)) & PMask;
   }
 
-  constexpr unsigned long PutFld(unsigned long From, unsigned dim)
+  constexpr uint64_t PutFld(uint64_t From, unsigned dim)
   {
     // Zero out the upper bits and move lower ones to the left into the
     // required position:
     return (From & PMask) << (dim * PBits);
   }
 
-  constexpr unsigned long AddExp(unsigned long E, unsigned long F)
+  constexpr uint64_t AddExp(uint64_t E, uint64_t F)
   {
     // Adding up bit flds of the exponents "E" and "F" modulo "PMod":
     if (E == 0)
@@ -151,38 +151,38 @@ namespace Bits
     if (F == 0)
       return E;
 
-    unsigned long res = 0UL;
+    uint64_t res = 0UL;
     for (unsigned dim = 0;  dim < NDims;  ++dim)
       res |= PutFld((GetFld(E, dim) + GetFld(F, dim)) % PMod, dim);
     return res;
   }
 
-  constexpr unsigned long SubExp(unsigned long E, unsigned long F)
+  constexpr uint64_t SubExp(uint64_t E, uint64_t F)
   {
     // Subtracting bit flds of the exponents "E" and "F" modulo "PMod":
     if (F == 0)
       return E;
 
-    unsigned long res = 0UL;
+    uint64_t res = 0UL;
     for (unsigned dim = 0;  dim < NDims;  ++dim)
       // NB: First, add "PMod" to the LHS to avoid negative vals:
       res |= PutFld(((PMod + GetFld(E, dim)) - GetFld(F, dim)) % PMod, dim);
     return res;
   }
 
-  constexpr unsigned long MultExp(unsigned long E, int m)
+  constexpr uint64_t MultExp(uint64_t E, int m)
   {
     // Multiplying bit flds of the exponent "E" by "m" modulo "PMod":
     if (m == 1)
       return E;
 
-    unsigned long res = 0UL;
+    uint64_t res = 0UL;
     for (unsigned dim = 0;  dim < NDims;  ++dim)
-      res |= PutFld((GetFld(E, dim) * ULong(Normalise(m))) % PMod, dim);
+      res |= PutFld((GetFld(E, dim) * uint64_t(Normalise(m))) % PMod, dim);
     return res;
   }
 
-  constexpr unsigned long DivExp(unsigned long E, unsigned n)
+  constexpr uint64_t DivExp(uint64_t E, unsigned n)
   {
     // Dividing bit flds of the exponent "E" by "n" modulo "PMod":
     if (n == 0)
@@ -190,9 +190,10 @@ namespace Bits
     if (n == 1)
       return E;
 
-    unsigned long res = 0UL;
+    uint64_t res = 0UL;
     for (unsigned dim = 0;  dim < NDims;  ++dim)
-      res |= PutFld((GetFld(E, dim) * ULong(InverseModP(int(n)))) % PMod, dim);
+      res |=
+        PutFld((GetFld(E, dim) * uint64_t(InverseModP(int(n)))) % PMod, dim);
     return res;
   }
 
@@ -243,7 +244,7 @@ namespace Bits
   // Find the Numer and Denom of the minimal total height corresponding to the
   // given Zp representation. Currently this is done just by direct search:
   //
-  constexpr std::pair<int, unsigned> GetNumerAndDenom(unsigned long rep)
+  constexpr std::pair<int, unsigned> GetNumerAndDenom(uint64_t rep)
   {
     // Numer is +-(height - denom):
     if (rep == 0UL)
@@ -279,7 +280,7 @@ namespace Bits
   //-------------------------------------------------------------------------//
   // Setting / Creation of Unit Encodings:                                   //
   //-------------------------------------------------------------------------//
-  constexpr unsigned long SetUnit(unsigned long U, unsigned dim, unsigned unit)
+  constexpr uint64_t SetUnit(uint64_t U, unsigned dim, unsigned unit)
   {
     // Clear the old bits at "dim" and set those from "unit" there.
     // XXX: we must always have unit <= PMask,  but instead of checking this
@@ -289,7 +290,7 @@ namespace Bits
            ((unit & PMask) << (dim * PBits));
   }
 
-  constexpr unsigned long MkUnit(unsigned dim, unsigned unit)
+  constexpr uint64_t MkUnit(unsigned dim, unsigned unit)
     { return SetUnit(0UL, dim, unit); }
 
   //-------------------------------------------------------------------------//
@@ -298,19 +299,19 @@ namespace Bits
   // See the implementation for the exact semantics. Unifies the units in (E,U)
   // and (F,V) operands of "*" or "/":
   //
-  constexpr  unsigned long UnifyUnits
-    (unsigned long E, unsigned long F, unsigned long U, unsigned long V)
+  constexpr  uint64_t UnifyUnits
+    (uint64_t E, uint64_t F, uint64_t U, uint64_t V)
   {
-    unsigned long res = 0UL;
+    uint64_t res = 0UL;
     for (unsigned dim = 0; dim < NDims; ++dim)
     {
-      unsigned long e = GetFld(E, dim);
-      unsigned long f = GetFld(F, dim);
-      unsigned long u = GetFld(U, dim);
-      unsigned long v = GetFld(V, dim);
+      uint64_t e = GetFld(E, dim);
+      uint64_t f = GetFld(F, dim);
+      uint64_t u = GetFld(U, dim);
+      uint64_t v = GetFld(V, dim);
 
       // Unified Units:
-      unsigned long unified =
+      uint64_t unified =
         (e == 0UL)
         ? // "e" is dimension-less:
           ((f == 0UL)
@@ -337,7 +338,7 @@ namespace Bits
   // "UnitsOK": Similar for "UnifyUnits" but for one Exponent Vector. Returns a
   // boolean used in external static assertions:
   //
-  constexpr bool UnitsOK(unsigned long E, unsigned long U, unsigned long V)
+  constexpr bool UnitsOK(uint64_t E, uint64_t U, uint64_t V)
   {
     for (unsigned dim = 0; dim < NDims; ++dim)
       if (GetFld(E,dim) != 0UL && GetFld(U,dim) != GetFld(V,dim))
@@ -350,12 +351,12 @@ namespace Bits
   //-------------------------------------------------------------------------//
   // Clean-Up (Re-Setting to the default 0) of unused units:                 //
   //-------------------------------------------------------------------------//
-  constexpr unsigned long CleanUpUnits(unsigned long E, unsigned long U)
+  constexpr uint64_t CleanUpUnits(uint64_t E, uint64_t U)
   {
-    unsigned long res = 0UL;
+    uint64_t res = 0UL;
     for (unsigned dim = 0; dim < NDims; ++dim)
     {
-      unsigned long u =
+      uint64_t u =
         (GetFld(E, dim) != 0)
         ? // This dim's Exp is non-trivial, so the Units are indeed required:
           GetFld(U, dim)

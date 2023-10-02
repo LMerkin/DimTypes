@@ -343,7 +343,7 @@
   /*-----------------------------------------------------------------------*/ \
   /* Conversion function for DimQs: "To_{DimName}_{UnitName}:              */ \
   /*-----------------------------------------------------------------------*/ \
-  template<unsigned long E, unsigned long U> \
+  template<uint64_t E, uint64_t U> \
   constexpr DimTypes::DimQ   \
     <E, \
      /* The Target Unit:  */ \
@@ -432,7 +432,7 @@
   /*-----------------------------------------------------------------------*/ \
   /* "Put": Safe outputting of a "DimQ" into a given Buffer:               */ \
   /*-----------------------------------------------------------------------*/ \
-  template<unsigned long E, unsigned long U> \
+  template<uint64_t E, uint64_t U>     \
   char* Put \
   ( \
     DimTypes::DimQ<E, U, RepT> a_dimq, \
@@ -464,12 +464,12 @@
   /*-----------------------------------------------------------------------*/ \
   /* "ToStr": Conversion of "DimQ" into a fixed-size string:               */ \
   /*-----------------------------------------------------------------------*/ \
-  /* XXX: Are 64 bytes OK for most use cases? */ \
-  template<size_t  Sz = 64, unsigned long E, unsigned long U>  \
+  /* XXX: Are 64 bytes OK for most use cases? */     \
+  template<size_t Sz = 64, uint64_t E, uint64_t U>   \
   inline std::array<char, Sz> ToStr(DimTypes::DimQ<E, U, RepT> a_dimq) \
   { \
     std::array<char, Sz> buff;  \
-    char const*          buffEnd = buff.data() + Sz;  \
+    char const*          buffEnd = buff.data() + Sz; \
     DEBUG_ONLY(char* realEnd =) \
       Put<E, U>(a_dimq, const_cast<char*>(buff.data()), buffEnd); \
     assert(realEnd < buffEnd && *realEnd == '\0');                \

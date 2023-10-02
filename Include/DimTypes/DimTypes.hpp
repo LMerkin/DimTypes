@@ -20,7 +20,7 @@ namespace DimTypes
   // of in-place update operators),  which is probably optimal even if "RepT" is
   // a complex or multiple-precision type, to provide better data locality:
   //
-  template<unsigned long E, unsigned long U, typename RepT = double>
+  template<uint64_t E, uint64_t U, typename RepT = double>
   class DimQ
   {
   private:
@@ -48,13 +48,13 @@ namespace DimTypes
     // is not a ctor: it takes an existing "DimQ" and returns a similar one but
     // with the unitary magnitude:
     //
-    constexpr DimQ UnitOf() const  { return DimQ(RepT(1.0));  }
+    constexpr DimQ UnitOf() const           { return DimQ(RepT(1.0));  }
   
     // Getting the exponent code (this is primarily for testing):
-    constexpr unsigned long        GetDimsCode ()    const { return E; }
+    constexpr uint64_t GetDimsCode () const { return E; }
   
     // Getting the Units code (also for testing):
-    constexpr unsigned long        GetUnitsCode()    const { return U; }
+    constexpr uint64_t GetUnitsCode() const { return U; }
   
     // The Magnitude of the dimensioned quantity (ie its value expressed in the
     // corresp dimensioned units). The magnitude is by itself dimension-less.
@@ -83,14 +83,14 @@ namespace DimTypes
     // 1st arg's units can still be used:
     //
     // Addition:
-    template<unsigned long V>
+    template<uint64_t V>
     constexpr DimQ operator+   (DimQ<E,V> a_right) const
     {
       static_assert(UnitsOK(E,U,V), "ERROR: Units do not unify");
       return DimQ(m_val + a_right.Magnitude());
     }
   
-    template<unsigned long V>
+    template<uint64_t V>
     constexpr DimQ& operator+= (DimQ<E,V> a_right)
     {
       static_assert(UnitsOK(E,U,V), "ERROR: Units do not unify");
@@ -100,14 +100,14 @@ namespace DimTypes
   
     // Subtraction of "DimQs":
     // Same constraints as for addition:
-    template<unsigned long V>
+    template<uint64_t V>
     constexpr DimQ operator- (DimQ<E,V,RepT> a_right) const
     {
       static_assert(UnitsOK(E,U,V), "ERROR: Units do not unify");
       return DimQ(m_val - a_right.Magnitude());
     }
   
-    template<unsigned long V>
+    template<uint64_t V>
     constexpr DimQ& operator-=(DimQ<E,V,RepT> a_right)
     {
       static_assert(UnitsOK(E,U,V), "ERROR: Units do not unify");
@@ -168,7 +168,7 @@ namespace DimTypes
     // afterwards, units of zero-exp dims are reset, otherwise false type-che-
     // cking failures may occur:
     //
-    template<unsigned long F, unsigned long V>
+    template<uint64_t F, uint64_t V>
     constexpr DimQ<AddExp(E,F),
                    CleanUpUnits(AddExp(E,F), UnifyUnits(E,F,U,V)), RepT>
     operator* (DimQ<F,V,RepT> a_right) const
@@ -180,7 +180,7 @@ namespace DimTypes
   
     // Division of "DimQ"s:
     // Dimension exponents are subtracted. Same treatment of units as for mult:
-    template<unsigned long F, unsigned long V>
+    template<uint64_t F, uint64_t V>
     constexpr DimQ<SubExp(E,F),
                    CleanUpUnits(SubExp(E,F), UnifyUnits(E,F,U,V)), RepT>
     operator/ (DimQ<F,V,RepT> a_right) const
@@ -250,8 +250,8 @@ namespace DimTypes
 #   ifdef  DIMQ_CMP
 #   undef  DIMQ_CMP
 #   endif
-#   define DIMQ_CMP(Op) \
-    template<unsigned long V> \
+#   define DIMQ_CMP(Op)  \
+    template<uint64_t V> \
     constexpr bool operator Op (DimQ<E,V,RepT> a_right) const \
     { \
       static_assert(UnitsOK(E,U,V), "ERROR: Units do not unify"); \
@@ -281,75 +281,75 @@ namespace DimTypes
   // resp arg "DimQ" obj is there.  So their visibility is very much like that
   // of "DimQ" methods:
   //
-  template<unsigned long E, unsigned long U, typename RepT>
-  constexpr DimQ<E,U,RepT> UnitOf(DimQ<E,U,RepT> a_dimq)
+  template<uint64_t E, uint64_t U, typename RepT>
+  constexpr DimQ<E,U,RepT>  UnitOf(DimQ<E,U,RepT> a_dimq)
     { return a_dimq.UnitOf(); }
 
-  template<unsigned long E, unsigned long U, typename RepT>
-  constexpr unsigned long GetDimsCode (DimQ<E,U,RepT> a_dimq)
+  template<uint64_t E, uint64_t U, typename RepT>
+  constexpr uint64_t GetDimsCode  (DimQ<E,U,RepT> a_dimq)
     { return a_dimq.GetDimsCode();  }
 
-  template<unsigned long E, unsigned long U, typename RepT>
-  constexpr unsigned long GetUnitsCode(DimQ<E,U,RepT> a_dimq)
+  template< uint64_t E,  uint64_t U, typename RepT>
+  constexpr uint64_t GetUnitsCode(DimQ<E,U,RepT> a_dimq)
     { return a_dimq.GetUnitsCode(); }
   
-  template<unsigned long E, unsigned long U, typename RepT>
+  template< uint64_t E,  uint64_t U, typename RepT>
   constexpr RepT Magnitude(DimQ<E,U,RepT> a_dimq)
     { return a_dimq.Magnitude();    }
 
-  template<unsigned long E, unsigned long U, typename RepT>
+  template< uint64_t E,  uint64_t U, typename RepT>
   constexpr DimQ<E,U,RepT>  Abs  (DimQ<E,U,RepT> a_right)
     { return a_right.Abs();    }
 
-  template<unsigned long E, unsigned long U, typename RepT>
+  template< uint64_t E,  uint64_t U, typename RepT>
   constexpr DimQ<E,U,RepT>  Floor(DimQ<E,U,RepT> a_right)
     { return a_right.Floor();  }
 
-  template<unsigned long E, unsigned long U, typename RepT>
+  template< uint64_t E,  uint64_t U, typename RepT>
   constexpr DimQ<E,U,RepT>  Ceil (DimQ<E,U,RepT> a_right)
     { return a_right.Ceil();  }
 
-  template<unsigned long E, unsigned long U, typename RepT>
+  template< uint64_t E,  uint64_t U, typename RepT>
   constexpr DimQ<E,U,RepT>  Round(DimQ<E,U,RepT> a_right)
     { return a_right.Round(); }
 
-  template<int M, unsigned long E, unsigned long U, typename RepT>
+  template<int M,  uint64_t E,  uint64_t U, typename RepT>
   constexpr DimQ<MultExp(E,M), CleanUpUnits(MultExp(E,M),U), RepT>
   IPow(DimQ<E,U,RepT> a_right)
     { return a_right.template IPow<M>(); }
 
-  template<unsigned long E, unsigned long U, typename RepT>
+  template< uint64_t E,  uint64_t U, typename RepT>
   constexpr DimQ<MultExp(E,2), CleanUpUnits(MultExp(E,2),U), RepT>
   Sqr(DimQ<E,U,RepT> a_right)
     { return a_right.Sqr(); }
 
-  template<int M, int N, unsigned long E, unsigned long U, typename RepT>
+  template<int M, int N,  uint64_t E,  uint64_t U, typename RepT>
   constexpr DimQ<DivExp(MultExp(E,M),N),
                  CleanUpUnits(DivExp(MultExp(E,M),N), U), RepT>
   RPow(DimQ<E,U,RepT> a_right)
     { return a_right.template RPow<M,N>(); }
 
-  template<unsigned long E, unsigned long U, typename RepT>
+  template< uint64_t E,  uint64_t U, typename RepT>
   constexpr DimQ<DivExp(E,2),U,RepT> SqRt(DimQ<E,U,RepT> a_right)
     { return a_right.SqRt(); }
 
-  template<unsigned long E, unsigned long U, typename RepT>
+  template< uint64_t E,  uint64_t U, typename RepT>
   constexpr DimQ<DivExp(E,3),U,RepT> CbRt(DimQ<E,U,RepT> a_right)
     { return a_right.CbRt(); }
 
-  template<unsigned long E, unsigned long U, typename RepT>
+  template< uint64_t E,  uint64_t U, typename RepT>
   constexpr bool IsZero  (DimQ<E,U,RepT> a_right)
     { return a_right.IsZero();     }
 
-  template<unsigned long E, unsigned long U, typename RepT>
+  template< uint64_t E,  uint64_t U, typename RepT>
   constexpr bool IsFinite(DimQ<E,U,RepT> a_right)
     { return a_right.IsFinite();   }
 
-  template<unsigned long E, unsigned long U, typename RepT>
+  template< uint64_t E,  uint64_t U, typename RepT>
   constexpr bool IsNeg   (DimQ<E,U,RepT> a_right)
     { return a_right.IsNeg(); }
 
-  template<unsigned long E, unsigned long U, typename RepT>
+  template< uint64_t E,  uint64_t U, typename RepT>
   constexpr bool IsPos   (DimQ<E,U,RepT> a_right)
     { return a_right.IsPos(); }
 }
