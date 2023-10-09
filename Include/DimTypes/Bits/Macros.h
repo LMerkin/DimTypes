@@ -573,3 +573,18 @@
 #endif
 #define UNUSED_PARAM(x)
 
+//---------------------------------------------------------------------------//
+// Branch Prediction:                                                        //
+//---------------------------------------------------------------------------//
+// NB: "LIKELY" and "UNLINKEY" macros are to distinguish deeply-generic and
+// deeply-degenerate cases, so the probabilities of each case are set high.
+// Indended to be used at run-time only,  so do not use them in "consnexpr"
+// functions:
+//
+#ifndef  LIKELY
+# define LIKELY(expr)   __builtin_expect_with_probability((expr), 1, 0.999)
+#endif
+#ifndef  UNLIKELY
+# define UNLIKELY(expr) __builtin_expect_with_probability((expr), 0, 0.999)
+#endif
+
