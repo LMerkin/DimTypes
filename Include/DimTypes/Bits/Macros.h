@@ -328,7 +328,7 @@
     <unsigned(DimsE::DimName), \
      unsigned(MK_UNITS_ENTRY_NAME(DimName,UnitName))> = RepT(UnitVal); \
   /*-----------------------------------------------------------------------*/ \
-  /* Convenience Type and Vals (1 and 0) for this Dim and Unit:            */ \
+  /* Convenience Type and Literals for this Dim and Unit:                  */ \
   /*-----------------------------------------------------------------------*/ \
   using MK_DIMQ_TYPE_ALIAS(DimName, UnitName) = \
      DimTypes::DimQ \
@@ -336,10 +336,12 @@
      DimTypes::Bits::MkUnit(unsigned(DimsE::DimName),  \
                             unsigned(MK_UNITS_ENTRY_NAME(DimName,UnitName))), \
      RepT>; \
-  constexpr MK_DIMQ_TYPE_ALIAS(DimName, UnitName)      \
-    MK_DIMQ_VAL0(DimName, UnitName)(0.0);              \
-  constexpr MK_DIMQ_TYPE_ALIAS(DimName, UnitName)      \
-    MK_DIMQ_VAL1(DimName, UnitName)(1.0);              \
+  /* NB: Literal suffix is the UnitName. Thus, identical UnitNames for     */ \
+  /* different Units are NOT allowed (the stopper is precisely HERE!).     */ \
+  /* This should normally be OK:                                           */ \
+  constexpr MK_DIMQ_TYPE_ALIAS(DimName, UnitName) operator       \
+    MK_LITERAL_OP(UnitName) (long double a_v)          \
+    { return MK_DIMQ_TYPE_ALIAS(DimName, UnitName)(RepT(a_v)); } \
   /*-----------------------------------------------------------------------*/ \
   /* Conversion function for DimQs: "To_{DimName}_{UnitName}:              */ \
   /*-----------------------------------------------------------------------*/ \
@@ -394,15 +396,10 @@
 #endif
 #define MK_DIMQ_TYPE_ALIAS(DimName, UnitName)   DimName##_##UnitName
 
-#ifdef  MK_DIMQ_VAL0
-#undef  MK_DIMQ_VAL0
+#ifdef  MK_LITERAL_OP
+#undef  MK_LITERAL_OP
 #endif
-#define MK_DIMQ_VAL0(DimName, UnitName)         DimName##_##UnitName##_0
-
-#ifdef  MK_DIMQ_VAL1
-#undef  MK_DIMQ_VAL1
-#endif
-#define MK_DIMQ_VAL1(DimName, UnitName)         DimName##_##UnitName##_1
+#define MK_LITERAL_OP(UnitName)                 ""_##UnitName
 
 #ifdef  MK_CONV_FUNC_NAME
 #undef  MK_CONV_FUNC_NAME

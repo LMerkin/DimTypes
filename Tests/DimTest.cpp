@@ -29,13 +29,13 @@ int main()
   //-------------------------------------------------------------------------//
   // Speed of light:                                                         //
   //-------------------------------------------------------------------------//
-  constexpr auto c = 299792.458 * Len_km_1 / Time_sec_1;
+  constexpr auto c = 299792.458_km / 1.0_sec;
 
   //-------------------------------------------------------------------------//
   // Heliocentric Gravitational Constant:                                    //
   //-------------------------------------------------------------------------//
   constexpr auto GMS  =
-    2.959122082855911e-4 * IPow<3>(Len_AU_1) / IPow<2>(Time_day_1);
+    2.959122082855911e-4 * IPow<3>(1.0_AU) / IPow<2>(1.0_day);
 
   //-------------------------------------------------------------------------//
   // Earth / Moon Mass Ratio: dimension-less:                                //
@@ -47,7 +47,7 @@ int main()
   //-------------------------------------------------------------------------//
   constexpr auto GME  =
     8.997011408268049e-10  / (1.0 + 1.0 / EMRat) *
-    IPow<3>(Len_AU_1) / IPow<2>(Time_day_1);
+    IPow<3>(1.0_AU) / IPow<2>(1.0_day);
 
   auto tonne = Mass_kg(1000.0);
   auto tn1   = CbRt(tonne);
@@ -58,8 +58,8 @@ int main()
   printf("tn3  = %s\n",   ToStr(tn3).data());
 
   auto AU1     = Len_AU(1.0);
-  auto AU2     = Len_AU_1;
-  auto AU3     = 1.0  * Len_AU_1;
+  auto AU2     = 1.0_AU;
+  auto AU3     = 1.0  * AU2;
   auto AU4     = To_Len_km(AU1);
   auto AU5     = To_Len_km(AU2);
   printf("AU1  = %s\n",   ToStr(AU1).data());
@@ -79,7 +79,7 @@ int main()
   printf("GME1 = %s\n",   ToStr(GME1).data());
   printf("SqRt = %s\n",   ToStr(SqRt(GME1)).data());
 
-  auto x       = Len_km(10.0) / Time_sec_1;
+  auto x       = 10.0_km / 1.0_sec;
   auto y       = To_Len_AU(To_Time_day(x));
   auto z       = 1.0 / y;
   auto dl      = y * z;
