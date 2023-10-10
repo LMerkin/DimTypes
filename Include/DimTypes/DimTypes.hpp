@@ -151,12 +151,14 @@ namespace DimTypes
     }
   
     //-----------------------------------------------------------------------//
-    // "Abs"; "Floor", "Ceil", "Round" (if supported by "RepT"):             //
+    // "Abs":
     //-----------------------------------------------------------------------//
-    constexpr DimQ Abs  () const { return DimQ(Bits::Abs  (m_val)); }
-    constexpr DimQ Floor() const { return DimQ(Bits::Floor(m_val)); }
-    constexpr DimQ Ceil () const { return DimQ(Bits::Ceil (m_val)); }
-    constexpr DimQ Round() const { return DimQ(Bits::Round(m_val)); }
+    // XXX: It is currently provided for Real "RepT" only (for Complex "RepT",
+    // comparison with 0 will cause a compilation error), because Complex sem-
+    // antics is quite different anyway:
+    //
+    constexpr  DimQ Abs  () const
+      { return DimQ((m_val < RepT(0.0)) ? (-m_val): m_val); }
 
     //=======================================================================//
     // Arithmetic operations which result in Dimensions change:              //
@@ -211,12 +213,16 @@ namespace DimTypes
             (IntPower<RepT, M>(m_val));
     }
 
-    // "Sqr" is a particularly-important case of "IPow":
+    // "Sqr" and "Cube" are particularly-important case of "IPow":
     constexpr DimQ<MultExp(E,2), CleanUpUnits(MultExp(E,2), U), RepT>
-    Sqr() const
+    Sqr()  const
       { return IPow<2>(); }
 
-    // "RPow": (General) Rational Power:
+    constexpr DimQ<MultExp(E,3), CleanUpUnits(MultExp(E,3), U), RepT>
+    Cube() const
+      { return IPow<3>(); }
+
+    // "RPow": (General) Rational Power, NOT "constexpr" for C++ < 26:
     template<int M, int N>
     DimQ<DivExp(MultExp(E,M),N),
          CleanUpUnits(DivExp(MultExp(E,M),N), U), RepT>
@@ -233,9 +239,10 @@ namespace DimTypes
     }
 
     // Shortcuts: "SqRt" and "CbRt". Here M==1, so "CleanUpUnits" is not
-    // required:
-    constexpr DimQ<DivExp(E,2),U,RepT> SqRt() const { return RPow<1,2>(); }
-    constexpr DimQ<DivExp(E,3),U,RepT> CbRt() const { return RPow<1,3>(); }
+    // required; again, these functions are NOT "constexpr" for C++ < 26:
+    //
+    DimQ<DivExp(E,2),U,RepT> SqRt() const { return RPow<1,2>(); }
+    DimQ<DivExp(E,3),U,RepT> CbRt() const { return RPow<1,3>(); }
 
     //-----------------------------------------------------------------------//
     // Comparison operators:                                                 //
@@ -323,18 +330,24 @@ namespace DimTypes
   Sqr(DimQ<E,U,RepT> a_right)
     { return a_right.Sqr(); }
 
+  template< uint64_t E,  uint64_t U, typename RepT>
+  constexpr DimQ<MultExp(E,3), CleanUpUnits(MultExp(E,3),U), RepT>
+  Cube(DimQ<E,U,RepT> a_right)
+    { return a_right.Cube(); }
+
   template<int M, int N,  uint64_t E,  uint64_t U, typename RepT>
   constexpr DimQ<DivExp(MultExp(E,M),N),
                  CleanUpUnits(DivExp(MultExp(E,M),N), U), RepT>
   RPow(DimQ<E,U,RepT> a_right)
     { return a_right.template RPow<M,N>(); }
 
+  // Again, "SqRt" and "CbRt" are NOT "constexpr" for C++ < 26:
   template< uint64_t E,  uint64_t U, typename RepT>
-  constexpr DimQ<DivExp(E,2),U,RepT> SqRt(DimQ<E,U,RepT> a_right)
+  DimQ<DivExp(E,2),U,RepT> SqRt(DimQ<E,U,RepT> a_right)
     { return a_right.SqRt(); }
 
   template< uint64_t E,  uint64_t U, typename RepT>
-  constexpr DimQ<DivExp(E,3),U,RepT> CbRt(DimQ<E,U,RepT> a_right)
+  DimQ<DivExp(E,3),U,RepT> CbRt(DimQ<E,U,RepT> a_right)
     { return a_right.CbRt(); }
 
   template< uint64_t E,  uint64_t U, typename RepT>

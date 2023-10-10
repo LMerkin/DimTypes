@@ -41,7 +41,10 @@ namespace Bits
   // Exponents for Fundamental Dimensions: Each exponent is 1 for the corresp
   // Dim:
   constexpr uint64_t DimExp(unsigned dim)
-    { return 1UL << (dim * PBits); }
+  {
+    assert(dim < NDims);
+    return 1UL << (dim * PBits);
+  }
 
   //=========================================================================//
   // Compile-Time GCD and Normalisation Functions:                           //
@@ -126,13 +129,11 @@ namespace Bits
   // Compile-Time Monomial Operations on Dimension Exponents:                //
   //=========================================================================//
   // Addition, Subtraction, Multiplication by Rationals:
-  // XXX: in the functions below, it would be better to check that "dim" is in
-  // the valid range (0..NDims-1), but generating proper compile-time err msgs
-  // is difficult, so we don't do it at the moment:
   //
   constexpr uint64_t GetFld(uint64_t From, unsigned dim)
   {
     // Move the selected bit field to the right and zero-out all other bits:
+    assert (dim < NDims);
     return (From >> (dim * PBits)) & PMask;
   }
 
@@ -140,6 +141,7 @@ namespace Bits
   {
     // Zero out the upper bits and move lower ones to the left into the
     // required position:
+    assert (dim < NDims);
     return (From & PMask) << (dim * PBits);
   }
 
@@ -282,6 +284,7 @@ namespace Bits
   //-------------------------------------------------------------------------//
   constexpr uint64_t SetUnit(uint64_t U, unsigned dim, unsigned unit)
   {
+    assert(dim < NDims);
     // Clear the old bits at "dim" and set those from "unit" there.
     // XXX: we must always have unit <= PMask,  but instead of checking this
     // pre-cond, we simply apply "PMask" to "unit". In all normal cases this
@@ -291,7 +294,10 @@ namespace Bits
   }
 
   constexpr uint64_t MkUnit(unsigned dim, unsigned unit)
-    { return SetUnit(0UL, dim, unit); }
+  {
+    assert(dim < NDims);
+    return SetUnit(0UL, dim, unit);
+  }
 
   //-------------------------------------------------------------------------//
   // Unification of Units:                                                   //
@@ -367,78 +373,6 @@ namespace Bits
   }
 
   //=========================================================================//
-  // Overloaded / templated functions on representation types:               //
-  //=========================================================================//
-// { return std::pow(z, T(1.0)/T(3.0)); }
-
-  //-------------------------------------------------------------------------//
-  // "Abs":                                                                  //
-  //-------------------------------------------------------------------------//
-  inline float  Abs(float  a_x)
-    { return ::fabsf(a_x); }
-
-  inline double Abs(double a_x)
-    { return ::fabs (a_x); }
-
-  inline long double Abs(long double a_x)
-    { return ::fabsl(a_x); }
-
-  template<typename T>
-  inline T Abs(std::complex<T> a_z)
-    { return   std::complex<T>(Abs(a_z)); }
-
-  //-------------------------------------------------------------------------//
-  // "Floor":                                                                //
-  //-------------------------------------------------------------------------//
-  inline float  Floor(float a_x)
-    { return ::floorf(a_x); }
-
-  inline double Floor(double a_x)
-    { return ::floor (a_x); }
-
-  inline long double Floor(long double a_x)
-    { return ::floorl(a_x); }
-
-  // XXX: For "complex" types, "Floor" is applied to both Re and Im parts:
-  template<typename T>
-  inline std::complex<T>      Floor(std::complex<T>  a_z)
-    { return  std::complex<T>(Floor(a_z.real()), Floor(a_z.imag())); }
-
-  //-------------------------------------------------------------------------//
-  // "Ceil":                                                                 //
-  //-------------------------------------------------------------------------//
-  inline float  Ceil(float  a_x)
-    { return ::ceilf(a_x); }
-
-  inline double Ceil(double a_x)
-    { return ::ceil (a_x); }
-
-  inline long double Ceil(long double a_x)
-    { return ::ceill(a_x); }
-
-  // XXX: For "complex" types, "Ceil" is applied to both Re and Im parts:
-  template<typename T>
-  inline std::complex<T>      Ceil(std::complex<T> a_z)
-    { return  std::complex<T>(Ceil(a_z.real()), Ceil(a_z.imag())); }
-
-  //-------------------------------------------------------------------------//
-  // "Round":                                                                //
-  //-------------------------------------------------------------------------//
-  inline float  Round (float  a_x)
-    { return ::roundf(a_x); }
-
-  inline double Round (double a_x)
-    { return ::round (a_x); }
-
-  inline long double Round(long double a_x)
-    { return ::roundl(a_x); }
-
-  // NB: For "complex" types, "Round" is applied to both Re and Im parts:
-  template<typename T>
-  inline std::complex<T>      Round(std::complex<T> a_z)
-    { return  std::complex<T>(Round(a_z.real()), Round(a_z.imag())); }
-
-  //=========================================================================//
   // Power Templated Functions:                                              //
   //=========================================================================//
   //-------------------------------------------------------------------------//
@@ -467,7 +401,8 @@ namespace Bits
   //-------------------------------------------------------------------------//
   // "FracPower23":                                                          //
   //-------------------------------------------------------------------------//
-  // "N" is assumed to consist of 2 and 3 multiples only:
+  // "N" is assumed to consist of 2 and 3 multiples only.
+  // NB: This function is NOT "constexpr" for C++ < 26:
   //
   template<typename  T, int M, unsigned N>
   inline T FracPower23(T a_x)
@@ -565,7 +500,8 @@ namespace Bits
     double  magIm  = double(a_val.imag());
 
     return a_buff +  snprintf(a_buff, size_t(a_n), "(%.16e %c %.16e * I)",
-                     magRe, (magIm < 0.0) ? '-' : '+', Abs(magIm));
+                     magRe, (magIm < 0.0) ? '-'      : '+',
+                            (magIm < 0.0) ? (-magIm) : magIm);
   }
 }
 // End namespace Bits
