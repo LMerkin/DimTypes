@@ -18,10 +18,10 @@
 // text, NOT in the "DimTypes" namespace:
 //
 //===========================================================================//
-// "FOR_EACH_DIM": Recursive Macro Application:                              //
+// "FOR_EACH_DIM":                                                           //
 //===========================================================================//
 // From: https://www.scs.stanford.edu/~dm/blog/va-opt.html
-// Recursively applies macro "Action" to the Args list, up to ~30 entries long:
+// Iteratively applies macro "Action" to the Args list, up to ~30 entries long:
 //
 #ifdef  PARENS
 #undef  PARENS
@@ -79,10 +79,11 @@
 #define FOR_EACH_DIM_AGAIN() FOR_EACH_DIM_HELPER
 
 //===========================================================================//
-// "FOR_EACH_UNIT":                                                          //
+// "FOR_EACH_OTHER_UNIT":                                                    //
 //===========================================================================//
-// Similar to "FOR_EACH_DIM" (named separately in order to avoid errors when
-// the former macro is invoked recursively from the latter):
+// Iterative "Action" application, similar to "FOR_EACH_DIM". Named separately
+// in order to avoid errors when the former macro is invoked  recursively from
+// the latter):
 //
 #ifdef  EXPAND_UNITS
 #undef  EXPAND_UNITS
@@ -100,16 +101,16 @@
 #undef  EXPAND_UNITS3
 #endif
 
-#ifdef  FOR_EACH_UNIT_AGAIN
-#undef  FOR_EACH_UNIT_AGAIN
+#ifdef  FOR_EACH_OTHER_UNIT_AGAIN
+#undef  FOR_EACH_OTHER_UNIT_AGAIN
 #endif
 
-#ifdef  FOR_EACH_UNIT_HELPER
-#undef  FOR_EACH_UNIT_HELPER
+#ifdef  FOR_EACH_OTHER_UNIT_HELPER
+#undef  FOR_EACH_OTHER_UNIT_HELPER
 #endif
 
-#ifdef  FOR_EACH_UNIT
-#undef  FOR_EACH_UNIT
+#ifdef  FOR_EACH_OTHER_UNIT
+#undef  FOR_EACH_OTHER_UNIT
 #endif
 
 #define EXPAND_UNITS(...) \
@@ -123,16 +124,17 @@
 
 #define EXPAND_UNITS3(...) __VA_ARGS__
 
-#define FOR_EACH_UNIT_AGAIN() FOR_EACH_UNIT_HELPER
+#define FOR_EACH_OTHER_UNIT_AGAIN() FOR_EACH_OTHER_UNIT_HELPER
 
-#define FOR_EACH_UNIT(Action, RepT, DimName, ...)                \
-  __VA_OPT__(EXPAND_UNITS(FOR_EACH_UNIT_HELPER(\
-                             Action, RepT, DimName, __VA_ARGS__)))
+#define FOR_EACH_OTHER_UNIT(Action, RepT, DimName, ...) \
+  __VA_OPT__(EXPAND_UNITS(FOR_EACH_OTHER_UNIT_HELPER(Action, RepT, DimName, \
+                                                     __VA_ARGS__)))
 
-#define FOR_EACH_UNIT_HELPER(Action, RepT, DimName, Arg1, ...)   \
-  /* NB: Arg1 is assumed to be enclosed in ()s! */               \
-  Action(RepT, DimName, Arg1)                                    \
-  __VA_OPT__(FOR_EACH_UNIT_AGAIN PARENS (Action, RepT, DimName, __VA_ARGS__))
+#define FOR_EACH_OTHER_UNIT_HELPER(Action, RepT, DimName, Arg1, ...)  \
+  /* NB: Arg1 is assumed to be enclosed in ()s! */      \
+  Action(RepT, DimName, Arg1)                           \
+  __VA_OPT__(FOR_EACH_OTHER_UNIT_AGAIN PARENS   \
+            (Action, RepT, DimName, __VA_ARGS__))
 
 //===========================================================================//
 // "DECLARE_DIMS":                                                           //
@@ -238,7 +240,7 @@
 #undef  GET_OTHER_UNITS
 #endif
 #define GET_OTHER_UNITS(DimName, _FundUnitName, ...) \
-  FOR_EACH_UNIT(GET_UNIT_NAME_COMMA, _RepT, DimName, __VA_ARGS__)
+  FOR_EACH_OTHER_UNIT(GET_UNIT_NAME_COMMA, _RepT, DimName, __VA_ARGS__)
 
 //---------------------------------------------------------------------------//
 // "GET_UNIT_NAME*", "GET_UNIT_VAL":                                         //
@@ -262,7 +264,7 @@
 #define GET_UNIT_VAL( _UnitName,  UnitVal)  UnitVal
 
 //---------------------------------------------------------------------------//
-// "MK_DIM_UNITS", "MK_DIM_UNITS_IMPL":                                      //
+// "MK_DIM_UNITS":                                                           //
 //---------------------------------------------------------------------------//
 // This is also an "Action" for use with "FOR_EACH_DIM".
 // Arg: (RepT, DimDcl=(DimName,  FundUnitName [, OtherUnitDcl...])),
@@ -284,16 +286,27 @@
   /*-----------------------------------------------------------------------*/ \
   enum class MK_UNITS_ENUM_NAME DimDcl: unsigned  \
   { \
-    GET_FUND_UNIT   DimDcl ,    /* With 0 code */ \
+    GET_FUND_UNIT   DimDcl = 0, /* FundUnit has Code=0                    */  \
     GET_OTHER_UNITS DimDcl      /* NB: DimDcl is already enclosed in ()s  */  \
   }; \
   /*-----------------------------------------------------------------------*/ \
   /* "UnitName", "UnitScale"... specialisations for Fund and Other Units:  */ \
   /*-----------------------------------------------------------------------*/ \
-  MK_UNIT_IMPL( RepT, GET_DIM_NAME DimDcl, GET_FUND_UNIT DimDcl, 1.0) \
+  MK_UNIT_IMPL( RepT, GET_DIM_NAME DimDcl,   GET_FUND_UNIT DimDcl, 1.0)     \
   \
-  FOR_EACH_UNIT(MK_ANOTHER_UNIT, RepT, GET_DIM_NAME  DimDcl,          \
-                GET_OTHER_UNITS_DCLS   DimDcl)
+  FOR_EACH_OTHER_UNIT(MK_ANOTHER_UNIT, RepT, GET_DIM_NAME  DimDcl,          \
+                      GET_OTHER_UNITS_DCLS   DimDcl) \
+  \
+  /*-----------------------------------------------------------------------*/ \
+  /* Convenience Type for this Dim (with implicit FundUnit):               */ \
+  /*-----------------------------------------------------------------------*/ \
+  static_assert \
+    (unsigned(MK_UNITS_ENUM_NAME DimDcl::GET_FUND_UNIT DimDcl) == 0); \
+  using GET_DIM_NAME DimDcl = \
+     DimTypes::DimQ \
+    <DimTypes::Bits::DimExp(unsigned(DimsE::GET_DIM_NAME DimDcl)),    \
+     DimTypes::Bits::MkUnit(unsigned(DimsE::GET_DIM_NAME DimDcl), 0), \
+     RepT>;
 
 //---------------------------------------------------------------------------//
 // "MK_ANOTHER_UNIT", "MK_UNIT_IMPL":                                        //
@@ -303,12 +316,12 @@
 #endif
 #define MK_ANOTHER_UNIT(RepT, DimName, UnitDcl)  \
         MK_UNIT_IMPL(   RepT, DimName, \
-                        GET_UNIT_NAME UnitDcl, GET_UNIT_VAL UnitDcl)
+                        GET_UNIT_NAME  UnitDcl, GET_UNIT_VAL UnitDcl)
 
 #ifdef  MK_UNIT_IMPL
 #undef  MK_UNIT_IMPL
 #endif
-#define MK_UNIT_IMPL(RepT, DimName, UnitName,  UnitVal) \
+#define MK_UNIT_IMPL(RepT, DimName, UnitName, UnitVal) \
   static_assert(unsigned(MK_UNITS_ENTRY_NAME(DimName,UnitName)) <=      \
                 DimTypes::Bits::PMask, "Too many Units for " \
                 STRINGIFY_NAME(DimName)); \
