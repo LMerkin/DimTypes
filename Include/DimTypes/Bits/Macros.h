@@ -380,8 +380,8 @@
       DimTypes::DimQ<E, DimTypes::Bits::SetUnit(U, Dim, NewUnit),  RepT>   \
       ( \
         a_dimq.Magnitude() * \
-        DimTypes::Bits::FracPower<Numer, Denom, RepT> \
-          /* OldScale / NewScale: */                  \
+        DimTypes::Bits::FracPow<Numer, Denom, RepT>  \
+          /* OldScale / NewScale: */                 \
           (UnitScale<Dim, OldUnit> / UnitScale<Dim, NewUnit>) \
       ); \
   }

@@ -49,8 +49,8 @@ int main()
     8.997011408268049e-10  / (1.0 + 1.0 / EMRat) *
     IPow<3>(1.0_AU) / IPow<2>(1.0_day);
 
-  auto tonne = Mass(1000.0);  // Assuming "kg" which is the FundUnit
-  auto tn1   = CbRt(tonne);
+  auto tonne   = Mass(1000.0);  // Assuming "kg" which is the FundUnit
+  auto tn1     = CbRt(tonne);
   printf("CbRt(tonne) = %s\n", ToStr(tn1).data());
 
   auto tn2     = - tn1;
@@ -58,26 +58,29 @@ int main()
   printf("tn3  = %s\n",   ToStr(tn3).data());
 
   auto AU1     = Len_AU(1.0);
-  auto AU2     = 1.0_AU;
-  auto AU3     = 1.0  * AU2;
-  auto AU4     = To_Len_km(AU1);
-  auto AU5     = To_Len_km(AU2);
   printf("AU1  = %s\n",   ToStr(AU1).data());
+  auto AU2     = 1.0_AU;
   printf("AU2  = %s\n",   ToStr(AU2).data());
+  auto AU3     = 1.0  * AU2;
   printf("AU3  = %s\n",   ToStr(AU3).data());
+  auto AU4     = To_Len_km(AU1);
   printf("AU4  = %s\n",   ToStr(AU4).data());
+  auto AU5     = To_Len_km(AU2);
   printf("AU5  = %s\n",   ToStr(AU5).data());
 
   printf("c    = %s\n",   ToStr(c)  .data());
   printf("GMS  = %s\n",   ToStr(GMS).data());
-  printf("GME  = %s\n",   ToStr(GME).data());
+  constexpr auto kS     = SqRt (GMS);
+  printf("kS   = %s\n",   ToStr(kS) .data());
 
-  auto GMS1 = To_Time_sec(To_Len_km(GMS));
-  auto GME1 = To_Time_sec(To_Len_km(GME));
-
+  auto GMS1    = To_Time_sec(To_Len_km(GMS));
   printf("GMS1 = %s\n",   ToStr(GMS1).data());
+
+  printf("GME  = %s\n",   ToStr(GME).data());
+  constexpr auto GME1   = To_Time_sec(To_Len_km(GME));
   printf("GME1 = %s\n",   ToStr(GME1).data());
-  printf("SqRt = %s\n",   ToStr(SqRt(GME1)).data());
+  constexpr auto kE     = SqRt (GME1);
+  printf("kE   = %s\n",   ToStr(kE).data());
 
   auto x       = 10.0_km / 1.0_sec;
   auto y       = To_Len_AU(To_Time_day(x));

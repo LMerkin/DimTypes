@@ -378,19 +378,19 @@ namespace Bits
   //-------------------------------------------------------------------------//
   // Power Expr with a Natural Degree:                                       //
   //-------------------------------------------------------------------------//
-  template<typename T, int M>
-  constexpr T IntPower(T a_x)
+  template<typename  T, int M>
+  constexpr T IntPow(T a_x)
   {
     if constexpr(M <  0)
-      return IntPower<T, -M>(a_x);
+      return T(1.0) / IntPow<T, -M>(a_x);
 
     if constexpr(M == 0)
-      return T(1.0);  // For optimisation only
+      return T(1.0);
 
     if constexpr(M == 1)
       return a_x;
 
-    T halfPow  = IntPower<T, M/2>(a_x);
+    T halfPow  = IntPow<T, M/2>(a_x);
     T halfPow2 = halfPow * halfPow;
     if constexpr(M % 2 == 1)
       return halfPow2 * a_x;
@@ -399,41 +399,40 @@ namespace Bits
   }
 
   //-------------------------------------------------------------------------//
-  // "FracPower23":                                                          //
-  //-------------------------------------------------------------------------//
-  // "N" is assumed to consist of 2 and 3 multiples only.
-  // NB: This function is NOT "constexpr" for C++ < 26:
-  //
-  template<typename  T, int M, unsigned N>
-  inline T FracPower23(T a_x)
-  {
-    static_assert(M != 0 && N != 0, "FracPower23: Invalid Frac");
-
-    if constexpr(N == 1)
-      return IntPower<T, M>(a_x);
-    else
-    if constexpr(N % 2 == 0)
-      return FracPow23<T, M, N/2>(std::sqrt(a_x));
-    else
-    {
-      static_assert(N % 3 == 0, "FracPower23: N != Mults(2,3)");
-      return FracPow23<T, M, N/3>(std::cbrt(a_x));
-    }
-  }
-
-  //-------------------------------------------------------------------------//
   // "Only2and3":                                                            //
   //-------------------------------------------------------------------------//
   constexpr bool Only2and3(unsigned a_n)
   {
     return
-      (a_n == 0)
+      (a_n == 0 || a_n == 1)
       ? true :
       (a_n % 2 == 0)
       ? Only2and3(a_n / 2) :
       (a_n % 3 == 0)
       ? Only2and3(a_n / 3)
       : false;
+  }
+
+  //-------------------------------------------------------------------------//
+  // "FracPow23":                                                            //
+  //-------------------------------------------------------------------------//
+  // "N" is assumed to consist of 2 and 3 multiples only.
+  //
+  template<typename  T, int M, unsigned N>
+  constexpr T FracPow23(T a_x)
+  {
+    static_assert(M != 0 && N != 0 && Only2and3(N), "FracPow23: Invalid Frac");
+
+    if constexpr(N == 1)
+      return IntPow<T, M>(a_x);
+    else
+    if constexpr(N % 2 == 0)
+      return FracPow23<T, M, N/2>(std::sqrt(a_x));
+    else
+    {
+      static_assert(N % 3 == 0, "FracPow23: N != Mults(2,3)");
+      return FracPow23<T, M, N/3>(std::cbrt(a_x));
+    }
   }
 
   //-------------------------------------------------------------------------//
@@ -448,11 +447,8 @@ namespace Bits
   //-------------------------------------------------------------------------//
   // Power Expr with a General Fractional Degree:                            //
   //-------------------------------------------------------------------------//
-  // NB: It is not a "constexpr" (because "sqrt", "cbrt" and "pow" are not such
-  // in C++ < 26):
-  //
   template<int M, unsigned N, typename T>
-  inline T FracPower(T a_x)
+  constexpr T  FracPow(T a_x)
   {
     constexpr auto     nFrac = NormaliseFrac(M, N);
     constexpr int      M1    = nFrac.first;
@@ -462,16 +458,19 @@ namespace Bits
     if constexpr(M1 == 0)
       return T(1.0);
     if constexpr(N1 == 1)
-      return IntPower<T, M1>(a_x);
+      return IntPow<T, M1>(a_x);
 
     // If the power is indeed fractional, we check whether "N1" only consists of
     // 2 and 3 multiples, in which case simplications based on "SqRt" and "CbRt"
     // are possible. XXX: However, we currently don't do that for "complex" typ-
     // es, because "cbrt" is not defined for them:
+    //
     if constexpr(Only2and3(N1) && !IsComplex<T>)
-      return FracPower23<T, M1, N1>(a_x);
+      return FracPow23<T,  M1, N1>(a_x);
     else
-      // Otherwise, use the generic "pow":
+      // Otherwise, use the generic "std::pow" (also available for "complex").
+      // HOWEVER, this function is not "constexpr", so using it in "constexpr"
+      // context will result in a compile-time error:
       return std::pow(a_x, T(M1)/T(N1));
   }
 

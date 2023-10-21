@@ -210,7 +210,7 @@ namespace DimTypes
     {
       return
         DimQ<MultExp(E,M), CleanUpUnits(MultExp(E,M), U), RepT>
-            (IntPower<RepT, M>(m_val));
+            (IntPow<RepT, M>(m_val));
     }
 
     // "Sqr" and "Cube" are particularly-important case of "IPow":
@@ -224,8 +224,8 @@ namespace DimTypes
 
     // "RPow": (General) Rational Power, NOT "constexpr" for C++ < 26:
     template<int M, int N>
-    DimQ<DivExp(MultExp(E,M),N),
-         CleanUpUnits(DivExp(MultExp(E,M),N), U), RepT>
+    constexpr DimQ<DivExp(MultExp(E,M),N),
+                   CleanUpUnits(DivExp(MultExp(E,M),N), U), RepT>
     RPow() const
     {
       // Multiples of "PMod" (including 0) are uninvertible in the curr rep;
@@ -235,14 +235,14 @@ namespace DimTypes
       return
         DimQ<DivExp(MultExp(E,M),N),
              CleanUpUnits(DivExp(MultExp(E,M),N), U), RepT>
-            (FracPower<M,N,RepT>(m_val));
+            (FracPow<M,N,RepT>(m_val));
     }
 
     // Shortcuts: "SqRt" and "CbRt". Here M==1, so "CleanUpUnits" is not
     // required; again, these functions are NOT "constexpr" for C++ < 26:
     //
-    DimQ<DivExp(E,2),U,RepT> SqRt() const { return RPow<1,2>(); }
-    DimQ<DivExp(E,3),U,RepT> CbRt() const { return RPow<1,3>(); }
+    constexpr DimQ<DivExp(E,2),U,RepT> SqRt() const { return RPow<1,2>(); }
+    constexpr DimQ<DivExp(E,3),U,RepT> CbRt() const { return RPow<1,3>(); }
 
     //-----------------------------------------------------------------------//
     // Comparison operators:                                                 //
@@ -275,7 +275,9 @@ namespace DimTypes
     constexpr bool IsFinite() const  { return IsFinite(m_val); }
 
     // NB: The following methods will not compile if the field "RepT" is not
-    // ordered (eg for complex numbers):
+    // ordered (eg for complex numbers). However, if they  are not  actually
+    // used, this will cause no harm:
+    //
     constexpr bool IsNeg   () const  { return m_val <  RepT(0.0); }
     constexpr bool IsPos   () const  { return m_val >  RepT(0.0); }
   };
@@ -343,11 +345,11 @@ namespace DimTypes
 
   // Again, "SqRt" and "CbRt" are NOT "constexpr" for C++ < 26:
   template< uint64_t E,  uint64_t U, typename RepT>
-  DimQ<DivExp(E,2),U,RepT> SqRt(DimQ<E,U,RepT> a_right)
+  constexpr DimQ<DivExp(E,2),U,RepT> SqRt(DimQ<E,U,RepT> a_right)
     { return a_right.SqRt(); }
 
   template< uint64_t E,  uint64_t U, typename RepT>
-  DimQ<DivExp(E,3),U,RepT> CbRt(DimQ<E,U,RepT> a_right)
+  constexpr DimQ<DivExp(E,3),U,RepT> CbRt(DimQ<E,U,RepT> a_right)
     { return a_right.CbRt(); }
 
   template< uint64_t E,  uint64_t U, typename RepT>
