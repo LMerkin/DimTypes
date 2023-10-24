@@ -4,6 +4,7 @@
 //         Encoding/Decoding of Dimension Exponents and Unit Vectors         //
 //===========================================================================//
 #pragma once
+#include "CEMaths.hpp"
 #include <complex>
 #include <cstdio>
 #include <cmath>
@@ -416,7 +417,8 @@ namespace Bits
   //-------------------------------------------------------------------------//
   // "FracPow23":                                                            //
   //-------------------------------------------------------------------------//
-  // "N" is assumed to consist of 2 and 3 multiples only.
+  // "N" is assumed to consist of 2 and 3 multiples only, so we can use the
+  // square and cubic roots:
   //
   template<typename  T, int M, unsigned N>
   constexpr T FracPow23(T a_x)
@@ -427,22 +429,13 @@ namespace Bits
       return IntPow<T, M>(a_x);
     else
     if constexpr(N % 2 == 0)
-      return FracPow23<T, M, N/2>(std::sqrt(a_x));
+      return FracPow23<T, M, N/2>(CEMaths::SqRt<T>(a_x));
     else
     {
       static_assert(N % 3 == 0, "FracPow23: N != Mults(2,3)");
-      return FracPow23<T, M, N/3>(std::cbrt(a_x));
+      return FracPow23<T, M, N/3>(CEMaths::CbRt<T>(a_x));
     }
   }
-
-  //-------------------------------------------------------------------------//
-  // "IsComplex":                                                            //
-  //-------------------------------------------------------------------------//
-  template<typename T>
-  constexpr bool IsComplex = false;
-
-  template<typename T>
-  constexpr bool IsComplex<std::complex<T>> = true;
 
   //-------------------------------------------------------------------------//
   // Power Expr with a General Fractional Degree:                            //
@@ -461,17 +454,22 @@ namespace Bits
       return IntPow<T, M1>(a_x);
 
     // If the power is indeed fractional, we check whether "N1" only consists of
-    // 2 and 3 multiples, in which case simplications based on "SqRt" and "CbRt"
-    // are possible. XXX: However, we currently don't do that for "complex" typ-
-    // es, because "cbrt" is not defined for them:
+    // 2 and 3 multiples,  in which case, simplifications  based  on "SqRt" and
+    // "CbRt" may be available:
     //
-    if constexpr(Only2and3(N1) && !IsComplex<T>)
+    if constexpr(Only2and3(N1))
       return FracPow23<T,  M1, N1>(a_x);
     else
-      // Otherwise, use the generic "std::pow" (also available for "complex").
-      // HOWEVER, this function is not "constexpr", so using it in "constexpr"
-      // context will result in a compile-time error:
-      return std::pow(a_x, T(M1)/T(N1));
+    if constexpr(CEMaths::IsComplex<T>)
+    {
+      // If "T" is "complex", the type of the degree is still the underlying
+      // real one:
+      using P = T::value_type;
+      return CEMaths::Pow<T>(a_x, P(M1)/P(N1));
+    }
+    else
+      // Otherwise, use the generic real "Pow":
+      return CEMaths::Pow<T>(a_x, T(M1)/T(N1));
   }
 
   //=========================================================================//

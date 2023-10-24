@@ -193,5 +193,6 @@ LINK_DIRECTORIES   ("${PROJECT_BINARY_DIR}"
 #=============================================================================#
 # Tests:                                                                      #
 #=============================================================================#
-ADD_EXECUTABLE(DimTest Tests/DimTest.cpp)
+ADD_EXECUTABLE(DimTest     Tests/DimTest.cpp)
+ADD_EXECUTABLE(CEMathsTest Tests/CEMathsTest.cpp)
 

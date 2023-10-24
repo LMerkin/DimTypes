@@ -367,5 +367,17 @@ namespace DimTypes
   template< uint64_t E,  uint64_t U, typename RepT>
   constexpr bool IsPos   (DimQ<E,U,RepT> a_right)
     { return a_right.IsPos(); }
+
+  //=========================================================================//
+  // Lifetd "constexpr" Mathematical Functions:                              //
+  //=========================================================================//
+  using Bits::CEMaths::Exp;
+  using Bits::CEMaths::Log;
+  using Bits::CEMaths::Cos;
+  using Bits::CEMaths::Sin;
+  using Bits::CEMaths::CosSin;
+  using Bits::CEMaths::SqRt;
+  using Bits::CEMaths::CbRt;
+  using Bits::CEMaths::Pow;
 }
 // End namespace DimTypes
