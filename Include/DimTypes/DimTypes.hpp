@@ -372,7 +372,16 @@ namespace DimTypes
   // Lifetd "constexpr" Mathematical Functions:                              //
   //=========================================================================//
   using Bits::CEMaths::NaN;
+  using Bits::CEMaths::Inf;
+  using Bits::CEMaths::Eps;
+
+  using Bits::CEMaths::SqRt2;
+  using Bits::CEMaths::SqRt3;
+
   using Bits::CEMaths::Pi;
+  using Bits::CEMaths::TwoPi;
+  using Bits::CEMaths::Pi_2;
+  using Bits::CEMaths::Pi_4;
 
   using Bits::CEMaths::Exp;
   using Bits::CEMaths::Log;

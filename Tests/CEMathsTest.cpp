@@ -3,6 +3,7 @@
 //                            "CEMathsTest.cpp":                             //
 //     Test for Our Implementation of "constexpr" Mathematical Functions     //
 //===========================================================================//
+#define  DIMTYPES_FORCE_PADE_APPROX 1
 #include "DimTypes/DimTypes.hpp"
 #include <iostream>
 
@@ -54,37 +55,55 @@ namespace
 
     ErrAccum<F> expErrs;
     ErrAccum<F> logErrs;
+    ErrAccum<F> sqrtErrs;
+    ErrAccum<F> cbrtErrs;
     ErrAccum<F> cosErrs;
     ErrAccum<F> sinErrs;
 
     for (F x = F(-80.0); x <= F(80.0); x += F(0.03125))
     {
       // Exp:
-      F expX = Exp(x);
-      expErrs.Update(x, expX, std::exp(x));
+      F expX = Exp<F>(x);
+      expErrs .Update(x, expX,    std::exp(x));
       
-      // Log of the previously-computed Exp:
-      F logEX = Log(expX);
-      // logErrs.Update(x, logEX, x);
-      logErrs.Update(x, logEX, std::log(expX));
+      // Log  of the previously-computed Exp:
+      F logEX = Log<F>(expX);
+      logErrs .Update(expX, logEX, std::log(expX));
+      logErrs .Update(expX, logEX, x);
+
+      // SqRt of the previously-computed Exp:
+      F sqrtEX = SqRt<F>(expX);
+      sqrtErrs.Update(expX, sqrtEX, std::sqrt(expX));
+      sqrtErrs.Update(expX, sqrtEX, Exp<F>(x/F(2.0)));
+
+      // CbRt of "x" and of the previously-computed Exp:
+      F cbrtX  = CbRt<F>(x);
+      cbrtErrs.Update(x,    cbrtX,  std::cbrt(x));
+      F cbrtEX = CbRt<F>(expX);
+      cbrtErrs.Update(expX, cbrtEX, std::cbrt(expX));
+      cbrtErrs.Update(expX, cbrtEX, Exp<F>(x/F(3.0)));
 
       // Cos:
-      F cosX = Cos(x);
-      cosErrs.Update(x, cosX, std::cos(x));
+      F cosX = Cos<F>(x);
+      cosErrs .Update(x, cosX, std::cos(x));
 
       // Sin:
-      F sinX = Sin(x);
-      sinErrs.Update(x, sinX, std::sin(x));
+      F sinX = Sin<F>(x);
+      sinErrs .Update(x, sinX, std::sin(x));
     }
     // Results:
-    std::cout << "Exp: MaxErr=[" << expErrs.GetMaxErr() / Eps<F>
-              << "*Eps]\t@ x="   << expErrs.GetArgMaxErr() << std::endl;
-    std::cout << "Log: MaxErr=[" << logErrs.GetMaxErr() / Eps<F>
-              << "*Eps]\t@ x="   << logErrs.GetArgMaxErr() << std::endl;
-    std::cout << "Cos: MaxErr=[" << cosErrs.GetMaxErr() / Eps<F>
-              << "*Eps]\t@ x="   << cosErrs.GetArgMaxErr() << std::endl;
-    std::cout << "Sin: MaxErr=[" << sinErrs.GetMaxErr() / Eps<F>
-              << "*Eps]\t@ x="   << sinErrs.GetArgMaxErr() << std::endl;
+    std::cout << "Exp  : MaxErr=[" << expErrs .GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="     << expErrs .GetArgMaxErr() << std::endl;
+    std::cout << "Log  : MaxErr=[" << logErrs .GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="     << logErrs .GetArgMaxErr() << std::endl;
+    std::cout << "SqRt : MaxErr=[" << sqrtErrs.GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="     << sqrtErrs.GetArgMaxErr() << std::endl;
+    std::cout << "CbRt : MaxErr=[" << cbrtErrs.GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="     << cbrtErrs.GetArgMaxErr() << std::endl;
+    std::cout << "Cos  : MaxErr=[" << cosErrs .GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="     << cosErrs .GetArgMaxErr() << std::endl;
+    std::cout << "Sin  : MaxErr=[" << sinErrs .GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="     << sinErrs .GetArgMaxErr() << std::endl;
   }
 }
 

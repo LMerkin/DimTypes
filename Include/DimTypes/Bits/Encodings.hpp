@@ -464,7 +464,7 @@ namespace Bits
     {
       // If "T" is "complex", the type of the degree is still the underlying
       // real one:
-      using P = T::value_type;
+      using P = typename T::value_type;
       return CEMaths::Pow<T>(a_x, P(M1)/P(N1));
     }
     else
