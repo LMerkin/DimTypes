@@ -50,9 +50,12 @@ namespace
 
     assert (a_title != nullptr);
     std::cout << "======= " << a_title << " =======" << std::endl;
+    std::cout << "Eps="     << Eps<F>  << std::endl;
 
     ErrAccum<F> expErrs;
     ErrAccum<F> logErrs;
+    ErrAccum<F> cosErrs;
+    ErrAccum<F> sinErrs;
 
     for (F x = F(-80.0); x <= F(80.0); x += F(0.03125))
     {
@@ -62,20 +65,33 @@ namespace
       
       // Log of the previously-computed Exp:
       F logEX = Log(expX);
-      logErrs.Update(x, logEX, x);
+      // logErrs.Update(x, logEX, x);
+      logErrs.Update(x, logEX, std::log(expX));
+
+      // Cos:
+      F cosX = Cos(x);
+      cosErrs.Update(x, cosX, std::cos(x));
+
+      // Sin:
+      F sinX = Sin(x);
+      sinErrs.Update(x, sinX, std::sin(x));
     }
     // Results:
-    std::cout << "Exp: MaxErr=" << expErrs.GetMaxErr() / Eps<F> << " Eps @ x="
-              << expErrs.GetArgMaxErr() << std::endl;
-    std::cout << "Log: MaxErr=" << logErrs.GetMaxErr() / Eps<F> << " Eps @ x="
-              << logErrs.GetArgMaxErr() << std::endl;
+    std::cout << "Exp: MaxErr=[" << expErrs.GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="   << expErrs.GetArgMaxErr() << std::endl;
+    std::cout << "Log: MaxErr=[" << logErrs.GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="   << logErrs.GetArgMaxErr() << std::endl;
+    std::cout << "Cos: MaxErr=[" << cosErrs.GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="   << cosErrs.GetArgMaxErr() << std::endl;
+    std::cout << "Sin: MaxErr=[" << sinErrs.GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="   << sinErrs.GetArgMaxErr() << std::endl;
   }
 }
 
 int main()
 {
-  TestFuncs<float>      ("FLOAT");
-  TestFuncs<double>     ("DOUBLE");
+  TestFuncs<float>      ("FLOAT      ");
+  TestFuncs<double>     ("DOUBLE     ");
   TestFuncs<long double>("LONG DOUBLE");
 	return 0;
 }

@@ -10,6 +10,7 @@
 #include <climits>
 #include <complex>
 #include <utility>
+#include <cstdio>
 
 namespace DimTypes::Bits::CEMaths
 {
@@ -80,14 +81,14 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // ExpPade<float>: 4th-Order Pade Approximant:                             //
   //-------------------------------------------------------------------------//
-  // Eps<float> = 2^(-24) =~ 6e-8,
+  // Eps<float> = 2^(-23) =~ 1.2e-7,
   // the abs precision of the 4th-order approximant is ~1e-10 (however, the
   // 3rd-order one would be slightly insuffient):
   //
   template<>
   constexpr float ExpPade<float>(float a_x)
   {
-    assert(std::fabs(a_x) <= 0.5f);
+    assert(std::fabs(a_x) < 0.5f);
 
     constexpr float a1 = 0.5f;
     constexpr float a2 = float(3.0 /   28.0);
@@ -105,19 +106,21 @@ namespace DimTypes::Bits::CEMaths
 
     float  se  = t4  + t2  + 1.0f;
     float  so  = t3  + t1;
-    return (se + so) / (se - so);
+    float  res = (se + so) / (se - so);
+    assert(res > 0.0f);
+    return res;
   }
 
   //-------------------------------------------------------------------------//
   // ExpPade<double>: 6th-Order Pade Approximant:                            //
   //-------------------------------------------------------------------------//
-  // Eps<double> = 2^(-53) =~ 1e-16,
+  // Eps<double> = 2^(-52) =~ 2.2e-16,
   // the abs precision of the 6th-order approximation is ~4e-17:
   //
   template<>
   constexpr double ExpPade<double>(double a_x)
   {
-    assert(std::fabs(a_x) <= 0.5);
+    assert(std::fabs(a_x) < 0.5);
 
     constexpr double a1 = 0.5;
     constexpr double a2 = 5.0 /     44.0;
@@ -127,9 +130,9 @@ namespace DimTypes::Bits::CEMaths
     constexpr double a6 = 1.0 / 665280.0;
 
     double x2  = a_x * a_x;
-    double x3  = x2  * a_x;
+    double x3  = a_x * x2;
     double x4  = x2  * x2;
-    double x5  = x4  * a_x;
+    double x5  = x2  * x3;
     double x6  = x3  * x3;
 
     double t1  = a1  * a_x;
@@ -139,21 +142,23 @@ namespace DimTypes::Bits::CEMaths
     double t5  = a5  * x5;
     double t6  = a6  * x6;
 
-    double se  = t6  + t4  + t2 + 1.0;
-    double so  = t5  + t3  + t1;
-    return (se + so) / (se - so);
+    double se  = 1.0 + t2  + t4 + t6;
+    double so  = t1  + t3  + t5;
+    double res = (se + so) / (se - so);
+    assert(res > 0.0);
+    return res;
   }
 
   //-------------------------------------------------------------------------//
   // ExpPade<long double>: 7th-Order Pade Approximant:                       //
   //-------------------------------------------------------------------------//
-  // Eps<long double> = 2^(-64) =~ 5e-20,
+  // Eps<long double> = 2^(-63) =~ 1.1e-19,
   // the abs precision of the 7th-order approximant is ~1e-20:
   //
   template<>
   constexpr long double ExpPade<long double>(long double a_x)
   {
-    assert(std::fabs(a_x) <= 0.5L);
+    assert(std::fabs(a_x) < 0.5L);
 
     constexpr long double a1 = 0.5L;
     constexpr long double a2 = 3.0L /       26.0L;
@@ -180,13 +185,19 @@ namespace DimTypes::Bits::CEMaths
 
     long double se   = t6  + t4  + t2 + 1.0L;
     long double so   = t7  + t5  + t3 + t1;
-    return (se + so) / (se - so);
+    long double res  = (se + so) / (se - so);
+    assert     (res > 0.0L);
+    return res;
   }
 
   //=========================================================================//
   // "LogPade":                                                              //
   //=========================================================================//
-  // Pade approximants for log(x), 1/2 <= x < 1, centered at x = 3/4:
+  // Pade approximants for log(x), 1/2 <= x < 1, centered at x = 3/4.
+  // Altermatively, we could use approximants centered at x=1, which would have
+  // "simpler" coeffs, but they would require higher orders for the same preci-
+  // sion, so would offer no real advantages, since  in both cases the approxi-
+  // mants are "dense":
   //
   template<typename F>
   F LogPade(F a_x);
@@ -194,119 +205,130 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // LogPade<float>: 4th-Order Pade Approximant:                             //
   //-------------------------------------------------------------------------//
-  // Eps<float> = 2^(-24) =~ 6e-8,
-  // the abs precision of the 4th-order approximant is ~6e-9:
+  // Eps<float> = 2^(-23) =~ 1.2e-7,
+  // the abs precision of the 4th-order approximant is ~6e-9 (yet, the 3rd-order
+  // one would be insufficient):
   //
   template<>
   constexpr float LogPade<float>(float a_x)
   {
     assert(0.5f <= a_x && a_x < 1.0f);
-    float y = a_x - 0.75f;
 
-    constexpr float  b4 =   384.0f;
-    constexpr float  b3 =  5760.0f;
-    constexpr float  b2 = 19440.0f;
-    constexpr float  b1 = 22680.0f;
-    constexpr float  b0 =  8505.0f;
+    constexpr float  b4 =  1536.0f;
+    constexpr float  b3 = 18432.0f;
+    constexpr float  b2 = 31104.0f;
+    constexpr float  b1 = 10368.0f;
+    constexpr float  b0 =   486.0f;
 
-    constexpr double A  = -0.28768207245178093;         // log(3/4)
-    constexpr float  a4 = float(  384.0 * A +  1600.0);
-    constexpr float  a3 = float( 5760.0 * A + 12480.0);
-    constexpr float  a2 = float(19440.0 * A + 22680.0);
-    constexpr float  a1 = float(22680.0 * A + 11340.0);
-    constexpr float  a0 = float( 8505.0 * A);
-    return
-      ((((a4 * y + a3) * y + a2) * y + a1) + a0) /
-      ((((b4 * y + b3) * y + b2) * y + b1) + b0);
+    constexpr double A  = -0.28768207245178093;           // log(3/4)
+    constexpr float  a4 = float(double(b4) * A +  6400.0);
+    constexpr float  a3 = float(double(b3) * A + 30720.0);
+    constexpr float  a2 = float(double(b2) * A);
+    constexpr float  a1 = float(double(b1) * A - 17280.0);
+    constexpr float  a0 = float(double(b0) * A -  2025.0);
+
+    float res =
+      ((((a4 * a_x + a3) * a_x + a2) * a_x + a1) * a_x + a0) /
+      ((((b4 * a_x + b3) * a_x + b2) * a_x + b1) * a_x + b0);
+    assert(res < 0.0f);
+    return res;
   }
 
   //-------------------------------------------------------------------------//
   // LogPade<double>: 8th-Order Pade Approximant:                            //
   //-------------------------------------------------------------------------//
-  // Eps<double> = 2^(-53) =~ 1e-16,
+  // Eps<double> = 2^(-52) =~ 2.2e-16,
   // the abs precision of the 8th-order approximation is ~7e-17:
   //
   template<>
   constexpr double LogPade<double>(double a_x)
   {
     assert(0.5 <= a_x && a_x < 1.0);
-    double y = a_x - 0.75;
 
-    constexpr double b8 =     1146880.0;
-    constexpr double b7 =    61931520.0;
-    constexpr double b6 =   812851200.0;
-    constexpr double b5 =  4470681600.0;
-    constexpr double b4 = 12573792000.0;
-    constexpr double b3 = 19615115520.0;
-    constexpr double b2 = 17163226080.0;
-    constexpr double b1 =  7881073200.0;
-    constexpr double b0 =  1477701225.0;
+    constexpr double b8 =     9175040.0;
+    constexpr double b7 =   440401920.0;
+    constexpr double b6 =  4046192640.0;
+    constexpr double b5 = 12138577920.0;
+    constexpr double b4 = 14224896000.0;
+    constexpr double b3 =  6827950080.0;
+    constexpr double b2 =  1280240640.0;
+    constexpr double b1 =    78382080.0;
+    constexpr double b0 =      918540.0;
 
     constexpr double A  =  -0.28768207245178093;          // log(3/4)
-    constexpr double a8 =  b8 * A +     6234112.0;
-    constexpr double a7 =  b7 * A +   212779008.0;
-    constexpr double a6 =  b6 * A +  1979873280.0;
-    constexpr double a5 =  b5 * A +  7908848640.0;
-    constexpr double a4 =  b4 * A + 15956740800.0;
-    constexpr double a3 =  b3 * A + 17046469440.0;
-    constexpr double a2 =  b2 * A +  9194585400.0;
-    constexpr double a1 =  b1 * A +  1970268300.0;
-    constexpr double a0 =  b0 * A;
-    return
-      ((((((((a8 * y + a7) * y + a6) * y + a5) * y + a4) * y + a3) * y + a2)
-                 * y + a1) * y + a0) /
-      ((((((((b8 * y + b7) * y + b6) * y + b5) * y + b4) * y + b3) * y + a2)
-                 * y + b1) * y + b0);
+    constexpr double a8 =  b8 * A +    49872896.0;
+    constexpr double a7 =  b7 * A +  1402994688.0;
+    constexpr double a6 =  b6 * A +  7687766016.0;
+    constexpr double a5 =  b5 * A + 10924720128.0;
+    constexpr double a4 =  b4 * A;
+    constexpr double a3 =  b3 * A -  6145155072.0;
+    constexpr double a2 =  b2 * A -  2432457216.0;
+    constexpr double a1 =  b1 * A -   249702912.0;
+    constexpr double a0 =  b0 * A -     4992921.0;
+
+    double res =
+      ((((((((a8 * a_x + a7) * a_x + a6) * a_x + a5) * a_x + a4) * a_x + a3)
+                 * a_x + a2) * a_x + a1) * a_x + a0) /
+      ((((((((b8 * a_x + b7) * a_x + b6) * a_x + b5) * a_x + b4) * a_x + b3)
+                 * a_x + b2) * a_x + b1) * a_x + b0);
+    assert(res < 0.0L);
+    return res;
   }
 
   //-------------------------------------------------------------------------//
   // LogPade<long double>: 10th-Order Pade Approximant:                      //
   //-------------------------------------------------------------------------//
-  // Eps<long double> = 2^(-64) =~ 5e-20,
+  // Eps<long double> = 2^(-63) =~ 1.1e-19,
   // the abs precision of the 10th-order approximant is ~8e-21:
   //
   template<>
   constexpr long double LogPade<long double>(long double a_x)
   {
     assert(0.5L  <= a_x && a_x < 1.0L);
-    long double y = a_x - 0.75L;
 
-    constexpr long double b10 =       82575360.0L;
-    constexpr long double b9  =     6812467200.0L;
-    constexpr long double b8  =   137952460800.0L;
-    constexpr long double b7  =  1195587993600.0L;
-    constexpr long double b6  =  5492232345600.0L;
-    constexpr long double b5  = 14829027333120.0L;
-    constexpr long double b4  = 24715045555200.0L;
-    constexpr long double b3  = 25723822924800.0L;
-    constexpr long double b2  = 16278356694600.0L;
-    constexpr long double b1  =  5727569948100.0L;
-    constexpr long double b0  =   859135492215.0L;
+    constexpr long double b10 =     1321205760.0L;
+    constexpr long double b9  =    99090432000.0L;
+    constexpr long double b8  =  1504935936000.0L;
+    constexpr long double b7  =  8026324992000.0L;
+    constexpr long double b6  = 18435465216000.0L;
+    constexpr long double b5  = 19910302433280.0L;
+    constexpr long double b4  = 10369949184000.0L;
+    constexpr long double b3  =  2539579392000.0L;
+    constexpr long double b2  =   267846264000.0L;
+    constexpr long double b1  =     9920232000.0L;
+    constexpr long double b0  =       74401740.0L;
 
     constexpr long double A   = -0.287682072451780927439L;   // log(3/4)
-    constexpr long double a10 = b10 * A +      483721216.0L;
-    constexpr long double a9  = b9  * A +    26282065920.0L;
-    constexpr long double a8  = b8  * A +   394259374080.0L;
-    constexpr long double a7  = b7  * A +  2619855912960.0L;
-    constexpr long double a6  = b6  * A +  9288846927360.0L;
-    constexpr long double a5  = b5  * A + 19148275770624.0L;
-    constexpr long double a4  = b4  * A + 23675444432640.0L;
-    constexpr long double a3  = b3  * A + 17292125410560.0L;
-    constexpr long double a2  = b2  * A +  6873083937720.0L;
-    constexpr long double a1  = b1  * A +  1145513989620.0L;
-    constexpr long double a0  = b0  * A;
-    return
-      ((((((((((a10 * y + a9) * y + a8) * y + a7) * y + a6) * y + a5) * y + a4)
-                    * y + a3) * y + a2) * y + a1) * y + a0)
+    constexpr long double a10 = b10 * A +     7739539456.0L;
+    constexpr long double a9  = b9  * A +   362466508800.0L;
+    constexpr long double a8  = b8  * A +  3665593958400.0L;
+    constexpr long double a7  = b7  * A + 12192369868800.0L;
+    constexpr long double a6  = b6  * A + 13519341158400.0L;
+    constexpr long double a5  = b5  * A;
+    constexpr long double a4  = b4  * A -  7604629401600.0L;
+    constexpr long double a3  = b3  * A -  3857742028800.0L;
+    constexpr long double a2  = b2  * A -   652396971600.0L;
+    constexpr long double a1  = b1  * A -    36287578800.0L;
+    constexpr long double a0  = b0  * A -      435840669.0L;
+
+    long double res =
+      ((((((((((a10 * a_x + a9) * a_x + a8) * a_x + a7) * a_x + a6) * a_x + a5)
+                    * a_x + a4) * a_x + a3) * a_x + a2) * a_x + a1) * a_x + a0)
       /
-      ((((((((((b10 * y + b9) * y + b8) * y + b7) * y + b6) * y + b5) * y + b4)
-                    * y + b3) * y + b2) * y + b1) * y + b0);
+      ((((((((((b10 * a_x + b9) * a_x + b8) * a_x + b7) * a_x + b6) * a_x + b5)
+                    * a_x + b4) * a_x + b3) * a_x + b2) * a_x + b1) * a_x + b0);
+    assert(res < 0.0L);
+    return res;
   }
 
   //=========================================================================//
   // "CosPade":                                                              //
   //=========================================================================//
-  // Assumes 0 <= x <= Pi/4, approximants are cenetred at Pi/8:
+  // Assumes 0 <= x <= Pi/4. We have a choice of 2 kinds of approximants here:
+  // (a) those centered at x=0,   containing polynomials of even degrees only;
+  // (b) those centered at x=Pi/8 with "dense" polynomials  and  quite complex
+  //     coeffs, but of slighly lower degree;
+  // from the computational efficiency point of view, method (a) is better!
   //
   template<typename F>
   F CosPade(F a_x);
@@ -314,300 +336,83 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // CosPade<float>: 4th-Order Pade approximant:                             //
   //-------------------------------------------------------------------------//
-  // Eps<float> = 2^(-24) =~ 6e-8,
-  // the abs precision of the 4th-order approximant is ~4e-10 (yet, lower-order
-  // approximants are insufficient):
+  // Eps<float> = 2^(-23) =~ 1.2e-7,
+  // the abs precision of the 4th-order approximant is ~4e-8:
   //
   template<>
   constexpr float CosPade<float>(float a_x)
   {
     assert(0 <= a_x && a_x < Pi_4<float> + 10.0f * Eps<float>);
-    float  y  = a_x - Pi_8<float>;
 
-    constexpr float C    = CosPi8<float>;
-    constexpr float C2   = C  * C;
-    constexpr float C4   = C2 * C2;
-    constexpr float S    = SinPi8<float>;
-    constexpr float S2   = S  * S;
-    constexpr float S4   = S2 * S2;
-    constexpr float CS   = C  * S;
-    constexpr float C2S2 = CS * CS;
-
-    constexpr float a4 =         C *(32865.0f*C4 + 63720.0f*C2S2 + 30856.0f*S4);
-    constexpr float a3 =   20.0f*S * (6573.0f*C4 + 12028.0f*C2S2 +  5456.0f*S4);
-    constexpr float a2 = -180.0f*C * (4025.0f*C4 +  7312.0f*C2S2 +  3288.0f*S4);
-    constexpr float a1 = -840.0f*S * (1725.0f*C4 +  2956.0f*C2S2 +  1232.0f*S4);
-    constexpr float a0 = 1680.0f*C * ( 945.0f*C4 +  1560.0f*C2S2 +   616.0f*S4);
-
-    constexpr float b4 =    1365.0f*C4 +    3300.0f*C2S2 +    1936.0f*S4;
-    constexpr float b3 =      20.0f*CS *    (273.0f*C2   +     274.0f*S2);
-    constexpr float b2 =   69300.0f*C4 +  132840.0f*C2S2 +   63360.0f*S4;
-    constexpr float b1 =     840.0f*CS *    (165.0f*C2   +     164.0f*S2);
-    constexpr float b0 = 1587600.0f*C4 + 2620800.0f*C2S2 + 1034880.0f*S4;
+    constexpr float a4 = float( 313.0 / 15120.0);
+    constexpr float a2 = float(-115.0 /   252.0);
+    constexpr float b4 = float(  13.0 / 15120.0);
+    constexpr float b2 = float(  11.0 /   252.0);
+    float           x2 = a_x * a_x;
     return
-      ((((a4 * y + a3) * y + a2) * y + a1) * y + a0) /
-      ((((b4 * y + b3) * y + b2) * y + b1) * y + b0);
+      ((a4 * x2 + a2) * x2 + 1.0f) /
+      ((b4 * x2 + b2) * x2 + 1.0f);
   }
 
   //-------------------------------------------------------------------------//
   // CosPade<double>: 8th-Order Pade approximant:                            //
   //-------------------------------------------------------------------------//
-  // Eps<double> = 2^(-53) =~ 1e-16,
-  // the abs precision of the 7th-order approximation is ~2e-18 (however, the
+  // Eps<double> = 2^(-52) =~ 2.2e-16,
+  // the abs precision of the 8th-order approximation is ~2e-18 (however, the
   // 6th-order one would be insufficient):
   //
   template<>
   constexpr double CosPade(double a_x)
   {
     assert(0 <= a_x && a_x < Pi_4<double> + 100.0 * Eps<double>);
-    double y  = a_x - Pi_8<double>;
 
-    constexpr double C    = CosPi8<double>;
-    constexpr double C2   = C  * C;
-    constexpr double C4   = C2 * C2;
-    constexpr double C6   = C4 * C2;
-    constexpr double C8   = C4 * C4;
+    constexpr double a8 =   80737373.0 / 23594700729600.0;
+    constexpr double a6 = -  7696415.0 /    13108167072.0;
+    constexpr double a4 =    4375409.0 /      141863280.0;
+    constexpr double a2 = -   260735.0 /         545628.0;
 
-    constexpr double S    = SinPi8<double>;
-    constexpr double S2   = S  * S;
-    constexpr double S4   = S2 * S2;
-    constexpr double S6   = S4 * S2;
-    constexpr double S8   = S4 * S4;
-
-    constexpr double C6S2 = C6 * S2;
-    constexpr double C4S4 = C4 * S4;
-    constexpr double C2S6 = C2 * S6;
-    constexpr double C4S2 = C4 * S2;
-    constexpr double C2S4 = C2 * S4;
-    constexpr double CS   = C  * S;
-
-    constexpr double a7 =
-      -  17960237039745.0*C8      -  83207769964704.0*C6S2
-      - 141933814031520.0*C4S4    - 106085270418688.0*C2S6
-      -  29398989312128.0*S8;
-
-    constexpr double a6 =
-      56.0*CS *
-      (2565748148535.0*C6         + 7730465927976.0*C4S2 +
-       7763690345904.0*C2S4       + 2598972566464.0*S6);
-
-    constexpr double a5 =
-       1321096787226216.0*C8      +  7172883472132224.0*C6S2 +
-      13620536004096000.0*C4S4    + 11006812103261184.0*C2S6 +
-       3238062784072704.0*S8;
-
-    constexpr double a4 =
-      -5040.0*CS *
-      (2621223784179.0*C6         + 7919753370408.0*C4S2 +
-       7975844019696.0*C2S4       + 2677314433472.0*S6);
-
-    constexpr double a3 =
-      - 22699576770670800.0*C8    - 166809791770997760.0*C6S2
-      -366163436979648000.0*C4S4  - 322696181854126080.0*C2S6
-      -100642959875082240.0*S8;
-
-    constexpr double a2 =
-      1995840.0*CS *
-      (136481341815.0*C6          + 413843892840.0*C4S2  +
-       418244830896.0*C2S4        + 140882279872.0*S6);
-
-    constexpr double a1 =
-        48235826436557760.0*C8    +  826617033671869440.0*C6S2 +
-      2214669463598592000.0*C4S4  + 2142438414048092160.0*C2S6 +
-       706150157693460480.0*S8;
-
-    constexpr double a0 =
-      -17297280.0*CS *
-      ( 39040911063.0*C6          + 118905514056.0*C4S2  +
-       120688949808.0*C2S4        +  40824346816.0*S6);
-
-    constexpr double b7 =
-      C *
-      (156069114201.0*C6          + 462824834472.0*C4S2  +
-       457443575568.0*C2S4        + 150687855296.0*S6);
-
-    constexpr double b6 =
-      -56.0*S *
-      (22295587743.0*C6           + 64703433366.0 *C4S2  +
-       62520967656.0*C2S4         + 20113122032.0 *S6);
-
-    constexpr double b5 =
-      1512.0*C *
-      (13517797293.0*C6           + 40955931126.0 *C4S2  +
-       41357942008.0*C2S4         + 13919808176.0 *S6);
-
-    constexpr double b4 =
-      -5040.0*S *
-      ( 40553391879.0*C6          + 119785261860.0*C4S2  +
-       117909181272.0*C2S4        +  38677311296.0*S6);
-
-    constexpr double b3 =
-      55440.0*C *
-      (25583269257.0 *C6          +  78971217948.0*C4S2  +
-       81192490200.0 *C2S4        +  27804541504.0*S6);
-
-    constexpr double b2 =
-      -1995840.0*S *
-      ( 8527756419.0 *C6          + 25597906866.0 *C4S2  +
-       25612284624.0 *C2S4        +  8542134176.0 *S6);
-
-    constexpr double b1 =
-      8648640.0*C *
-      (5577273009.0  *C6          + 17495867970.0 *C4S2  +
-       18260384688.0 *C2S4        +  6341789728.0 *S6);
-
-    constexpr double b0 =
-      -17297280.0*S *
-      ( 39040911063.0*C6          + 118905514056.0*C4S2  +
-       120688949808.0*C2S4        +  40824346816.0*S6);
-
+    constexpr double b8 =      11321.0 /  1814976979200.0;
+    constexpr double b6 =     109247.0 /    65540835360.0;
+    constexpr double b4 =      34709.0 /      141863280.0;
+    constexpr double b2 =      12079.0 /         545628.0;
+    double           x2 = a_x * a_x;
     return
-      (((((((a7 * y + a6) * y + a5) * y + a4) * y + a3) * y + a2) * y + a1)
-                * y + a0)   /
-      (((((((b7 * y + b6) * y + b5) * y + b4) * y + b3) * y + b2) * y + b1)
-                * y + b0);
+      ((((a8 * x2 + a6) * x2 + a4) * x2 + a2) * x2 + 1.0) /
+      ((((b8 * x2 + b6) * x2 + b4) * x2 + b2) * x2 + 1.0);
   }
 
   //-------------------------------------------------------------------------//
-  // CosPade<long double>: 8th-Order Pade approximant:                       //
+  // CosPade<long double>: (10,8)th-Order Pade approximant:                  //
   //-------------------------------------------------------------------------//
-  // Eps<long double> = 2^(-64) =~ 5e-20,
-  // the abs precision of the 8th-order approximant is ~1e-22:
+  // Eps<long double> = 2^(-63) =~ 1.1e-19,
+  // the abs precision of the (10,8)th-order approximant is 1.5e-21:
   //
   template<>
   constexpr long double CosPade(long double a_x)
   {
     assert(0 <= a_x && a_x < Pi_4<long double> + 100.0L * Eps<long double>);
-    long double y   =  a_x - Pi_8<long double>;
 
-    constexpr long double C    = CosPi8<long double>;
-    constexpr long double C2   = C  * C;
-    constexpr long double C4   = C2 * C2;
-    constexpr long double C6   = C4 * C2;
-    constexpr long double C8   = C4 * C4;
+    constexpr long double a10 = -  19934927.0L / 865535480409600.0L;
+    constexpr long double a8  =   106649201.0L /  15274155536640.0L;
+    constexpr long double a6  = - 250412863.0L /    327854348640.0L;
+    constexpr long double a4  =     1341515.0L /        40031056.0L;
+    constexpr long double a2  = -   7257019.0L /        15011646.0L;
 
-    constexpr long double S    = SinPi8<long double>;
-    constexpr long double S2   = S  * S;
-    constexpr long double S4   = S2 * S2;
-    constexpr long double S6   = S4 * S2;
-    constexpr long double S8   = S4 * S4;
-
-    constexpr long double C6S2 = C6 * S2;
-    constexpr long double C4S4 = C4 * S4;
-    constexpr long double C2S6 = C2 * S6;
-    constexpr long double C4S2 = C4 * S2;
-    constexpr long double C2S4 = C2 * S4;
-
-    constexpr long double a8 =
-      C*
-      ( 297652211504544897.0L*C8        + 1174264331449521312.0L*C6S2 +
-       1736890268152061088.0L*C4S4      + 1141596387920467200.0L*C2S6 +
-        281318239713382528.0L*S8);
-
-    constexpr long double a7 =
-      72.0L*S*
-      ( 33072467944949433.0L*C8         + 127323946914556392.0L*C6S2  +
-       183542490714637296.0L*C4S4       + 117403012425542080.0L*C2S6  +
-        28112000680511744.0L*S8);
-
-    constexpr long double a6 =
-      -2520.0L*C*
-      ( 20267255425871025.0L*C8         + 78716525642582256.0L*C6S2   +
-       114549299020529472.0L*C4S4       + 74018042785709184.0L*C2S6   +
-        17918013981890944.0L*S8);
-
-    constexpr long double a5 =
-      -55440.0L*S*
-      ( 5527433297964825.0L*C8          + 20979200214016200.0L*C6S2   +
-       29775043377698160.0L*C4S4        + 18722219280440512.0L*C2S6   +
-        4398942818793728.0L*S8);
-
-    constexpr long double a4 =
-      166320.0L*C*
-      (16130697800718501.0L*C8          + 61507376437867776.0L*C6S2   +
-       87744575600843232.0L*C4S4        + 55489812991102464.0L*C2S6   +
-       13121916027408512.0L*S8);
-
-    constexpr long double a3 =
-      8648640.0L*S*
-      (1240822907747577.0L*C8           + 4636795860808488.0L*C6S2    +
-       6466327458527472.0L*C4S4         + 3985558949424064.0L*C2S6    +
-        915204443957504.0L*S8);
-
-    constexpr long double a2 =
-      -8648640.0L*C*
-      ( 4806222105259575.0L*C8          + 17941474161593136.0L*C6S2   +
-       24991189867060992.0L*C4S4        + 15382845578391168.0L*C2S6   +
-        3526907767663744.0L*S8);
-
-    constexpr long double a1 =
-      -259459200.0L*S*
-      ( 320414807017305.0L*C8           + 1177883440344072.0L*C6S2    +
-       1611553286068848.0L*C4S4         +  971115468558016.0L*C2S6    +
-        217030815815936.0L*S8);
-
-    constexpr long double a0 =
-      518918400.0L*C*
-      (167629288667841.0L*C8            +  611142073397856.0L*C6S2    +
-       827911697193504.0L*C4S4          +  492914320371456.0L*C2S6    +
-       108515407907968.0L*S8);
-
-    constexpr long double b8 =
-       542578576637097.0L*C8            + 2427989179575960.0L*C6S2    +
-      4029330951462960.0L*C4S4          + 2945008687202112.0L*C2S6    +
-       801088338678016.0L*S8;
-
-    constexpr long double b7 =
-      72.0L*C*S*
-      ( 60286508515233.0L*C6            + 181255851122346.0L*C4S2     +
-       181652188684824.0L*C2S4          +  60682846077712.0L*S6);
-
-    constexpr long double b6 =
-      144992827721621880.0L*C8          + 601083367536571920.0L*C6S2  +
-      932967718803489600.0L*C4S4        + 642656625645525120.0L*C2S6  +
-      165779446656983040.0L*S8;
-
-    constexpr long double b5 =
-      55440.0L*C*S*
-      (15691864472037.0L*C6             + 47087897200812.0L*C4S2      +
-       47100196475016.0L*C2S4           + 15704163746240.0L*S6);
-
-    constexpr long double b4 =
-       21282423302370550320.0L*C8       + 83492524053917858880.0L*C6S2     +
-      122732020270552049280.0L*C4S4     + 80116162718853381120.0L*C2S6     +
-       19594243199849472000.0L*S8;
-
-    constexpr long double b3 =
-      8648640.0L*C*S*
-      ( 9843130620477.0L*C6             + 29486873498382.0L*C4S2      +
-       29444353658160.0L*C2S4           +  9800610780256.0L*S6);
-
-    constexpr long double b2 =
-       1925676385894920859200.0L*C8     + 7248435129017981458560.0L*C6S2   +
-      10189674067987768273920.0L*C4S4   + 6336748537167824455680.0L*C2S6   +
-       1469833212303056240640.0L*S8;
-
-    constexpr long double b1 =
-      259459200.0L*C*S*
-      (14843770318377.0L*C6             + 44400706451640.0L*C4S2      +
-       44270108318160.0L*C2S4           + 14713172184896.0L*S6);
-
-    constexpr long double b0 =
-       86985922268654183174400.0L*C8    + 317132866900297998950400.0L*C6S2 +
-      429618613248937586073600.0L*C4S4  + 255782310464243353190400.0L*C2S6 +
-       56310641846950101811200.0L*S8;
-
+    constexpr long double b8  =      391693.0L / 259660644122880.0L;
+    constexpr long double b6  =      101797.0L /    163927174320.0L;
+    constexpr long double b4  =        5293.0L /        40031056.0L;
+    constexpr long double b2  =      124402.0L /         7505823.0L;
+    long double           x2  = a_x * a_x;
     return
-      ((((((((a8 * y + a7) * y + a6) * y + a5) * y + a4) * y + a3) * y + a2)
-                 * y + a1) * y + a0)   /
-      ((((((((b8 * y + b7) * y + b6) * y + b5) * y + b4) * y + b3) * y + b2)
-                 * y + b1) * y + b0);
+      (((((a10 * x2 + a8) * x2 + a6) * x2 + a4) * x2 + a2) * x2 + 1.0L) /
+       (((( b8 * x2 + b6) * x2 + b4) * x2 + b2) * x2 + 1.0L);
   }
 
   //=========================================================================//
   // "SinPade":                                                              //
   //=========================================================================//
-  // The arg is assumed to be in [0 .. Pi/4], centered at Pi/8:
+  // The arg is assumed to be in [0 .. Pi/4], centered at x=0 (same considera-
+  // tions apply as for "CosPade"):
   //
   template<typename F>
   F SinPade(F a_x);
@@ -615,14 +420,13 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // SinPade<float>: (5,4)th-Order Pade approximant:                         //
   //-------------------------------------------------------------------------//
-  // Eps<float> = 2^(-24) =~ 6e-8,
+  // Eps<float> = 2^(-23) =~ 1.2e-7,
   // the abs precision of the (5,4)th-order approximant is ~1.6e-9:
   //
   template<>
   constexpr float SinPade<float>(float a_x)
   {
     assert(0 <= a_x && a_x < Pi_4<float> + float(10.0 * Eps<float>));
-
     constexpr float a4 = float( 551.0 / 166320.0);
     constexpr float a2 = float(- 53.0 /    396.0);
     constexpr float b4 = float(   5.0 /  11088.0);
@@ -636,7 +440,7 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // SinPade<double>: (7,8)th-Order Pade approximant:                        //
   //-------------------------------------------------------------------------//
-  // Eps<double> = 2^(-53) =~ 1e-16,
+  // Eps<double> = 2^(-52) =~ 2.2e-16,
   // the abs precision of the (7,8)th-order approximation is ~7e-17:
   //
   template<>
@@ -652,7 +456,6 @@ namespace DimTypes::Bits::CEMaths
     constexpr double b6 =      36317.0 /     12335869260.0;
     constexpr double b4 =      26015.0 /        74762844.0;
     constexpr double b2 =     187642.0 /         7188735.0;
-
     double           x2 = a_x * a_x;
     return
       a_x *  (((a6 * x2 + a4) * x2 + a2) * x2 + 1.0)          /
@@ -660,9 +463,9 @@ namespace DimTypes::Bits::CEMaths
   }
 
   //-------------------------------------------------------------------------//
-  // SinPade<long double>: (9,8)th-Order Pade approximant:                   //
+  // SinPade<long double>: (10,8)th-Order Pade approximant:                  //
   //-------------------------------------------------------------------------//
-  // Eps<long double> = 2^(-64) =~ 5e-20,
+  // Eps<long double> = 2^(-63) =~ 1.1e-19,
   // the abs precision of the (10,8)th-order approximant is about the same:
   //
   template<>
@@ -679,7 +482,6 @@ namespace DimTypes::Bits::CEMaths
     constexpr long double b6 =      560401.0L /      562956694560.0L;
     constexpr long double b4 =     1281433.0L /        7217393520.0L;
     constexpr long double b2 =     2290747.0L /         120289892.0L;
-
     long double           x2 = a_x * a_x;
     return
       a_x * ((((a8 * x2 + a6) * x2 + a4) * x2 + a2) * x2 + 1.0L) /
@@ -692,7 +494,7 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // "Exp" for an arbitrary real arg:                                        //
   //-------------------------------------------------------------------------//
-  template<bool ForceApprox=false, typename F>
+  template<bool ForceApprox=true, typename F>
   constexpr F Exp(F a_x)
   {
     // Complex "Exp" has a separate specific implementation:
@@ -716,7 +518,7 @@ namespace DimTypes::Bits::CEMaths
       // Get the integral and fractional part of "y":   y = intgY + fracY:
       F intgY = NaN<F>;
       F fracY = std::modf (y, &intgY);
-      assert(std::isfinite(intgY) && std::fabs(fracY) < F(1));
+      assert(std::isfinite(intgY) && std::fabs(fracY) < F(1.0));
 
       // Check if "intgY" is too large in absolute value:
       if (intgY > F(INT_MAX))
@@ -724,32 +526,32 @@ namespace DimTypes::Bits::CEMaths
       if (intgY < F(INT_MIN))
         return F(0);
 
-      // If OK:
+      // Generic Case:
       int n = int(intgY);
 
-      // For the fractional part, get back to Base-E, it can only become smaller
-      // in abs value as a result:
-      F f = fracY * Ln2<F>;
-      assert(std::fabs(f) < F(1));
-
-      // Make it within [-0.5 .. 0.5] for better convergence:
-      if (f < F(-0.5))
+      // Make "fracY" within [-0.5 .. 0.5] for better convergence:
+      if (fracY < F(-0.5))
       {
-        f += F(1.0);
+        fracY += F(1.0);
         --n;
       }
       else
-      if (f > F(0.5))
+      if (fracY > F(0.5))
       {
-        f -= F(1.0);
+        fracY -= F(1.0);
         ++n;
       }
-      assert(std::fabs(f) <= F(0.5));
+      assert(std::fabs(fracY) <= F(0.5));
+
+      // For the fractional part, get back to Base-E; it can only become smaller
+      // in abs value as a result:
+      F f = fracY * Ln2<F>;
+      assert(std::fabs(f) <  F(0.5));
 
       // Use the Pade approximant for exp(f) around f=0:
       F res = ExpPade<F>(f);
 
-      // Multiply the result by 2^n (can still get 0 or +oo):
+      // Multiply the result by 2^n (can still get 0 or +oo at this moment):
       return std::ldexp(res, n);
 
 #   ifndef __clang__
@@ -763,7 +565,7 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // "Log" (Natural Logarithm) for an arbitrary real arg:                    //
   //-------------------------------------------------------------------------//
-  template<bool ForceApprox=false, typename F>
+  template<bool ForceApprox=true, typename F>
   constexpr F Log(F a_x)
   {
     // Complex "Log" has a separate specific implementation:
@@ -794,7 +596,7 @@ namespace DimTypes::Bits::CEMaths
       assert(0.5 <= fracX && fracX < F(1) && e2X != INT_MIN);
 
       // Then log(x) = log(2^e2X  * fracX) = e2X * log(2) + log(fracX),
-      // so expand     log(fracX) in the vicinity of fracX = 1/4:
+      // so expand     log(fracX) in the vicinity of fracX = 3/4:
       F logFX = LogPade<F>(fracX);
       assert(logFX < 0);
 
@@ -813,7 +615,7 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // Generic "Pow" for an arbitrary real arg:                                //
   //-------------------------------------------------------------------------//
-  template<bool ForceApprox=false, typename F>
+  template<bool ForceApprox=true, typename F>
   constexpr F Pow(F a_x, F a_y)
   {
     // Complex "Pow" is not implemented yet. Also, for this generic implementa-
@@ -826,7 +628,7 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // "Cos" for an arbitrary real arg:                                        //
   //-------------------------------------------------------------------------//
-  template<bool ForceApprox=false, typename F>
+  template<bool ForceApprox=true, typename F>
   constexpr F Cos(F a_x)
   {
     // Complex "Cos" has a separate specific implementation:
@@ -864,7 +666,10 @@ namespace DimTypes::Bits::CEMaths
       F res = (a_x <= Pi_4<F>) ? CosPade<F>(a_x) : SinPade<F>(Pi_2<F> - a_x);
 
       // Don't forget the sign:
-      return chSgn ? (- res) : res;
+      if (chSgn)
+        res = - res;
+      assert(std::fabs(res) < F(1.0) + Eps<F>);
+      return res;
 #   ifndef __clang__
     }
     else
@@ -876,7 +681,7 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // "Sin" for an arbitrary real arg:                                        //
   //-------------------------------------------------------------------------//
-  template<bool ForceApprox=false, typename F>
+  template<bool ForceApprox=true, typename F>
   constexpr F Sin(F a_x)
   {
     // Complex "Sin" has a separate specific implementation:
@@ -914,7 +719,10 @@ namespace DimTypes::Bits::CEMaths
       F res = (a_x <= Pi_4<F>) ? SinPade<F>(a_x) : CosPade<F>(Pi_2<F> - a_x);
 
       // Don't forget the sign:
-      return chSgn ? (- res) : res;
+      if (chSgn)
+        res = - res;
+      assert(std::fabs(res) < F(1.0) + Eps<F>);
+      return res;
 #   ifndef __clang__
     }
     else
