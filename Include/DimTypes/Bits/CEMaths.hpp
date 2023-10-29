@@ -10,7 +10,8 @@
 #include <climits>
 #include <complex>
 #include <utility>
-#include <cstdio>
+
+#include <iostream>
 
 namespace DimTypes::Bits::CEMaths
 {
@@ -766,7 +767,7 @@ namespace DimTypes::Bits::CEMaths
     // Complex "Exp" has a separate specific implementation:
     static_assert(!IsComplex<F>);
 
-# if defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX
+# if (defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX)
     // Special Cases:
     if (std::isnan(a_x))
       return NaN<F>;
@@ -831,13 +832,16 @@ namespace DimTypes::Bits::CEMaths
     // Complex "Log" has a separate specific implementation:
     static_assert(!IsComplex<F>);
 
-# if defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX
+# if (defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX)
     // Special Cases:
     if (std::isnan(a_x) || a_x < 0)
       return NaN<F>;
 
     if (a_x == 0)
       return -Inf<F>;
+
+    if (a_x == F(1.0))
+      return F(0.0);
 
     if (std::isinf(a_x))
     {
@@ -887,7 +891,7 @@ namespace DimTypes::Bits::CEMaths
     // Complex "Cos" has a separate specific implementation:
     static_assert(!IsComplex<F>);
 
-# if defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX
+# if (defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX)
     if (!std::isfinite(a_x))
       return NaN<F>;
 
@@ -932,7 +936,7 @@ namespace DimTypes::Bits::CEMaths
     // Complex "Sin" has a separate specific implementation:
     static_assert(!IsComplex<F>);
 
-# if defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX
+# if (defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX)
     if (!std::isfinite(a_x))
       return NaN<F>;
 
@@ -977,13 +981,13 @@ namespace DimTypes::Bits::CEMaths
     // Complex "SqRt" has a separate specific implementation:
     static_assert(!IsComplex<F>);
 
-# if defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX
-    // Special Cases -- similar to "Log":
+# if (defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX)
+    // Special Cases:
     if (!(a_x >= 0))
       return NaN<F>;
 
-    if (a_x == 0)
-      return F(0.0);
+    if (a_x == 0 || a_x == F(1.0))
+      return a_x;
 
     if (std::isinf(a_x))
     {
@@ -991,6 +995,8 @@ namespace DimTypes::Bits::CEMaths
       return  Inf<F>;
     }
     // Generic Case:
+    //
+#   if (!defined(__clang__))
     // Get the Base-2 exponent and the normalised fractional part of "a_x":
     assert(std::isfinite(a_x) && a_x > 0);
     int e2X   = INT_MIN;
@@ -1011,7 +1017,28 @@ namespace DimTypes::Bits::CEMaths
         sqrtFX /= SqRt2<F>;
     }
     return std::ldexp(sqrtFX, n);
+#   else
+    // XXX: In CLang <= 17, "std::frexp" is not "constexpr", so another method
+    // is required: Use Hayley iterations which always converge for the initial
+    // approximation; the latter always OVER-estimates the root:
+    F y = (a_x > F(1.0)) ? a_x : F(1.0);
 
+    while (true)
+    {
+      // The following normalisation tries to avoid Infinities and NaNs:
+      F x_y2 = (a_x / y) / y;
+      F c    = (F(1.0) + F(3.0) * x_y2) / (F(3.0) + x_y2);
+      y *= c;
+
+      // "ry" is a relative correction applied to "y":
+      F ry = c - F(1.0);
+      if (ry < 0)
+        ry = - ry;
+      if (ry < F(50.0) * Eps<F>)
+        break;
+    }
+    return y;
+#   endif
 # else
     // GCC, and NOT forcing the Pade approximants method:
     return std::sqrt(a_x);
@@ -1027,7 +1054,7 @@ namespace DimTypes::Bits::CEMaths
     // Complex "SqRt" has a separate specific implementation:
     static_assert(!IsComplex<F>);
 
-# if defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX
+# if (defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX)
     if (std::isinf(a_x))
       return (a_x > 0) ? Inf<F> : -Inf<F>;
     else
@@ -1041,6 +1068,7 @@ namespace DimTypes::Bits::CEMaths
       a_x = - a_x;
     assert(a_x > 0);
 
+#   if (!defined(__clang__))
     // Get the Base-2 exponent and the normalised fractional part of "a_x":
     assert(std::isfinite(a_x) && a_x > 0);
     int e2X   = INT_MIN;
@@ -1053,7 +1081,7 @@ namespace DimTypes::Bits::CEMaths
 
     // Then the exponent of the result is e2X/3:
     int n = e2X / 3;
-    int r = e2X % 3;   // 0, +-1, +-2
+    int r = e2X % 3;  // 0, +-1, +-2
     switch (r)
     {
       case 1:
@@ -1077,10 +1105,31 @@ namespace DimTypes::Bits::CEMaths
       default:
         assert(false);  // Cannot happen
     }
-    F res = std::ldexp(cbrtFX, n);
+    F y = std::ldexp(cbrtFX, n);
+#   else
+    // XXX: In CLang <= 17, "std::frexp" is not "constexpr", so another method
+    // is required: Use Hayley iterations which always converge for the initial
+    // approximation; the latter always OVER-estimates the root:
+    F y = (a_x > F(1.0)) ? a_x : F(1.0);
+
+    while (true)
+    {
+      // The following normalisation tries to avoid Infinities and NaNs:
+      F x_y3 = ((a_x / y) / y) / y;
+      F c    = (F(1.0) + F(2.0) * x_y3) / (F(2.0) + x_y3);
+      y *= c;
+
+      // "ry" is a relative correction applied to "y":
+      F ry = c - F(1.0);
+      if (ry < 0)
+        ry = - ry;
+      if (ry < F(50.0) * Eps<F>)
+        break;
+    }
+#   endif
     if (chSgn)
-      res = - res;
-    return res;
+      y = -y;
+    return y;
 # else
     // GCC, and NOT forcing the Pade approximants method:
     return std::cbrt (a_x);

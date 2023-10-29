@@ -11,6 +11,10 @@ namespace
   //=========================================================================//
   // Type Declarations:                                                      //
   //=========================================================================//
+# ifdef __clang__
+# pragma  clang diagnostic push
+# pragma  clang diagnostic ignored "-Wunused-function"
+# endif
   DECLARE_DIMS(
     double,
     (Len,  m,   (km,  1000.0),  (AU, 1.495978706996262e+11)),
@@ -18,6 +22,9 @@ namespace
     (Mass, kg)
   )
 }
+# ifdef __clang__
+# pragma  clang diagnostic pop
+# endif
 
 int main()
 {

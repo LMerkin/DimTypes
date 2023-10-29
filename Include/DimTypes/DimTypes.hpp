@@ -44,6 +44,12 @@ namespace DimTypes
       return *this;
     }
 
+    // Conversion from another Rep (but E and U must match):
+    template<typename R>
+    constexpr explicit DimQ(DimQ<E,U,R> const& a_right)
+      : m_val(RepT(a_right.m_val))
+      {}
+
     // The dimensioned unit for the given dimensioned quantity. NB: This method
     // is not a ctor: it takes an existing "DimQ" and returns a similar one but
     // with the unitary magnitude:
@@ -78,20 +84,20 @@ namespace DimTypes
     //-----------------------------------------------------------------------//
     // Addition and Subtraction of "DimQ"s:                                  //
     //-----------------------------------------------------------------------//
-    // This is only possible if the dimensions and rep are same, and the units
-    // can be unified (i.e. same units for non-0 exponents), in which case the
+    // This is only possible if the dimensions and RepT are same, and the units
+    // can be unified (i.e. same units for non-0 exponents),  in which case the
     // 1st arg's units can still be used:
     //
     // Addition:
     template<uint64_t V>
-    constexpr DimQ operator+   (DimQ<E,V> a_right) const
+    constexpr DimQ operator+   (DimQ<E,V,RepT> a_right) const
     {
       static_assert(UnitsOK(E,U,V), "ERROR: Units do not unify");
       return DimQ(m_val + a_right.Magnitude());
     }
   
     template<uint64_t V>
-    constexpr DimQ& operator+= (DimQ<E,V> a_right)
+    constexpr DimQ& operator+= (DimQ<E,V,RepT> a_right)
     {
       static_assert(UnitsOK(E,U,V), "ERROR: Units do not unify");
       m_val += a_right.Magnitude();
