@@ -848,7 +848,7 @@ namespace DimTypes::Bits::CEMaths
     // Get the Base-2 exponent and the normalised fractional part of "a_x":
     assert(std::isfinite(a_x) && a_x > 0);
     int e2X   = INT_MIN;
-    F   fracX = std::frexp(a_x,  &e2X);
+    F   fracX = std::frexp(a_x, &e2X);
     assert(0.5 <= fracX && fracX < F(1) && e2X != INT_MIN);
 
     // Then log(x) = log(2^e2X  * fracX) = e2X * log(2) + log(fracX),
@@ -994,7 +994,7 @@ namespace DimTypes::Bits::CEMaths
     // Get the Base-2 exponent and the normalised fractional part of "a_x":
     assert(std::isfinite(a_x) && a_x > 0);
     int e2X   = INT_MIN;
-    F   fracX = std::frexp(a_x,  &e2X);
+    F   fracX = std::frexp(a_x, &e2X);
     assert(0.5 <= fracX && fracX < F(1) && e2X != INT_MIN);
 
     // Get the Pade approximant of SqRt(fracX):
@@ -1044,7 +1044,7 @@ namespace DimTypes::Bits::CEMaths
     // Get the Base-2 exponent and the normalised fractional part of "a_x":
     assert(std::isfinite(a_x) && a_x > 0);
     int e2X   = INT_MIN;
-    F   fracX = std::frexp(a_x,  &e2X);
+    F   fracX = std::frexp(a_x, &e2X);
     assert(0.5 <= fracX && fracX < F(1) && e2X != INT_MIN);
 
     // Get the Pade approximant of CbRt(fracX):

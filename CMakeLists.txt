@@ -110,7 +110,7 @@ ELSEIF("${TOOL_CHAIN}" STREQUAL "CLang")
                 -Wno-c99-extensions      -Wno-zero-length-array  \
                 -Wno-packed              -Wno-undefined-func-template \
                 -Wno-gnu-statement-expression \
-                -std=gnu++20 \
+                -std=gnu++23 \
                 -Wno-c++98-compat        -Wno-c++98-compat-pedantic    \
                 -Wno-weak-vtables        -Wno-double-promotion         \
                 -Wno-weak-template-vtables    \
