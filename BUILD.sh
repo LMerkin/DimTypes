@@ -24,7 +24,7 @@ function usage
 {
   echo "ERROR: Invalid option: $1"
   echo "Available options:"
-  echo "-t ToolChain, currently supported: GCC(default), CLang, NVHPC"
+  echo "-t ToolChain, currently supported: GCC (default), CLang, NVHPC"
   echo "-c       : Configure"
   echo "-C       : as above, but with full clean-up"
   echo "-b       : Build"
@@ -37,7 +37,7 @@ function usage
   exit 1
 }
 
-while getopts ":t:j:cCbidruvq" opt
+while getopts ":t:j:cCbdruvq" opt
 do
   case $opt in
     t) ToolChain="$OPTARG";;
