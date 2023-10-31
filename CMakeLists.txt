@@ -153,7 +153,6 @@ SET(CMAKE_CXX_FLAGS_DEBUG          "")
 #-----------------------------------------------------------------------------#
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXXFLAGS}")
 
-
 ADD_DEFINITIONS(-DUNCHECKED_MODE=${UNCHECKED_MODE})
 # Ignore warnings in system headers:
 ADD_DEFINITIONS(-isystem "${ENV_PREFIX}/include")
