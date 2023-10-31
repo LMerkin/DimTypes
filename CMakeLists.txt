@@ -44,11 +44,6 @@ IF (NOT ENV_PREFIX)
   SET(ENV_PREFIX "/opt")
 ENDIF()
 
-IF (NOT CMAKE_INSTALL_PREFIX)
-  SET(CMAKE_INSTALL_PREFIX
-      "${ENV_PREFIX}/${PROJECT_NAME}-${TOOL_CHAIN}-${CMAKE_BUILD_TYPE}")
-ENDIF()
-
 #=============================================================================#
 # Compiler Settings:                                                          #
 #=============================================================================#
