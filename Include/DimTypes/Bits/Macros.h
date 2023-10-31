@@ -172,10 +172,10 @@
   /* specialisation with actual Dims and Units encodings:                  */ \
   /*-----------------------------------------------------------------------*/ \
   template<unsigned Dim, unsigned Unit> \
-  char const* UnitNameStr = nullptr;       \
+  char const* UnitNameStr = nullptr;    \
   \
   template<unsigned Dim, unsigned Unit> \
-  RepT UnitScale          = RepT(NAN);     \
+  RepT UnitScale          = RepT(NAN);  \
   \
   /*-----------------------------------------------------------------------*/ \
   /* For each Dim, declare all its Units, their vals and conversion funcs: */ \
@@ -192,7 +192,7 @@
 // Helper Methods for "DECLARE_DIMS":                                        //
 //===========================================================================//
 //---------------------------------------------------------------------------//
-// "GET_DIM_NAME_COMMA", "GET_DIM_NAME":                                    //
+// "GET_DIM_NAME_COMMA", "GET_DIM_NAME":                                     //
 //---------------------------------------------------------------------------//
 // This is an "Action" for use with "FOR_EACH_DIM".
 // Arg: (RepT, DimDcl=(DimName, FundUnitName [, OtherUnitDcl...])):
@@ -366,7 +366,7 @@
       (U, unsigned(DimsE::DimName), \
           unsigned(MK_UNITS_ENTRY_NAME(DimName,UnitName))),  \
      RepT> \
-  MK_CONV_FUNC_NAME(DimName,UnitName) (DimTypes::DimQ<E,U,RepT> a_dimq) \
+  MK_CONV_FUNC_NAME(DimName,UnitName) (DimTypes::DimQ<E,U,RepT> a_dimq)    \
   { \
     constexpr unsigned Dim       = unsigned(DimsE::DimName); \
     constexpr unsigned OldUnit   = DimTypes::Bits::GetFld     (U, Dim);    \

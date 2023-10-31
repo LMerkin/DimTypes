@@ -1019,9 +1019,11 @@ namespace DimTypes::Bits::CEMaths
     return std::ldexp(sqrtFX, n);
 #   else
     // XXX: In CLang <= 17, "std::frexp" is not "constexpr", so another method
-    // is required: Use Hayley iterations which always converge for the initial
-    // approximation; the latter always OVER-estimates the root:
-    F y = (a_x > F(1.0)) ? a_x : F(1.0);
+    // is required: Use Hayley iterations which always converge:
+    // Initial approximation of the root from above: Using the ineqiality bet-
+    // ween the Arithmetic and Geometric Means (the other operand is 1):
+    //
+    F y = F(0.5) * (a_x + F(1.0));
 
     while (true)
     {
@@ -1108,9 +1110,11 @@ namespace DimTypes::Bits::CEMaths
     F y = std::ldexp(cbrtFX, n);
 #   else
     // XXX: In CLang <= 17, "std::frexp" is not "constexpr", so another method
-    // is required: Use Hayley iterations which always converge for the initial
-    // approximation; the latter always OVER-estimates the root:
-    F y = (a_x > F(1.0)) ? a_x : F(1.0);
+    // is required: Use Hayley iterations which always converge:
+    // Initial approximation of the root from above: Using the ineqiality bet-
+    // ween the Arithmetic and Geometric Means (the other operands are 1, 1):
+    //
+    F y = (a_x + F(2.0)) /  F(3.0);
 
     while (true)
     {
