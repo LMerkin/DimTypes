@@ -44,11 +44,6 @@ IF (NOT ENV_PREFIX)
   SET(ENV_PREFIX "/opt")
 ENDIF()
 
-IF (NOT CMAKE_INSTALL_PREFIX)
-  SET(CMAKE_INSTALL_PREFIX
-      "${ENV_PREFIX}/${PROJECT_NAME}-${TOOL_CHAIN}-${CMAKE_BUILD_TYPE}")
-ENDIF()
-
 #=============================================================================#
 # Compiler Settings:                                                          #
 #=============================================================================#
@@ -157,7 +152,6 @@ SET(CMAKE_CXX_FLAGS_DEBUG          "")
 # Special defs (mostly for Boost) and libs:                                   #
 #-----------------------------------------------------------------------------#
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXXFLAGS}")
-
 
 ADD_DEFINITIONS(-DUNCHECKED_MODE=${UNCHECKED_MODE})
 # Ignore warnings in system headers:
