@@ -16,13 +16,36 @@
 namespace DimTypes::Bits::CEMaths
 {
   //=========================================================================//
-  // "IsComplex":                                                            //
+  // Utils:                                                                  //
   //=========================================================================//
+  //-------------------------------------------------------------------------//
+  // "IsComplex":                                                            //
+  //-------------------------------------------------------------------------//
   template<typename T>
   constexpr bool IsComplex = false;
 
   template<typename T>
   constexpr bool IsComplex<std::complex<T>> = true;
+
+  //-------------------------------------------------------------------------//
+  // "Abs":                                                                  //
+  //-------------------------------------------------------------------------//
+  // XXX: In CLang <= 17, "std::fabs" is not "constexpr" contrary to the C++23
+  // standard, so we provide our own "constexpr" implementation in that case:
+  //
+  template<typename F>
+  constexpr F Abs(F a_x)
+  {
+#   ifdef __clang__
+    return (a_x < F(0)) ? (-a_x) : a_x;
+#   else
+    return std::fabs(a_x);
+#   endif
+  }
+
+  // NB: "std::isinf", "std::isnan", "std::isfinite" are ALWAYS "constexpr" in
+  // compilers supporting C++ >= 23 (even in CLang <= 17 which is not entirely
+  // standard-complient), so there is no need to wrap them into our own impls...
 
   //=========================================================================//
   // Consts:                                                                 //
@@ -112,7 +135,7 @@ namespace DimTypes::Bits::CEMaths
   template<>
   constexpr float ExpPade<float>(float a_x)
   {
-    assert(std::fabs(a_x) < 0.5f);
+    assert(Abs(a_x) < 0.5f);
 
     constexpr float a1 = 0.5f;
     constexpr float a2 = float(3.0 /   28.0);
@@ -144,7 +167,7 @@ namespace DimTypes::Bits::CEMaths
   template<>
   constexpr double ExpPade<double>(double a_x)
   {
-    assert(std::fabs(a_x) < 0.5);
+    assert(Abs(a_x) < 0.5);
 
     constexpr double a1 = 0.5;
     constexpr double a2 = 5.0 /     44.0;
@@ -182,7 +205,7 @@ namespace DimTypes::Bits::CEMaths
   template<>
   constexpr long double ExpPade<long double>(long double a_x)
   {
-    assert(std::fabs(a_x) < 0.5L);
+    assert(Abs(a_x) < 0.5L);
 
     constexpr long double a1 = 0.5L;
     constexpr long double a2 = 3.0L /       26.0L;
@@ -747,6 +770,10 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // "Exp" for an arbitrary real arg:                                        //
   //-------------------------------------------------------------------------//
+  // XXX: In CLang <= 17,  this function  is STILL NOT "constexpr", because
+  // "std::modf" and "std::ldexp" are not -- so using it in the "constexpr"
+  // context will fail:
+  //
   template<typename F>
   constexpr F Exp(F a_x)
   {
@@ -768,7 +795,7 @@ namespace DimTypes::Bits::CEMaths
     // Get the integral and fractional part of "y":   y = intgY + fracY:
     F intgY = NaN<F>;
     F fracY = std::modf (y, &intgY);
-    assert(std::isfinite(intgY) && std::fabs(fracY) < F(1.0));
+    assert(std::isfinite(intgY) && Abs(fracY) < F(1.0));
 
     // Check if "intgY" is too large in absolute value:
     if (intgY > F(INT_MAX))
@@ -791,12 +818,12 @@ namespace DimTypes::Bits::CEMaths
       fracY -= F(1.0);
       ++n;
     }
-    assert(std::fabs(fracY) <= F(0.5));
+    assert(Abs(fracY) <= F(0.5));
 
     // For the fractional part, get back to Base-E; it can only become smaller
     // in abs value as a result:
     F f = fracY * Ln2<F>;
-    assert(std::fabs(f) <  F(0.5));
+    assert(Abs(f) <  F(0.5));
 
     // Use the Pade approximant for exp(f) around f=0:
     F res = ExpPade<F>(f);
@@ -812,6 +839,10 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // "Log" (Natural Logarithm) for an arbitrary real arg:                    //
   //-------------------------------------------------------------------------//
+  // XXX: In CLang <= 17,  this function  is STILL NOT "constexpr", because
+  // "std::modf" and "std::ldexp" are not -- so using it in the "constexpr"
+  // context will fail:
+  //
   template<typename F>
   constexpr F Log(F a_x)
   {
@@ -858,6 +889,9 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // Generic "Pow" for an arbitrary real arg:                                //
   //-------------------------------------------------------------------------//
+  // XXX: In CLang <= 17,  this function  is STILL NOT "constexpr",  because
+  // "Exp" is not either -- so using it in the "constexpr" context will fail:
+  //
   template<typename F>
   constexpr F Pow(F a_x, F a_y)
   {
@@ -871,6 +905,9 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // "Cos" for an arbitrary real arg:                                        //
   //-------------------------------------------------------------------------//
+  // XXX: In CLang <= 17,  this function  is STILL NOT "constexpr",  because
+  // "std::fmod" is not -- so using it in the "constexpr" context will fail:
+  //
   template<typename F>
   constexpr F Cos(F a_x)
   {
@@ -883,7 +920,7 @@ namespace DimTypes::Bits::CEMaths
 
     // First, normalise the arg to the interval [0; +00):
     // NB: "fabs" and "fmod" are "constexpr" functions in C++ >= 23:
-    a_x = std::fabs(a_x);
+    a_x = Abs(a_x);
 
     // Then normalise it to the interval [0..2*Pi):
     a_x = std::fmod(a_x, TwoPi<F>);
@@ -905,7 +942,7 @@ namespace DimTypes::Bits::CEMaths
     // Don't forget the sign:
     if (chSgn)
       res = - res;
-    assert(std::fabs(res) < F(1.0) + Eps<F>);
+    assert(Abs(res) < F(1.0) + Eps<F>);
     return res;
 # else
     // GCC, and NOT forcing the Pade approximants method:
@@ -916,6 +953,9 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // "Sin" for an arbitrary real arg:                                        //
   //-------------------------------------------------------------------------//
+  // XXX: In CLang <= 17,  this function  is STILL NOT "constexpr",  because
+  // "std::fmod" is not -- so using it in the "constexpr" context will fail:
+  //
   template<typename F>
   constexpr F Sin(F a_x)
   {
@@ -951,7 +991,7 @@ namespace DimTypes::Bits::CEMaths
     // Don't forget the sign:
     if (chSgn)
       res = - res;
-    assert(std::fabs(res) < F(1.0) + Eps<F>);
+    assert(Abs(res) < F(1.0) + Eps<F>);
     return res;
 # else
     // GCC, and NOT forcing the Pade approximants method:
@@ -962,6 +1002,8 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // "SqRt" (Square Root) for an arbitrary real arg:                         //
   //-------------------------------------------------------------------------//
+  // NB: This function is ALWAYS "constexpr", even in CLang <= 17:
+  //
   template<typename F>
   constexpr F SqRt(F a_x)
   {
@@ -1037,6 +1079,8 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // "CbRt" for an arbitrary real arg:                                       //
   //-------------------------------------------------------------------------//
+  // NB: This function is ALWAYS "constexpr", even in CLang <= 17:
+  //
   template<typename F>
   constexpr F CbRt (F a_x)
   {
@@ -1137,6 +1181,8 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // Complex "Exp":                                                          //
   //-------------------------------------------------------------------------//
+  // XXX: Not really "constexpr" in CLang <= 17:
+  //
   template<typename T>
   constexpr std::complex<T> Exp(std::complex<T> a_z)
   {
@@ -1150,6 +1196,8 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // Complex "Cos":                                                          //
   //-------------------------------------------------------------------------//
+  // XXX: Not really "constexpr" in CLang <= 17:
+  //
   template<typename T>
   constexpr std::complex<T> Cos(std::complex<T> a_z)
   {
@@ -1168,6 +1216,8 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // Complex "Sin":                                                          //
   //-------------------------------------------------------------------------//
+  // XXX: Not really "constexpr" in CLang <= 17:
+  //
   template<typename T>
   constexpr std::complex<T> Sin(std::complex<T> a_z)
   {
@@ -1186,7 +1236,8 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // Complex "Cos" and "Sin" together (for efficiency):                      //
   //-------------------------------------------------------------------------//
-  // Returns (cos(z), sin(z)):
+  // Returns (cos(z), sin(z)). XXX: Not really "constexpr" in CLang <= 17:
+  //
   //
   template<typename T>
   constexpr std::pair<std::complex<T>, std::complex<T>>
@@ -1212,7 +1263,7 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // Complex "Pow":                                                          //
   //-------------------------------------------------------------------------//
-  // FIXME: This implementation is NOT actually "constexpr" in CLang:
+  // XXX: Not really "constexpr" in CLang <= 17:
   //
   template<typename T>
   constexpr  std::complex<T> Pow(std::complex<T> a_z, T a_p)
@@ -1221,7 +1272,7 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // Complex "SqRt":                                                         //
   //-------------------------------------------------------------------------//
-  // FIXME: Also a placeholder as yet, NOT "constexpr" in CLang:
+  // XXX: Also a placeholder as yet, NOT "constexpr" in CLang <= 17:
   //
   template<typename T>
   constexpr  std::complex<T> SqRt(std::complex<T> a_z)
@@ -1230,7 +1281,7 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // Complex "CbRt":                                                         //
   //-------------------------------------------------------------------------//
-  // FIXME: Also as placeholder as yet, NOT "constexpr" in CLang:
+  // XXX: Also a placeholder as yet, NOT "constexpr" in CLang <= 17:
   //
   template<typename T>
   constexpr  std::complex<T> CbRt(std::complex<T> a_z)
