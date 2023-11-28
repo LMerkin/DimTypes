@@ -375,7 +375,7 @@ namespace DimTypes
     { return a_right.IsPos(); }
 
   //=========================================================================//
-  // Lifetd "constexpr" Mathematical Functions:                              //
+  // Lifted "constexpr" Mathematical Functions:                              //
   //=========================================================================//
   using Bits::CEMaths::NaN;
   using Bits::CEMaths::Inf;
@@ -389,6 +389,7 @@ namespace DimTypes
   using Bits::CEMaths::Pi_2;
   using Bits::CEMaths::Pi_4;
 
+  using Bits::CEMaths::Abs;
   using Bits::CEMaths::Exp;
   using Bits::CEMaths::Log;
   using Bits::CEMaths::Cos;
