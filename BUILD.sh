@@ -76,8 +76,8 @@ then
   BuildType="Release"
   BuildMode="UnChecked"
 else
-  # Set the BuildType:
-  [ $ReleaseMode -eq 1 -a $DebugMode -eq 0 ] && BuildType="Release"
+  # Set the BuildType. If it is not specified at all, "Release" is assumed:
+  BuildType="Release"
   [ $ReleaseMode -eq 0 -a $DebugMode -eq 1 ] && BuildType="Debug"
   [ $ReleaseMode -eq 1 -a $DebugMode -eq 1 ] && BuildType="RelWithDebInfo"
   # Here BuildMode is the same as BuildType:
@@ -139,9 +139,7 @@ then
     -D TOOL_CHAIN="$ToolChain"   \
     -D CMAKE_BUILD_TYPE="$BuildType"      \
     -D UNCHECKED_MODE="$UnCheckedMode"    \
-    -D CMAKE_EXPORT_COMPILE_COMMANDS="ON" \
-    -D ENV_PREFIX="$EnvPrefix" \
-    -D PROJECT_NAME="$Project" \
+    -D PROJ_NAME="$Project"    \
     -D LIB_DIR="$LibDir"  \
     -D BIN_DIR="$BinDir"  \
     -S "$TopDir" \

@@ -17,32 +17,26 @@ ENDIF()
 #=============================================================================#
 # Project Settings:                                                           #
 #=============================================================================#
-PROJECT(${PROJECT_NAME} LANGUAGES CXX)
+IF (NOT CMAKE_CXX_COMPILER OR NOT TOOL_CHAIN OR
+    NOT CMAKE_BUILD_TYPE   OR NOT PROJ_NAME  OR
+    NOT LIB_DIR            OR NOT BIN_DIR    OR NOT DEFINED UNCHECKED_MODE)
+  MESSAGE(FATAL_ERROR "Required Definition(s) Missing")
+ENDIF()
+# NB: Also, CUDA_VER, CUDA_CC and CUDA_INCL may be passed from the CMake cmdl,
+# but it is not an error if no CUDA is provided...
+
+# NB: In this case, PROJECT_SOURCE_DIR = CMAKE_SOURCE_DIR
+#              and  PROJECT_BINARY_DIR = CMAKE_BINARY_DIR ,
+# so we use the "CMAKE_"-prefixed vars:
+#
+PROJECT(${PROJ_NAME} LANGUAGES CXX)
 
 SET (CMAKE_EXPORT_COMPILE_COMMANDS ON)
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
 
-# NB: The following vars are normally provided via the command-line params:
-IF (LIB_DIR)
-  SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${LIB_DIR}")
-  SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${LIB_DIR}")
-ENDIF()
-
-IF (BIN_DIR)
-  SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${BIN_DIR}")
-ENDIF()
-
-IF (NOT TOOL_CHAIN)
-  SET(TOOL_CHAIN "NVHPC")
-ENDIF()
-
-IF (NOT CMAKE_BUILD_TYPE)
-  SET(CMAKE_BUILD_TYPE "RelWithDebInfo")
-ENDIF()
-
-IF (NOT ENV_PREFIX)
-  SET(ENV_PREFIX "/opt")
-ENDIF()
+SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${LIB_DIR}")
+SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${LIB_DIR}")
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${BIN_DIR}")
 
 #=============================================================================#
 # Compiler Settings:                                                          #
@@ -67,18 +61,16 @@ IF("${TOOL_CHAIN}" STREQUAL "GCC")
     MESSAGE(WARNING "UnSupported BuildType: ${CMAKE_BUILD_TYPE}")
   ENDIF()
   # Other flags:
-  # In G++ 12+, there are lots of bogus warnings regarding dangling pointers in
-  # our macros, so we have disabled them:
-  SET(CXXFLAGS "${CXXFLAGS} -march=native  -mtune=native \
-                -Wall                    -Wextra          -Wcast-qual \
-                -Winit-self              -Wwrite-strings  -Wmissing-braces \
-                -Wdisabled-optimization  -Wconversion  \
-                -Wno-stringop-truncation -Wno-dangling-pointer \
-                -std=gnu++23 \
-                -Wctor-dtor-privacy  -Wnon-virtual-dtor -Woverloaded-virtual \
-                -Wno-class-memaccess -Wno-double-promotion")
+  SET(CXXFLAGS "${CXXFLAGS} -march=native -mtune=native -std=gnu++23 \
+                -Wall                     -Wextra            \
+                -Wctor-dtor-privacy       -Wnon-virtual-dtor \
+                -Woverloaded-virtual      -Wcast-qual        \
+                -Winit-self               -Wwrite-strings    \
+                -Wmissing-braces          -Wdisabled-optimization  \
+                -Wconversion              -Wno-stringop-truncation \
+                -Wno-class-memaccess      -Wno-double-promotion    \
+                -Wno-c++20-compat")
 
-  # CXX Flags for OpenACC: TODO...
 #-----------------------------------------------------------------------------#
 ELSEIF("${TOOL_CHAIN}" STREQUAL "CLang")
 #-----------------------------------------------------------------------------#
@@ -93,23 +85,21 @@ ELSEIF("${TOOL_CHAIN}" STREQUAL "CLang")
     MESSAGE(WARNING "UnSupported BuildType: ${CMAKE_BUILD_TYPE}")
   ENDIF()
   # Other flags:
-  SET(CXXFLAGS "${CXXFLAGS} -march=native  -mtune=native \
-                -Weverything             -Wno-covered-switch-default  \
-                -Wno-switch-enum         -Wno-exit-time-destructors   \
-                -Wno-global-constructors -Wno-reserved-id-macro       \
-                -Wno-padded              -Wno-unused-macros           \
+  SET(CXXFLAGS "${CXXFLAGS}  -march=native    -mtune=native   -std=gnu++23  \
+                -Weverything                  -Wno-unsafe-buffer-usage      \
+                -Wno-c++98-compat             -Wno-c++98-compat-pedantic    \
+                -Wno-weak-vtables             -Wno-double-promotion         \
+                -Wno-weak-template-vtables    -Wno-covered-switch-default   \
+                -Wno-switch-enum              -Wno-exit-time-destructors    \
+                -Wno-global-constructors      -Wno-reserved-id-macro        \
+                -Wno-padded                   -Wno-unused-macros            \
                 -Wno-gnu-zero-variadic-macro-arguments \
-                -Wno-disabled-macro-expansion \
-                -Wno-float-equal         -Wno-missing-prototypes \
-                -Wno-vla                 -Wno-vla-extension      \
-                -Wno-c99-extensions      -Wno-zero-length-array  \
-                -Wno-packed              -Wno-undefined-func-template \
-                -Wno-gnu-statement-expression \
-                -std=gnu++23 \
-                -Wno-c++98-compat        -Wno-c++98-compat-pedantic    \
-                -Wno-weak-vtables        -Wno-double-promotion         \
-                -Wno-weak-template-vtables    \
-                -Wno-unsafe-buffer-usage -Wno-unused-const-variable    \
+                -Wno-disabled-macro-expansion          \
+                -Wno-float-equal              -Wno-missing-prototypes       \
+                -Wno-vla                      -Wno-vla-extension            \
+                -Wno-c99-extensions           -Wno-zero-length-array        \
+                -Wno-packed                   -Wno-undefined-func-template  \
+                -Wno-gnu-statement-expression -Wno-unused-const-variable    \
                 -Wno-unused-template")
 
 #-----------------------------------------------------------------------------#
@@ -127,23 +117,19 @@ ELSEIF("${TOOL_CHAIN}" STREQUAL "NVHPC")
   ENDIF()
 
   # Other flags:
-  SET(CXXFLAGS "${CXXFLAGS} -march=native  -mtune=native  \
-                -Wno-switch-enum         -Wno-float-equal \
-                -Wno-missing-prototypes  -Wno-vla         \
-                -std=c++23")
+  SET(CXXFLAGS  "${CXXFLAGS} -march=native -mtune=native    -std=c++23 \
+                -Wno-switch-enum           -Wno-float-equal \
+                -Wno-missing-prototypes    -Wno-vla")
+
 #-----------------------------------------------------------------------------#
 ELSE()
-  MESSAGE(FATAL_ERROR  "UnSupported UNIX ToolChain: ${TOOL_CHAIN}")
+  MESSAGE(FATAL_ERROR  "UnSupported ToolChain: ${TOOL_CHAIN}")
 ENDIF()
 
 #=============================================================================#
 # Compiler-Independent Compilation Env:                                       #
 #=============================================================================#
 # Reset the standard flags for the selected mode, to prevent a mix-up:
-SET(CMAKE_C_FLAGS_RELEASE          "")
-SET(CMAKE_C_FLAGS_RELWITHDEBINFO   "")
-SET(CMAKE_C_FLAGS_DEBUG            "")
-
 SET(CMAKE_CXX_FLAGS_RELEASE        "")
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "")
 SET(CMAKE_CXX_FLAGS_DEBUG          "")
@@ -152,10 +138,7 @@ SET(CMAKE_CXX_FLAGS_DEBUG          "")
 # Special defs (mostly for Boost) and libs:                                   #
 #-----------------------------------------------------------------------------#
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXXFLAGS}")
-
 ADD_DEFINITIONS(-DUNCHECKED_MODE=${UNCHECKED_MODE})
-# Ignore warnings in system headers:
-ADD_DEFINITIONS(-isystem "${ENV_PREFIX}/include")
 
 #-----------------------------------------------------------------------------#
 # Common Configs:                                                             #
@@ -175,14 +158,9 @@ ENDIF()
 # way:
 SET(CMAKE_SKIP_BUILD_RPATH         FALSE)
 SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-SET(CMAKE_INSTALL_RPATH            ${CMAKE_INSTALL_PREFIX}/lib)
 
-INCLUDE_DIRECTORIES("${PROJECT_SOURCE_DIR}/Include"
-                    "${ENV_PREFIX}/include")
-
-LINK_DIRECTORIES   ("${PROJECT_BINARY_DIR}"
-                    "${LIB_DIR}"
-                    "${ENV_PREFIX}/lib")
+INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/Include")
+LINK_DIRECTORIES   ("${CMAKE_BINARY_DIR}" "${LIB_DIR}")
 
 #=============================================================================#
 # Tests:                                                                      #
