@@ -47,7 +47,7 @@ MESSAGE(STATUS "Configuring for the ${TOOL_CHAIN} ToolChain...")
 IF("${TOOL_CHAIN}" STREQUAL "GCC")
 #-----------------------------------------------------------------------------#
   # Optimisation and debugging flags:
-  IF ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+  IF ("${CMAKE_BUILD_TYPE}"     STREQUAL "Release")
     # NB: Do NOT use:
     # "-ffast-math" option -- it will result in incorrect treatment of "NaN"s!
     # -flto"               -- it intereacts in a strange way with header-only
@@ -58,7 +58,7 @@ IF("${TOOL_CHAIN}" STREQUAL "GCC")
   ELSEIF ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     SET(CXXFLAGS "-O0 -g")
   ELSE()
-    MESSAGE(WARNING "UnSupported BuildType: ${CMAKE_BUILD_TYPE}")
+    MESSAGE(FATAL_ERROR "UnSupported BuildType: ${CMAKE_BUILD_TYPE}")
   ENDIF()
   # Other flags:
   SET(CXXFLAGS "${CXXFLAGS} -march=native -mtune=native -std=gnu++23 \
@@ -75,14 +75,14 @@ IF("${TOOL_CHAIN}" STREQUAL "GCC")
 ELSEIF("${TOOL_CHAIN}" STREQUAL "CLang")
 #-----------------------------------------------------------------------------#
   # Optimisation and debugging flags:
-  IF ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+  IF ("${CMAKE_BUILD_TYPE}"     STREQUAL "Release")
     SET(CXXFLAGS "-O3 -mavx2 -DNDEBUG -funroll-loops -fomit-frame-pointer")
   ELSEIF ("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
     SET(CXXFLAGS "-O2 -g -funroll-loops")
   ELSEIF ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"  )
     SET(CXXFLAGS "-O0 -g")
   ELSE()
-    MESSAGE(WARNING "UnSupported BuildType: ${CMAKE_BUILD_TYPE}")
+    MESSAGE(FATAL_ERROR "UnSupported BuildType: ${CMAKE_BUILD_TYPE}")
   ENDIF()
   # Other flags:
   SET(CXXFLAGS "${CXXFLAGS}  -march=native    -mtune=native   -std=gnu++23  \
@@ -106,14 +106,14 @@ ELSEIF("${TOOL_CHAIN}" STREQUAL "CLang")
 ELSEIF("${TOOL_CHAIN}" STREQUAL "NVHPC")
 #-----------------------------------------------------------------------------#
   # Optimisation and debugging flags:
-  IF ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+  IF ("${CMAKE_BUILD_TYPE}"     STREQUAL "Release")
     SET(CXXFLAGS "-O3 -mavx2 -DNDEBUG")
   ELSEIF ("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
     SET(CXXFLAGS "-O2 -g")
   ELSEIF ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"  )
     SET(CXXFLAGS "-O0 -g")
   ELSE()
-    MESSAGE(WARNING "UnSupported BuildType: ${CMAKE_BUILD_TYPE}")
+    MESSAGE(FATAL_ERROR "UnSupported BuildType: ${CMAKE_BUILD_TYPE}")
   ENDIF()
 
   # Other flags:
