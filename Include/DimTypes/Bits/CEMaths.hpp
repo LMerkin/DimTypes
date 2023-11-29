@@ -16,7 +16,7 @@
 namespace DimTypes::Bits::CEMaths
 {
   //=========================================================================//
-  // Utils:                                                                  //
+  // Elementary Functions, Utils:                                            //
   //=========================================================================//
   //-------------------------------------------------------------------------//
   // "IsComplex":                                                            //
@@ -46,6 +46,12 @@ namespace DimTypes::Bits::CEMaths
   // NB: "std::isinf", "std::isnan", "std::isfinite" are ALWAYS "constexpr" in
   // compilers supporting C++ >= 23 (even in CLang <= 17 which is not entirely
   // standard-complient), so there is no need to wrap them into our own impls...
+
+  //-------------------------------------------------------------------------//
+  // "Sqr", "Cube":                                                          //
+  //-------------------------------------------------------------------------//
+  template<typename F> constexpr F Sqr (F a_x) { return a_x * a_x;       }
+  template<typename F> constexpr F Cube(F a_x) { return a_x * a_x * a_x; }
 
   //=========================================================================//
   // Consts:                                                                 //

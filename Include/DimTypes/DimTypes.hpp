@@ -390,6 +390,8 @@ namespace DimTypes
   using Bits::CEMaths::Pi_4;
 
   using Bits::CEMaths::Abs;
+  using Bits::CEMaths::Sqr;
+  using Bits::CEMaths::Cube;
   using Bits::CEMaths::Exp;
   using Bits::CEMaths::Log;
   using Bits::CEMaths::Cos;
