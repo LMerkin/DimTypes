@@ -228,7 +228,10 @@ namespace DimTypes
     Cube() const
       { return IPow<3>(); }
 
-    // "RPow": (General) Rational Power, NOT "constexpr" for C++ < 26:
+    // "RPow": (General) Rational Power. In general it is NOT "constexpr" for
+    // C++ < 26, but it is "constexpr"  if it can be reduced to a composition
+    // of "SqRt" and "CbRt":
+    //
     template<int M, int N>
     constexpr DimQ<DivExp(MultExp(E,M),N),
                    CleanUpUnits(DivExp(MultExp(E,M),N), U), RepT>
@@ -245,8 +248,7 @@ namespace DimTypes
     }
 
     // Shortcuts: "SqRt" and "CbRt". Here M==1, so "CleanUpUnits" is not
-    // required; again, these functions are NOT "constexpr" for C++ < 26:
-    //
+    // required:
     constexpr DimQ<DivExp(E,2),U,RepT> SqRt() const { return RPow<1,2>(); }
     constexpr DimQ<DivExp(E,3),U,RepT> CbRt() const { return RPow<1,3>(); }
 
@@ -349,7 +351,6 @@ namespace DimTypes
   RPow(DimQ<E,U,RepT> a_right)
     { return a_right.template RPow<M,N>(); }
 
-  // Again, "SqRt" and "CbRt" are NOT "constexpr" for C++ < 26:
   template< uint64_t E,  uint64_t U, typename RepT>
   constexpr DimQ<DivExp(E,2),U,RepT> SqRt(DimQ<E,U,RepT> a_right)
     { return a_right.SqRt(); }

@@ -99,8 +99,7 @@ ELSEIF("${TOOL_CHAIN}" STREQUAL "CLang")
                 -Wno-vla                      -Wno-vla-extension            \
                 -Wno-c99-extensions           -Wno-zero-length-array        \
                 -Wno-packed                   -Wno-undefined-func-template  \
-                -Wno-gnu-statement-expression -Wno-unused-const-variable    \
-                -Wno-unused-template")
+                -Wno-gnu-statement-expression")
 
 #-----------------------------------------------------------------------------#
 ELSEIF("${TOOL_CHAIN}" STREQUAL "NVHPC")

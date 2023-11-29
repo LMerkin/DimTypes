@@ -14,6 +14,8 @@ namespace
 # ifdef __clang__
 # pragma  clang diagnostic push
 # pragma  clang diagnostic ignored "-Wunused-function"
+# pragma  clang diagnostic ignored "-Wunused-template"
+# pragma  clang diagnostic ignored "-Wunused-const-variable"
 # endif
   DECLARE_DIMS(
     double,

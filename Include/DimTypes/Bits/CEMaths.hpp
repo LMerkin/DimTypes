@@ -21,11 +21,8 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // "IsComplex":                                                            //
   //-------------------------------------------------------------------------//
-  template<typename T>
-  constexpr bool IsComplex = false;
-
-  template<typename T>
-  constexpr bool IsComplex<std::complex<T>> = true;
+  template<typename T> inline constexpr bool IsComplex = false;
+  template<typename T> inline constexpr bool IsComplex<std::complex<T>> = true;
 
   //-------------------------------------------------------------------------//
   // "Abs":                                                                  //

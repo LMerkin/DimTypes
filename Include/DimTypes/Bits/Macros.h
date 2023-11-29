@@ -329,7 +329,7 @@
   /* "UnitNameStr" Specialisation for this Unit:                           */ \
   /*-----------------------------------------------------------------------*/ \
   template<> \
-  constexpr char UnitNameStr   \
+  inline constexpr char UnitNameStr   \
     <unsigned(DimsE::DimName), \
      unsigned(MK_UNITS_ENTRY_NAME(DimName,UnitName))>[] = \
     STRINGIFY_NAME(UnitName);  \
@@ -337,7 +337,7 @@
   /* "UnitScale" Specialisation for this Unit:                             */ \
   /*-----------------------------------------------------------------------*/ \
   template<> \
-  constexpr RepT UnitScale     \
+  inline constexpr RepT UnitScale     \
     <unsigned(DimsE::DimName), \
      unsigned(MK_UNITS_ENTRY_NAME(DimName,UnitName))> = RepT(UnitVal); \
   /*-----------------------------------------------------------------------*/ \

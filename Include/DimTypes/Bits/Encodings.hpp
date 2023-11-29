@@ -28,12 +28,12 @@ namespace Bits
   // real constraint at the moment (can create up to "PMod" different units per
   // dim), so the number of units is not checked.
   //
-  constexpr uint64_t PMod  = 509;
-  constexpr int      IPMod = int(PMod);
+  inline constexpr uint64_t PMod  = 509;
+  inline constexpr int      IPMod = int(PMod);
 
-  constexpr unsigned NDims = 7;
-  constexpr unsigned PBits = 9;
-  constexpr uint64_t PMask = (1UL << PBits) - 1;
+  inline constexpr unsigned NDims = 7;
+  inline constexpr unsigned PBits = 9;
+  inline constexpr uint64_t PMask = (1UL << PBits) - 1;
   static_assert(PMod <= PMask, "Insufficient bits for PMod");
 
   static_assert(PBits * NDims <= sizeof(uint64_t) * 8,
@@ -239,7 +239,7 @@ namespace Bits
   }
 
   // So:
-  constexpr unsigned MaxHeight = FindMaxHeight();
+  inline constexpr unsigned MaxHeight = FindMaxHeight();
 
   //=========================================================================//
   // Extraction of Numer and Denom from Zp-Encodings:                        //
