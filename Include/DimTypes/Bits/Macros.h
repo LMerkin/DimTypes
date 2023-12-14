@@ -476,20 +476,20 @@
   /*-----------------------------------------------------------------------*/ \
   /* XXX: Are 64 bytes OK for most use cases? */     \
   template<size_t Sz = 64, uint64_t E, uint64_t U>   \
-  inline std::array<char, Sz> ToStr(DimTypes::DimQ<E, U, RepT> a_dimq) \
+  inline std::array<char, Sz> ToStr(DimTypes::DimQ<E, U, RepT> a_dimq)   \
   { \
     std::array<char, Sz> buff;  \
     char const*          buffEnd = buff.data() + Sz; \
-    DEBUG_ONLY(char* realEnd =) \
-      Put<E, U>(a_dimq, const_cast<char*>(buff.data()), buffEnd); \
-    assert(realEnd < buffEnd && *realEnd == '\0');                \
+    DEBUG_ONLY(char* realEnd =) Put<E, U>(a_dimq, buff.data(), buffEnd); \
+    assert(realEnd < buffEnd && *realEnd == '\0');   \
     return buff;    \
   } \
   /*-----------------------------------------------------------------------*/ \
   /* Output: "operator<<":                                                 */ \
   /*-----------------------------------------------------------------------*/ \
   template<uint64_t E, uint64_t U> \
-  std::ostream& operator<< (std::ostream& a_os, DimQ<E, U, RepT> a_dimq) \
+  std::ostream& operator<< \
+    (std::ostream& a_os, DimTypes::DimQ<E, U, RepT> a_dimq) \
     { return a_os << ToStr(a_dimq).data(); }
 
 //---------------------------------------------------------------------------//
