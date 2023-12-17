@@ -52,7 +52,7 @@ IF("${TOOL_CHAIN}" STREQUAL "GCC")
     # "-ffast-math" option -- it will result in incorrect treatment of "NaN"s!
     # -flto"               -- it intereacts in a strange way with header-only
     #                         code!
-    SET(CXXFLAGS "-O3 -mavx2 -DNDEBUG -funroll-loops -fomit-frame-pointer")
+    SET(CXXFLAGS "-O3 -mavx2 -funroll-loops -fomit-frame-pointer")
   ELSEIF ("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
     SET(CXXFLAGS "-O2 -g -funroll-loops")
   ELSEIF ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
@@ -76,7 +76,7 @@ ELSEIF("${TOOL_CHAIN}" STREQUAL "CLang")
 #-----------------------------------------------------------------------------#
   # Optimisation and debugging flags:
   IF ("${CMAKE_BUILD_TYPE}"     STREQUAL "Release")
-    SET(CXXFLAGS "-O3 -mavx2 -DNDEBUG -funroll-loops -fomit-frame-pointer")
+    SET(CXXFLAGS "-O3 -mavx2 -funroll-loops -fomit-frame-pointer")
   ELSEIF ("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
     SET(CXXFLAGS "-O2 -g -funroll-loops")
   ELSEIF ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"  )
@@ -106,7 +106,7 @@ ELSEIF("${TOOL_CHAIN}" STREQUAL "NVHPC")
 #-----------------------------------------------------------------------------#
   # Optimisation and debugging flags:
   IF ("${CMAKE_BUILD_TYPE}"     STREQUAL "Release")
-    SET(CXXFLAGS "-O3 -mavx2 -DNDEBUG")
+    SET(CXXFLAGS "-O3 -mavx2")
   ELSEIF ("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
     SET(CXXFLAGS "-O2 -g")
   ELSEIF ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"  )
@@ -133,11 +133,11 @@ SET(CMAKE_CXX_FLAGS_RELEASE        "")
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "")
 SET(CMAKE_CXX_FLAGS_DEBUG          "")
 
-#-----------------------------------------------------------------------------#
-# Special defs (mostly for Boost) and libs:                                   #
-#-----------------------------------------------------------------------------#
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXXFLAGS}")
-ADD_DEFINITIONS(-DUNCHECKED_MODE=${UNCHECKED_MODE})
+
+IF (UNCHECKED_MODE)
+  ADD_DEFINITIONS(-DUNCHECKED_MODE=1 -DNDEBUG)
+ENDIF()
 
 #-----------------------------------------------------------------------------#
 # Common Configs:                                                             #
