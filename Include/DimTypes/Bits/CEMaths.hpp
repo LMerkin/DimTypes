@@ -10,8 +10,7 @@
 #include <climits>
 #include <complex>
 #include <utility>
-
-#include <iostream>
+#include <type_traits>
 
 namespace DimTypes::Bits::CEMaths
 {
@@ -33,8 +32,34 @@ namespace DimTypes::Bits::CEMaths
   template<typename F>
   constexpr F Abs(F a_x)
   {
+    static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
 #   ifdef __clang__
     return (a_x < F(0)) ? (-a_x) : a_x;
+#   else
+    return std::fabs(a_x);
+#   endif
+  }
+
+  //-------------------------------------------------------------------------//
+  // "FMod":                                                                 //
+  //-------------------------------------------------------------------------//
+  // Again, in CLang <= 17, "std::fmod" is not "constexpr", so our own implem-
+  // entation is needed:
+  //
+  template<typename F>
+  constexpr F FMod (F a_x, F a_y)
+  {
+    static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
+#   ifdef __clang__
+    // For the avoidance of doubt, we don't support negative args:
+    assert(a_x >= 0.0 && a_y > 0.0);
+    F q  = a_x / a_y;
+    assert(q >= 0.0);
+    // Convert "q" to "unsigned long" -- it is always rounded down:
+    using  ULong = unsigned long;
+    ULong  u = ULong(r);
+    F      r = std::max(a_x - F(u) * a_y, 0.0);
+    return r;
 #   else
     return std::fabs(a_x);
 #   endif
@@ -781,7 +806,7 @@ namespace DimTypes::Bits::CEMaths
   constexpr F Exp(F a_x)
   {
     // Complex "Exp" has a separate specific implementation:
-    static_assert(!IsComplex<F>);
+    static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
 
 # if (defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX)
     // Special Cases:
@@ -850,7 +875,7 @@ namespace DimTypes::Bits::CEMaths
   constexpr F Log(F a_x)
   {
     // Complex "Log" has a separate specific implementation:
-    static_assert(!IsComplex<F>);
+    static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
 
 # if (defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX)
     // Special Cases:
@@ -900,7 +925,7 @@ namespace DimTypes::Bits::CEMaths
   {
     // Complex "Pow" is not implemented yet. Also, for this generic implementa-
     // tion,   "a_x" is required to be positive:
-    static_assert(!IsComplex<F>);
+    static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
     assert(a_x > 0);
     return Exp<F>(a_y * Log<F>(a_x));
   }
@@ -915,7 +940,7 @@ namespace DimTypes::Bits::CEMaths
   constexpr F Cos(F a_x)
   {
     // Complex "Cos" has a separate specific implementation:
-    static_assert(!IsComplex<F>);
+    static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
 
 # if (defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX)
     if (!std::isfinite(a_x))
@@ -963,7 +988,7 @@ namespace DimTypes::Bits::CEMaths
   constexpr F Sin(F a_x)
   {
     // Complex "Sin" has a separate specific implementation:
-    static_assert(!IsComplex<F>);
+    static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
 
 # if (defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX)
     if (!std::isfinite(a_x))
@@ -1011,7 +1036,7 @@ namespace DimTypes::Bits::CEMaths
   constexpr F SqRt(F a_x)
   {
     // Complex "SqRt" has a separate specific implementation:
-    static_assert(!IsComplex<F>);
+    static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
 
 # if (defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX)
     // Special Cases:
@@ -1088,7 +1113,7 @@ namespace DimTypes::Bits::CEMaths
   constexpr F CbRt (F a_x)
   {
     // Complex "SqRt" has a separate specific implementation:
-    static_assert(!IsComplex<F>);
+    static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
 
 # if (defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX)
     if (std::isinf(a_x))
