@@ -294,9 +294,16 @@ namespace DimTypes
     constexpr bool ApproxEquals(DimQ<E,V,RepT> a_right) const
     {
       static_assert(UnitsOK(E,U,V), "ERROR: Units do not unify");
-      // NB: The Tolerance is 50*Eps:
-      return Bits::CEMaths::Abs(m_val - a_right.m_val) <
-             Bits::CEMaths::Eps<RepT> * 50.0;
+      // NB: The Tolerance is 10*Eps. It is absolute for the LHS < 1, and
+      // relative otherwise:
+      RepT err =
+        Bits::CEMaths::Abs
+        (
+          Bits::CEMaths::Abs(m_val) < 1.0
+          ? m_val - a_right.m_val
+          : m_val / a_right.m_val - 1.0
+        );
+      return err < Bits::CEMaths::Eps<RepT> * 10.0;
     }
   };
 
