@@ -288,6 +288,16 @@ namespace DimTypes
     //
     constexpr bool IsNeg   () const  { return m_val <  RepT(0.0); }
     constexpr bool IsPos   () const  { return m_val >  RepT(0.0); }
+
+    // Approximate Equality:
+    template<uint64_t V>
+    constexpr bool ApproxEquals(DimQ<E,V,RepT> a_right) const
+    {
+      static_assert(UnitsOK(E,U,V), "ERROR: Units do not unify");
+      // NB: The Tolerance is 50*Eps:
+      return Bits::CEMaths::Abs(m_val - a_right.m_val) <
+             Bits::CEMaths::Eps<RepT> * 50.0;
+    }
   };
 
   //=========================================================================//
