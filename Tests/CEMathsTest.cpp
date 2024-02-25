@@ -3,7 +3,7 @@
 //                            "CEMathsTest.cpp":                             //
 //     Test for Our Implementation of "constexpr" Mathematical Functions     //
 //===========================================================================//
-#define  DIMTYPES_FORCE_PADE_APPROX 1
+#define  DIMTYPES_FORCE_APPROX 1
 #include "DimTypes/DimTypes.hpp"
 #include <iostream>
 
@@ -59,6 +59,7 @@ namespace
     ErrAccum<F> cbrtErrs;
     ErrAccum<F> cosErrs;
     ErrAccum<F> sinErrs;
+    ErrAccum<F> tanErrs;
 
     for (F x = F(-80.0); x <= F(80.0); x += F(0.03125))
     {
@@ -90,6 +91,10 @@ namespace
       // Sin:
       F sinX = Sin<F>(x);
       sinErrs .Update(x, sinX, std::sin(x));
+
+      // Tan:
+      F tanX = Tan<F>(x);
+      tanErrs .Update(x, tanX, std::tan(x));
     }
     // Results:
     std::cout << "Exp  : MaxErr=[" << expErrs .GetMaxErr() / Eps<F>
@@ -104,6 +109,8 @@ namespace
               << "*Eps]\t@ x="     << cosErrs .GetArgMaxErr() << std::endl;
     std::cout << "Sin  : MaxErr=[" << sinErrs .GetMaxErr() / Eps<F>
               << "*Eps]\t@ x="     << sinErrs .GetArgMaxErr() << std::endl;
+    std::cout << "Tan  : MaxErr=[" << tanErrs .GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="     << tanErrs .GetArgMaxErr() << std::endl;
   }
 }
 

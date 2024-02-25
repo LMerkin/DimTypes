@@ -50,19 +50,19 @@ namespace DimTypes::Bits::CEMaths
   constexpr F FMod (F a_x, F a_y)
   {
     static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
-#   ifdef __clang__
+# if (defined(__clang__) || DIMTYPES_FORCE_APPROX)
     // For the avoidance of doubt, we don't support negative args:
     assert(a_x >= 0.0 && a_y > 0.0);
     F q  = a_x / a_y;
     assert(q >= 0.0);
     // Convert "q" to "unsigned long" -- it is always rounded down:
     using  ULong = unsigned long;
-    ULong  u = ULong(r);
-    F      r = std::max(a_x - F(u) * a_y, 0.0);
+    ULong  u = ULong(q);
+    F      r = std::max(a_x - F(u) * a_y, F(0.0));
     return r;
-#   else
-    return std::fabs(a_x);
-#   endif
+# else
+    return std::fmod(a_x, a_y);
+# endif
   }
 
   // NB: "std::isinf", "std::isnan", "std::isfinite" are ALWAYS "constexpr" in
@@ -808,7 +808,7 @@ namespace DimTypes::Bits::CEMaths
     // Complex "Exp" has a separate specific implementation:
     static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
 
-# if (defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX)
+# if (defined(__clang__) || DIMTYPES_FORCE_APPROX)
     // Special Cases:
     if (std::isnan(a_x))
       return NaN<F>;
@@ -877,7 +877,7 @@ namespace DimTypes::Bits::CEMaths
     // Complex "Log" has a separate specific implementation:
     static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
 
-# if (defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX)
+# if (defined(__clang__) || DIMTYPES_FORCE_APPROX)
     // Special Cases:
     if (std::isnan(a_x) || a_x < 0)
       return NaN<F>;
@@ -933,25 +933,21 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // "Cos" for an arbitrary real arg:                                        //
   //-------------------------------------------------------------------------//
-  // XXX: In CLang <= 17,  this function  is STILL NOT "constexpr",  because
-  // "std::fmod" is not -- so using it in the "constexpr" context will fail:
-  //
   template<typename F>
   constexpr F Cos(F a_x)
   {
     // Complex "Cos" has a separate specific implementation:
     static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
 
-# if (defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX)
+# if (defined(__clang__) || DIMTYPES_FORCE_APPROX)
     if (!std::isfinite(a_x))
       return NaN<F>;
 
     // First, normalise the arg to the interval [0; +00):
-    // NB: "fabs" and "fmod" are "constexpr" functions in C++ >= 23:
     a_x = Abs(a_x);
 
-    // Then normalise it to the interval [0..2*Pi):
-    a_x = std::fmod(a_x, TwoPi<F>);
+    // Then normalise it to the interval [0..2*Pi) (full period):
+    a_x = FMod(a_x, TwoPi<F>);
 
     // Then to the interval [0..Pi]:
     bool chSgn = (a_x > Pi<F>);
@@ -981,27 +977,23 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // "Sin" for an arbitrary real arg:                                        //
   //-------------------------------------------------------------------------//
-  // XXX: In CLang <= 17,  this function  is STILL NOT "constexpr",  because
-  // "std::fmod" is not -- so using it in the "constexpr" context will fail:
-  //
   template<typename F>
   constexpr F Sin(F a_x)
   {
     // Complex "Sin" has a separate specific implementation:
     static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
 
-# if (defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX)
+# if (defined(__clang__) || DIMTYPES_FORCE_APPROX)
     if (!std::isfinite(a_x))
       return NaN<F>;
 
     // First, normalise the arg to the interval [0; +00):
-    // NB: "fabs" and "fmod" are "constexpr" functions in C++ >= 23:
     bool  chSgn =  (a_x < 0);
     if (chSgn)
       a_x = - a_x;
 
-    // Then normalise it to the interval [0..2*Pi):
-    a_x = std::fmod(a_x, TwoPi<F>);
+    // Then normalise it to the interval [0..2*Pi) (full period):
+    a_x = FMod(a_x, TwoPi<F>);
 
     // Then to the interval [0..Pi]:
     if (a_x > Pi<F>)
@@ -1028,6 +1020,53 @@ namespace DimTypes::Bits::CEMaths
   }
 
   //-------------------------------------------------------------------------//
+  // "Tan" for an arbitrary real arg:                                        //
+  //-------------------------------------------------------------------------//
+  template<typename F>
+  constexpr F Tan(F a_x)
+  {
+    // Complex "Tan" has a separate specific implementation:
+    static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
+
+# if (defined(__clang__) || DIMTYPES_FORCE_APPROX)
+    if (!std::isfinite(a_x))
+      return NaN<F>;
+
+    // First, normalise the arg to the interval [0; +00):
+    bool  chSgn =  (a_x < 0);
+    if (chSgn)
+      a_x = - a_x;
+
+    // Then normalise it to the interval [0..Pi) (full period):
+    a_x   = FMod(a_x, Pi<F>);
+
+    // Then to the interval [0..Pi/2):
+    if (a_x > Pi_2<F>)
+    {
+      a_x   = Pi<F> - a_x;
+      chSgn = !chSgn;
+    }
+
+    // Finally, to the interval [0..Pi/4], and compute the function:
+    F res = NaN<F>;
+    if (a_x <= Pi_4<F>)
+      // XXX: For the moment, we do not have a separate Pade Approximant for
+      // Tan, so use the ratio. This may result in a larger error, but anyway,
+      // the error may be unbounded as x -> Pi/2:
+      res = SinPade<F>(a_x) / CosPade<F>(a_x);
+    else
+    {
+      F y = Pi_2<F> - a_x;
+      // Tan(x) = CoTan(y):
+      res = CosPade<F>(y)   / SinPade<F>(y);
+    }
+    return chSgn ? (-res) : res;
+# else
+    return std::tan(a_x);
+# endif
+  }
+
+  //-------------------------------------------------------------------------//
   // "SqRt" (Square Root) for an arbitrary real arg:                         //
   //-------------------------------------------------------------------------//
   // NB: This function is ALWAYS "constexpr", even in CLang <= 17:
@@ -1038,7 +1077,7 @@ namespace DimTypes::Bits::CEMaths
     // Complex "SqRt" has a separate specific implementation:
     static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
 
-# if (defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX)
+# if (defined(__clang__) || DIMTYPES_FORCE_APPROX)
     // Special Cases:
     if (!(a_x >= 0))
       return NaN<F>;
@@ -1115,7 +1154,7 @@ namespace DimTypes::Bits::CEMaths
     // Complex "SqRt" has a separate specific implementation:
     static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
 
-# if (defined(__clang__) || DIMTYPES_FORCE_PADE_APPROX)
+# if (defined(__clang__) || DIMTYPES_FORCE_APPROX)
     if (std::isinf(a_x))
       return (a_x > 0) ? Inf<F> : -Inf<F>;
     else
@@ -1286,6 +1325,19 @@ namespace DimTypes::Bits::CEMaths
     std::complex<T>  cosZ(reCos, imCos);
     std::complex<T>  sinZ(reSin, imSin);
     return std::make_pair(cosZ,  sinZ) ;
+  }
+
+  //-------------------------------------------------------------------------//
+  // Complex "Tan":                                                          //
+  //-------------------------------------------------------------------------//
+  // NB: This function is ALWAYS "constexpr", even in CLang <= 17:
+  //
+  template<typename T>
+  constexpr std::complex<T> Tan(std::complex<T> a_z)
+  {
+    // Complex arg: Compute Cos and Sin together:
+    auto   cs = CosSin(a_z);
+    return std::get<1>(cs) / std::get<0>(cs);
   }
 
   //-------------------------------------------------------------------------//

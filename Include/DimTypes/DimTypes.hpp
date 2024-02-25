@@ -414,6 +414,7 @@ namespace DimTypes
   using Bits::CEMaths::Log;
   using Bits::CEMaths::Cos;
   using Bits::CEMaths::Sin;
+  using Bits::CEMaths::Tan;
   using Bits::CEMaths::CosSin;
   using Bits::CEMaths::SqRt;
   using Bits::CEMaths::CbRt;
