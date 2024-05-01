@@ -306,7 +306,32 @@
      DimTypes::DimQ \
     <DimTypes::Bits::DimExp(unsigned(DimsE::GET_DIM_NAME DimDcl)),    \
      DimTypes::Bits::MkUnit(unsigned(DimsE::GET_DIM_NAME DimDcl), 0), \
-     RepT>;
+     RepT>; \
+  /*-----------------------------------------------------------------------*/ \
+  /* Simplified Conversion: "To_{DimName}" (assuming the FundUnit):        */ \
+  /*-----------------------------------------------------------------------*/ \
+  template<uint64_t E, uint64_t U> \
+  constexpr DimTypes::DimQ   \
+    <E, \
+     DimTypes::Bits::SetUnit(U, unsigned(DimsE:: GET_DIM_NAME DimDcl), 0),  \
+     RepT> \
+  MK_CONV_FUNC_NAME0 DimDcl (DimTypes::DimQ<E,U,RepT> a_dimq) \
+  { \
+    constexpr unsigned Dim       = unsigned(DimsE::GET_DIM_NAME  DimDcl);   \
+    constexpr unsigned OldUnit   = DimTypes::Bits::GetFld    (U, Dim);      \
+    constexpr auto     ExpNumDen = \
+      DimTypes::Bits::GetNumerAndDenom(DimTypes::Bits::GetFld(E, Dim));     \
+    constexpr int      Numer     = ExpNumDen.first;  \
+    constexpr unsigned Denom     = ExpNumDen.second; \
+    return \
+      DimTypes::DimQ<E, DimTypes::Bits::SetUnit(U, Dim, 0), RepT>           \
+      ( \
+        a_dimq.Magnitude() * \
+        DimTypes::Bits::FracPow<Numer, Denom, RepT>     \
+          /* OldScale / NewScale: */ \
+          (UnitScale<Dim, OldUnit> / UnitScale<Dim, 0>) \
+      ); \
+  }
 
 //---------------------------------------------------------------------------//
 // "MK_ANOTHER_UNIT", "MK_UNIT_IMPL":                                        //
@@ -386,9 +411,9 @@
       ); \
   }
 
-//---------------------------------------------------------------------------//
+//===========================================================================//
 // NAME CONCATENATIONS AND STRINGIFICATION:                                  //
-//---------------------------------------------------------------------------//
+//===========================================================================//
 // XXX: Why are they required in the first place?   That is, why can't we use
 // "##" concatenations directly in the calling macros? -- For some reason, in
 // the latter case,  component names may not get fully evaluated,  so we need
@@ -418,6 +443,11 @@
 #undef  MK_CONV_FUNC_NAME
 #endif
 #define MK_CONV_FUNC_NAME(DimName, UnitName)    To_##DimName##_##UnitName
+
+#ifdef  MK_CONV_FUNC_NAME0
+#undef  MK_CONV_FUNC_NAME0
+#endif
+#define MK_CONV_FUNC_NAME0(DimName, ...)        To_##DimName
 
 #ifdef  STRINGIFY_NAME
 #undef  STRINGIFY_NAME
