@@ -2,7 +2,7 @@
 //===========================================================================//
 //                            "Tests/DimTests.cpp":                          //
 //===========================================================================//
-#define  DIMTYPES_FORCE_APPROX 1
+#define  DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL 1
 #include "DimTypes/DimTypes.hpp"
 #include <cstdio>
 
