@@ -115,8 +115,8 @@ namespace
         asinErrs.Update(x, asinX, std::asin(x));
 
         // Sin(ASin):
-        F backX = Sin<F>(asinX);
-        asinErrs.Update(asinX, backX, x);
+        F bsX = Sin<F>(asinX);
+        asinErrs.Update(asinX, bsX, x);
       }
 
       // ACos:
@@ -126,8 +126,8 @@ namespace
         acosErrs.Update(x, acosX, std::acos(x));
 
         // Cos(ACos):
-        F backX = Cos<F>(acosX);
-        acosErrs.Update(acosX, backX, x);
+        F bcX = Cos<F>(acosX);
+        acosErrs.Update(acosX, bcX, x);
       }
 
       // ATan2:
