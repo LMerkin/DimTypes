@@ -11,6 +11,7 @@
 #include <complex>
 #include <utility>
 #include <type_traits>
+#include <iostream>
 
 namespace DimTypes::Bits::CEMaths
 {
@@ -561,6 +562,140 @@ namespace DimTypes::Bits::CEMaths
   }
 
   //=========================================================================//
+  // "ATanPade":                                                             //
+  //=========================================================================//
+  // Pade approximants for atan(x), |x| <= 1, centered at x = 0;
+  // Compared to other elementary functions, atan(x) requires relatively
+  // lengthy Pade approximants to achieve the required accuracy:
+  // XXX: A rational Pade approximation may not be the most efficient choice in
+  // this case; Chebyshev approximation constructed using the Remez algorithm
+  // might be better. However, it may not preserbe the exact value and derivat-
+  // ives at x=0. Anoher possibiliy is to use a muli-point atan approximation:
+  //
+  template<typename F>
+  constexpr F ATanPade(F a_x);
+
+  //-------------------------------------------------------------------------//
+  // ATanPade<float>: (11,8)th-Order Pade Approximant:                       //
+  //-------------------------------------------------------------------------//
+  // Eps<float> = 2^(-23) =~ 1.2e-7,
+  // the abs precision of the (11,8)th-order approximant is ~3.7e-8:
+  //
+  template<>
+  constexpr float ATanPade<float>(float a_x)
+  {
+    assert(-1.0f <= a_x && a_x <= 1.0f);
+
+    constexpr float a11 = float(- 16384.0 / 72747675.0);
+    constexpr float  a9 = float(  16384.0 /  1322685.0);
+    constexpr float  a7 = float(   3159.0 /    11305.0);
+    constexpr float  a5 = float(   6139.0 /     4845.0);
+    constexpr float  a3 = float(    113.0 /       57.0);
+
+    constexpr float  b8 = float(    231.0 /     4199.0);
+    constexpr float  b6 = float(    924.0 /     1615.0);
+    constexpr float  b4 = float(    594.0 /      323.0);
+    constexpr float  b2 = float(     44.0 /       19.0);
+
+    float            x2 = a_x * a_x;
+    return
+      (((((a11 * x2 + a9) * x2 + a7) * x2 + a5) * x2 + a3) * x2 + 1.0f) * a_x /
+       ((((b8  * x2 + b6) * x2 + b4) * x2 + b2) * x2 + 1.0f);
+  }
+
+  //-------------------------------------------------------------------------//
+  // ATanPade<double>: (21,20)th-Order Pade Approximant:                     //
+  //-------------------------------------------------------------------------//
+  // Eps<double> = 2^(-52) =~ 2.2e-16,
+  // the abs precision of the (21,20)th-order approximant is ~1.1e-16:
+  //
+  template<>
+  constexpr double ATanPade<double>(double a_x)
+  {
+    assert(-1.0 <= a_x && a_x <= 1.0);
+
+    constexpr double a21 = 68719476736.0 / 65261681526586545.0;
+    constexpr double a19 =   562144147.0 /     2456679146493.0;
+    constexpr double a17 =   350944637.0 /       43099634149.0;
+    constexpr double a15 =   326695412.0 /        2925314535.0;
+    constexpr double a13 =      140612.0 /            181753.0;
+    constexpr double a11 =      153386.0 /             50061.0;
+    constexpr double  a9 =      100454.0 /             13653.0;
+    constexpr double  a7 =     1504228.0 /            138047.0;
+    constexpr double  a5 =       25908.0 /              2665.0;
+    constexpr double  a3 =         589.0 /               123.0;
+
+    constexpr double b20 =        2261.0 /         156835045.0;
+    constexpr double b18 =        4522.0 /           4091349.0;
+    constexpr double b16 =       33915.0 /           1363783.0;
+    constexpr double b14 =      348840.0 /           1363783.0;
+    constexpr double b12 =       67830.0 /             47027.0;
+    constexpr double b10 =       81396.0 /             16687.0;
+    constexpr double  b8 =      203490.0 /             19721.0;
+    constexpr double  b6 =      271320.0 /             19721.0;
+    constexpr double  b4 =        5985.0 /               533.0;
+    constexpr double  b2 =         210.0 /                41.0;
+
+    double            x2 = a_x * a_x;
+    return
+      ((((((((((a21 * x2 + a19) * x2 + a17) * x2 + a15) * x2 + a13) * x2 + a11)
+                    * x2 +  a9) * x2 +  a7) * x2 +  a5) * x2 +  a3) * x2 + 1.0)
+      * a_x /
+      ((((((((((b20 * x2 + b18) * x2 + b16) * x2 + b14) * x2 + b12) * x2 + b10)
+                    * x2 +  b8) * x2 +  b6) * x2 +  b4) * x2 +  b2) * x2 + 1.0);
+  }
+
+  //-------------------------------------------------------------------------//
+  // ATanPade<long double>: (27,24)th-Order Pade Approximant:                //
+  //-------------------------------------------------------------------------//
+  // Eps<long double> = 2^(-63) =~ 1.1e-19,
+  // the abs precision of the (27,24)th-order approximant is ~1.8e-20:
+  //
+  template<>
+  constexpr long double ATanPade<long double>(long double a_x)
+  {
+    assert(-1.0L <= a_x && a_x <= 1.0L);
+
+    constexpr long double a27 = -17592186044416.0L / 13619948432012945752275.0L;
+    constexpr long double a25 =  17592186044416.0L /    38803271886076768525.0L;
+    constexpr long double a23 =    567661032929.0L /        7645964903660447.0L;
+    constexpr long double a21 =     86486630155.0L /          32170960323957.0L;
+    constexpr long double a19 =    456530944307.0L /          10723653441319.0L;
+    constexpr long double a17 =     61212140501.0L /            166000827265.0L;
+    constexpr long double a15 =      1543545098.0L /               791736855.0L;
+    constexpr long double a13 =     27146901662.0L /              4064249189.0L;
+    constexpr long double a11 =       116611930.0L /                 7625233.0L;
+    constexpr long double  a9 =         8318998.0L /                  352359.0L;
+    constexpr long double  a7 =         4750009.0L /                  195755.0L;
+    constexpr long double  a5 =           66263.0L /                    4165.0L;
+    constexpr long double  a3 =             307.0L /                      51.0L;
+
+    constexpr long double b24 =           98325.0L /             19293438101.0L;
+    constexpr long double b22 =          235980.0L /               665290969.0L;
+    constexpr long double b20 =         1297890.0L /               150226993.0L;
+    constexpr long double b18 =        15863100.0L /               150226993.0L;
+    constexpr long double b16 =        16223625.0L /                21460999.0L;
+    constexpr long double b14 =        25957800.0L /                 7540351.0L;
+    constexpr long double b12 =          865260.0L /                   82861.0L;
+    constexpr long double b10 =         5191560.0L /                  240499.0L;
+    constexpr long double  b8 =          170775.0L /                    5593.0L;
+    constexpr long double  b6 =         1138500.0L /                   39151.0L;
+    constexpr long double  b4 =           14850.0L /                     833.0L;
+    constexpr long double  b2 =             108.0L /                      17.0L;
+
+    long double            x2 = a_x * a_x;
+    return
+      (((((((((((((a27 * x2 + a25) * x2 + a23) * x2 + a21) * x2 + a19)
+                       * x2 + a17) * x2 + a15) * x2 + a13) * x2 + a11)
+                       * x2 +  a9) * x2 +  a7) * x2 +  a5) * x2 +  a3)
+                       * x2 + 1.0L)
+      * a_x /
+       ((((((((((((b24 * x2 + b22) * x2 + b20) * x2 + b18) * x2 + b16)
+                       * x2 + b14) * x2 + b12) * x2 + b10) * x2 + b8)
+                       * x2 +  b6) * x2 +  b4) * x2 +  b2) * x2 + 1.0L);
+  }
+
+  //=========================================================================//
   // "SqRtPade":                                                             //
   //=========================================================================//
   // Pade approximants for sqrt(x), 1/2 <= x < 1, centered at x = 3/4:
@@ -793,7 +928,7 @@ namespace DimTypes::Bits::CEMaths
   }
 
   //=========================================================================//
-  // "Exp", "Log", "Pow", "Cos", "Sin", "SqRt", "CbRt" for any real types:   //
+  // Elementary Mathematical Functions for any real types:                   //
   //=========================================================================//
   //-------------------------------------------------------------------------//
   // "Exp" for an arbitrary real arg:                                        //
@@ -1062,7 +1197,87 @@ namespace DimTypes::Bits::CEMaths
     }
     return chSgn ? (-res) : res;
 # else
+    // Use the standard impl:
     return std::tan(a_x);
+# endif
+  }
+
+  //-------------------------------------------------------------------------//
+  // "ATan" for an arbitrary real arg:                                       //
+  //-------------------------------------------------------------------------//
+  // NB: This function is ALWAYS "constexpr", even in CLang <= 18:
+  //
+  template<typename F>
+  constexpr F ATan (F a_x)
+  { 
+    // Complex "ATan" is not implemented yet:
+    static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
+  
+# if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
+    if (a_x == F(0.0))
+      return   F(0.0);
+
+    bool chSgn = false;
+    if (a_x <  F(0.0))
+    {
+      a_x = - a_x;
+      chSgn = true;
+    }
+    if (std::isinf(a_x))
+      return chSgn ? (-Pi_2<F>) : Pi_2<F>;
+
+    // Then normalise the arg to the interval (0..1]:
+    bool inv = false;
+    if (a_x > F(1.0))
+    {
+      a_x = F(1.0) / a_x;
+      inv = true;
+    }
+    // Now use the Pade Approximant:
+    F   res = ATanPade<F>(a_x);
+
+    if (inv)
+      res = Pi_2<F> - res;
+    if (chSgn)
+      res = - res;
+    return res;
+# else
+    // Use the standard impl:
+    return std::atan(a_x);
+# endif
+  }
+
+  //-------------------------------------------------------------------------//
+  // "ATan2" for an arbitrary real arg:                                      //
+  //-------------------------------------------------------------------------//
+  template<typename F>
+  constexpr F ATan2(F a_y, F a_x)
+  {
+    // The args must be real:
+    static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
+
+# if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
+    // "a_y" has the sign of Sin, "a_x" has the sign of Cos:
+    // XXX: this impl is NOT completely conformant to that of std::atan2; some
+    // edge cases are handled differently here:
+    return
+      (a_x >  F(0.0))                     // 1st and 4th Quadrants
+      ? ATan<F>(a_y  /  a_x)
+      :
+      (a_x <  F(0.0))
+      ? ((a_y >= F(0.0))
+         ? ATan<F>(a_y  / a_x) + Pi<F>    // 2nd Quadrant
+         : ATan<F>(a_y  / a_x) - Pi<F>)   // 3rd Quadrant
+      :
+      ((a_y > F(0.0))
+       ?  Pi_2<F>                         // Pos Y Axis
+       :
+       (a_y < F(0.0))                     // Neg Y Axis
+       ? -Pi_2<F>
+       : NaN<F>);                         // 0/0 is UNDEFINED
+# else
+    // Use the standard impl:
+    return std::atan2(a_y, a_x);
 # endif
   }
 
@@ -1235,6 +1450,58 @@ namespace DimTypes::Bits::CEMaths
 # else
     // GCC, and NOT forcing the Pade approximants method:
     return std::cbrt (a_x);
+# endif
+  }
+
+  //-------------------------------------------------------------------------//
+  // "ASin" for an arbitrary real arg:                                       //
+  //-------------------------------------------------------------------------//
+  template<typename F>
+  constexpr F ASin (F a_x)
+  {
+    // Complex "ASin" is not implemented yet:
+    static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
+
+# if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
+    return
+      (-F(1.0) < a_x && a_x < F(1.0))
+      ? ATan(a_x / SqRt(F(1.0) - a_x * a_x))
+      :
+      (a_x == -F(1.0))
+      ? -Pi_2<F>
+      :
+      (a_x ==  F(1.0))
+      ?  Pi_2<F>
+      :  NaN<F>;
+# else
+    // Use the standard impl:
+    return std::asin(a_x);
+# endif
+  }
+
+  //-------------------------------------------------------------------------//
+  // "ACos" for an arbitrary real arg:                                       //
+  //-------------------------------------------------------------------------//
+  template<typename F>
+  constexpr F ACos (F a_x)
+  {
+    // Complex "ACos" is not implemented yet:
+    static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
+
+# if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
+    return
+      (F(0.0) < a_x   && a_x <= F(1.0))
+      ? ATan(SqRt(F(1.0) - a_x * a_x) / a_x)
+      :
+      (a_x == F(0.0))
+      ? Pi_2<F>
+      :
+      (-F(1.0) <= a_x && a_x <  F(0.0))
+      ? ATan(SqRt(F(1.0) - a_x * a_x) / a_x) + Pi<F>
+      : NaN<F>;
+# else
+    // Use the standard impl:
+    std::acos(a_x);
 # endif
   }
 
