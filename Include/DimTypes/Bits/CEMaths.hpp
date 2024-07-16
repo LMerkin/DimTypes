@@ -1501,7 +1501,7 @@ namespace DimTypes::Bits::CEMaths
       : NaN<F>;
 # else
     // Use the standard impl:
-    std::acos(a_x);
+    return std::acos(a_x);
 # endif
   }
 
