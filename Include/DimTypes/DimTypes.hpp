@@ -404,6 +404,7 @@ namespace DimTypes
   using Bits::CEMaths::Eps;
 
   using Bits::CEMaths::SqRt2;
+  using Bits::CEMaths::SqRt1_2;
   using Bits::CEMaths::SqRt3;
 
   using Bits::CEMaths::Pi;
