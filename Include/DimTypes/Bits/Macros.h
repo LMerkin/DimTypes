@@ -9,6 +9,7 @@
 #include <cassert>
 #include <stdexcept>
 #include <array>
+#include <format>
 
 //===========================================================================//
 // MACROS for User-Level Declaration of Dimensions and Units:                //
@@ -575,6 +576,39 @@
   /* Always allow a reserve of at least 1 byte: */ \
   if (N <= 1) \
     throw std::runtime_error("Put(DimQ): Buffer OverFlow");
+
+//===========================================================================//
+// "MK_DIMS_FMT":                                                            //
+//===========================================================================//
+// Creates a Formatter (for use with "std::format") for "DimQ"s previously dec-
+// lared by "DECLARE_DIMS". Because the Formatter requires specialisation of a
+// class declared in "std", it cannot in general be created  in "DECLARE_DIMS"
+// itself, since the latter macro may be invoked inside any namespace "DIMS_NS".
+// We thus need a separate macro, "MK_DIMS_FMT". It is to be invoked OUTSIDE of
+// any namespaces, and after the  "DECLARE_DIMS" declaration.   The name of the
+// namespace ("DIMS_NS") in which "DECLARE_DIMS" was invoked, if exists, must be
+// passed to "MK_DIMS_FMT". This is an unpleasant hack...
+//
+#ifdef  MK_DIMS_FMT
+#undef  MK_DIMS_FMT
+#endif
+#define MK_DIMS_FMT(DIMS_NS) \
+  namespace std \
+  { \
+    template<uint64_t E, uint64_t U, typename RepT> \
+    struct formatter<DimTypes::DimQ<E, U, RepT>>    \
+    { \
+      constexpr auto parse(std::format_parse_context& a_ctx) \
+        { return a_ctx.begin(); } \
+      \
+      auto format(DimTypes::DimQ<E, U, RepT> a_dimq, format_context& a_ctx) \
+      const \
+      { \
+        return std::format_to(a_ctx.out(), "{}", \
+               DIMS_NS::ToStr(a_dimq).data());   \
+      } \
+    };  \
+  }
 
 //===========================================================================//
 // Run-Time Checks:                                                          //

@@ -28,6 +28,8 @@ namespace
 # pragma  clang diagnostic pop
 # endif
 
+MK_DIMS_FMT()
+
 int main()
 {
   using namespace std;
@@ -98,10 +100,10 @@ int main()
   auto dl      = y * z;
   auto cmx     = c - x;
 
-  printf("x    = %s\n",   ToStr(x)  .data());
-  printf("     = %s\n",   ToStr(y)  .data());
-  printf("1/x  = %s\n",   ToStr(z)  .data());
-  printf("x/x  = %s\n",   ToStr(dl) .data());
-  printf("c-x  = %s\n",   ToStr(cmx).data());
+  cout << "x    = " << ToStr(x).data() << endl;
+  cout << "     = " << ToStr(y).data() << endl;
+  cout << format("1/x  = {}", z)       << endl;
+  cout << format("x/x  = {}", dl)      << endl;
+  cout << format("c-x  = {}", cmx)     << endl;
   return 0;
 }
