@@ -283,8 +283,8 @@ namespace DimTypes
     DIMQ_CMP(<)
     DIMQ_CMP(<=)
   
-    constexpr bool IsZero  () const  { return m_val == RepT(0.0); }
-    constexpr bool IsFinite() const  { return IsFinite(m_val); }
+    constexpr bool IsZero  () const  { return m_val == RepT(0.0);   }
+    constexpr bool IsFinite() const  { return std::isfinite(m_val); }
 
     // NB: The following methods will not compile if the field "RepT" is not
     // ordered (eg for complex numbers). However, if they  are not  actually
