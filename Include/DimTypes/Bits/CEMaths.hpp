@@ -142,6 +142,22 @@ namespace DimTypes::Bits::CEMaths
     double(Ln3_4<long  double>);
   // Ln3_4<float> is proibably not required
 
+  //-------------------------------------------------------------------------//
+  // "ApproxEqual":                                                          //
+  //-------------------------------------------------------------------------//
+  template<typename F>
+  constexpr bool ApproxEqual(F a_x, F a_y)
+  {
+    F err =
+      Abs
+      (
+        Abs(a_y) < F(1.0)
+        ? a_x - a_y
+        : a_x / a_y - F(1.0)
+      );
+    return err < Eps<F> * F(100.0);
+  }
+
   //=========================================================================//
   // Pade Approximants for Exp, Sin and Cos:                                 //
   //=========================================================================//
