@@ -300,12 +300,17 @@ namespace DimTypes
       static_assert(UnitsOK(E,U,V), "ERROR: Units do not unify");
       // NB: The Tolerance is 100*Eps. It is absolute for the LHS < 1, and
       // relative otherwise:
+      return ApproxEqual(m_val, a_right.m_val);
+    }
+
+    constexpr static bool ApproxEqual(RepT a_left, RepT a_right)
+    {
       RepT err =
         Bits::CEMaths::Abs
         (
-          Bits::CEMaths::Abs(m_val) < 1.0
-          ? m_val - a_right.m_val
-          : m_val / a_right.m_val - 1.0
+          Bits::CEMaths::Abs(a_left) < 1.0
+          ? a_left - a_right
+          : a_left / a_right - 1.0
         );
       return err < Bits::CEMaths::Eps<RepT> * 100.0;
     }
