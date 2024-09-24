@@ -95,34 +95,38 @@ namespace DimTypes
     // 1st arg's units can still be used:
     //
     // Addition:
-    template<uint64_t V>
-    constexpr DimQ operator+   (DimQ<E,V,RepT,MaxDims> a_right) const
+    template<uint64_t F, uint64_t V>
+    constexpr DimQ operator+   (DimQ<F,V,RepT,MaxDims> a_right) const
     {
-      static_assert(En::UnitsOK(E,U,V), "ERROR: Units do not unify");
+      static_assert(E == F,             "ERROR: +: Different Dims");
+      static_assert(En::UnitsOK(E,U,V), "ERROR: +: Units do not unify");
       return DimQ(m_val + a_right.Magnitude());
     }
   
-    template<uint64_t V>
-    constexpr DimQ& operator+= (DimQ<E,V,RepT,MaxDims> a_right)
+    template<uint64_t F, uint64_t V>
+    constexpr DimQ& operator+= (DimQ<F,V,RepT,MaxDims> a_right)
     {
-      static_assert(En::UnitsOK(E,U,V), "ERROR: Units do not unify");
+      static_assert(E == F,             "ERROR: +=: Different Dims");
+      static_assert(En::UnitsOK(E,U,V), "ERROR: +=: Units do not unify");
       m_val += a_right.Magnitude();
       return *this;
     }
   
     // Subtraction of "DimQs":
     // Same constraints as for addition:
-    template<uint64_t V>
-    constexpr DimQ operator- (DimQ<E,V,RepT,MaxDims>  a_right) const
+    template<uint64_t F, uint64_t V>
+    constexpr DimQ operator- (DimQ<F,V,RepT,MaxDims>  a_right) const
     {
-      static_assert(En::UnitsOK(E,U,V), "ERROR: Units do not unify");
+      static_assert(E == F,             "ERROR: -: Different Dims");
+      static_assert(En::UnitsOK(E,U,V), "ERROR: -: Units do not unify");
       return DimQ(m_val - a_right.Magnitude());
     }
   
-    template<uint64_t V>
-    constexpr DimQ& operator-=(DimQ<E,V,RepT,MaxDims> a_right)
+    template<uint64_t F, uint64_t V>
+    constexpr DimQ& operator-=(DimQ<F,V,RepT,MaxDims> a_right)
     {
-      static_assert(En::UnitsOK(E,U,V), "ERROR: Units do not unify");
+      static_assert(E == F,             "ERROR: -= : Different Dims");
+      static_assert(En::UnitsOK(E,U,V), "ERROR: -= Units do not unify");
       m_val -= a_right.Magnitude();
       return *this;
     }
