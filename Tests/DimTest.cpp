@@ -18,7 +18,7 @@ namespace
 # pragma  clang diagnostic ignored "-Wunused-const-variable"
 # endif
   DECLARE_DIMS(
-    double, 8,
+    double, ,
     (Len,  m,   (km,  1000.0),  (AU, 1.495978706996262e+11)),
     (Time, sec, (day, 86400.0)),
     (Mass, kg)
