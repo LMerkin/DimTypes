@@ -69,13 +69,13 @@
 
 #define EXPAND_DIMS3(...) __VA_ARGS__
 
-#define FOR_EACH_DIM(Action, RepT, ...)                   \
-  __VA_OPT__(EXPAND_DIMS(FOR_EACH_DIM_HELPER(Action, RepT, __VA_ARGS__)))
+#define FOR_EACH_DIM(Action, ...)                   \
+  __VA_OPT__(EXPAND_DIMS(FOR_EACH_DIM_HELPER(Action, __VA_ARGS__)))
 
-#define FOR_EACH_DIM_HELPER(Action, RepT, Arg1, ...)      \
-  /* NB: Arg1 is assumed to be enclosed in ()s! */        \
-  Action(RepT, Arg1)                                      \
-  __VA_OPT__(FOR_EACH_DIM_AGAIN PARENS (Action, RepT, __VA_ARGS__))
+#define FOR_EACH_DIM_HELPER(Action, Arg1, ...)      \
+  /* NB: Arg1 is assumed to be enclosed in ()s! */  \
+  Action(Arg1)                                      \
+  __VA_OPT__(FOR_EACH_DIM_AGAIN PARENS (Action, __VA_ARGS__))
 
 #define FOR_EACH_DIM_AGAIN() FOR_EACH_DIM_HELPER
 
@@ -127,22 +127,22 @@
 
 #define FOR_EACH_OTHER_UNIT_AGAIN() FOR_EACH_OTHER_UNIT_HELPER
 
-#define FOR_EACH_OTHER_UNIT(Action, RepT, DimName, ...) \
-  __VA_OPT__(EXPAND_UNITS(FOR_EACH_OTHER_UNIT_HELPER(Action, RepT, DimName, \
+#define FOR_EACH_OTHER_UNIT(Action, DimName, ...)   \
+  __VA_OPT__(EXPAND_UNITS(FOR_EACH_OTHER_UNIT_HELPER(Action, DimName, \
                                                      __VA_ARGS__)))
 
-#define FOR_EACH_OTHER_UNIT_HELPER(Action, RepT, DimName, Arg1, ...)  \
-  /* NB: Arg1 is assumed to be enclosed in ()s! */      \
-  Action(RepT, DimName, Arg1)                           \
+#define FOR_EACH_OTHER_UNIT_HELPER(Action, DimName, Arg1, ...)  \
+  /* NB: Arg1 is assumed to be enclosed in ()s! */  \
+  Action(DimName, Arg1)                         \
   __VA_OPT__(FOR_EACH_OTHER_UNIT_AGAIN PARENS   \
-            (Action, RepT, DimName, __VA_ARGS__))
+            (Action,  DimName,  __VA_ARGS__))
 
 //===========================================================================//
 // "DECLARE_DIMS":                                                           //
 //===========================================================================//
 // Usage:
 // DECLARE_DIMS(
-//   RepT,
+//   RepT, [MaxDims],
 //   (FundUnitName [,(AnotherUnitName, AnotherUnitValInFundUnits)...]),
 //   ...
 // )
@@ -150,22 +150,35 @@
 // sation, the scale (value in the corresp Fundamental Unit) specialisation,
 // and a conversion function for arbitrary "DimQ"s into this Unit.
 // NB:
-// (*) With the naming conventions used, it is OK to have same-named Units for
-//     different Dims, though this is very rarely needed.
-// (*) Modular arithmetic is not used for Units,  so any Unit codes up to and
-//     including "PMask" are OK:
+// (*) "MaxDims" param may be empty, but the comma following it is mandatory;
+//     if specified explicitly, "MaxDims" may be 7, 8, or 9;
+// (*) with the naming conventions used, it is OK to have same-named Units for
+//     different Dims, though this is very rarely needed;
+// (*) modular arithmetic is not used for Units,  so any Unit codes up to and
+//     including the corresp "PMask" are OK:
 //
 #ifdef  DECLARE_DIMS
 #undef  DECLARE_DIMS
 #endif
-#define DECLARE_DIMS(RepT, ...) \
+#define DECLARE_DIMS(RepT, MaxDims, ...) \
+  /*-----------------------------------------------------------------------*/ \
+  /* "DimQ_MaxDims", "DimQ_RepT" and "DimQ_Encs":                          */ \
+  /*-----------------------------------------------------------------------*/ \
+  constexpr static unsigned   DimQ_MaxDims = \
+    ( unsigned{MaxDims} == 0 )  \
+    ? DimTypes::Bits::DefMaxDims \
+    : unsigned{MaxDims};   \
+  using                       DimQ_RepT    = RepT; \
+  using                       DimQ_Encs    = \
+    DimTypes::Bits::Encodings<RepT, DimQ_MaxDims>; \
+  \
   /*-----------------------------------------------------------------------*/ \
   /* "DimsE": Enum of all Dims to be used.                                 */ \
   /* Their encodings are assigned automatically, starting from 0:          */ \
   /*-----------------------------------------------------------------------*/ \
   enum class DimsE: unsigned \
   {  \
-    FOR_EACH_DIM(GET_DIM_NAME_COMMA, RepT, __VA_ARGS__) \
+    FOR_EACH_DIM(GET_DIM_NAME_COMMA, __VA_ARGS__) \
   }; \
   \
   /*-----------------------------------------------------------------------*/ \
@@ -173,21 +186,21 @@
   /* specialisation with actual Dims and Units encodings:                  */ \
   /*-----------------------------------------------------------------------*/ \
   template<unsigned Dim, unsigned Unit> \
-  char const* UnitNameStr = nullptr;    \
+  char const* UnitNameStr   = nullptr;  \
   \
   template<unsigned Dim, unsigned Unit> \
-  RepT UnitScale          = RepT(NAN);  \
+  DimQ_RepT UnitScale = DimQ_RepT(NAN); \
   \
   /*-----------------------------------------------------------------------*/ \
   /* For each Dim, declare all its Units, their vals and conversion funcs: */ \
   /*-----------------------------------------------------------------------*/ \
-  FOR_EACH_DIM(MK_DIM_UNITS, RepT, __VA_ARGS__) \
+  FOR_EACH_DIM(MK_DIM_UNITS, __VA_ARGS__) \
   \
   /*-----------------------------------------------------------------------*/ \
   /* Finally, generate a "DimQ" output function.                           */ \
   /* It uses the above-generated templates:                                */ \
   /*-----------------------------------------------------------------------*/ \
-  MK_DIMQ_OUTPUT(RepT)
+  MK_DIMQ_OUTPUT
 
 //===========================================================================//
 // Helper Methods for "DECLARE_DIMS":                                        //
@@ -196,14 +209,14 @@
 // "GET_DIM_NAME_COMMA", "GET_DIM_NAME":                                     //
 //---------------------------------------------------------------------------//
 // This is an "Action" for use with "FOR_EACH_DIM".
-// Arg: (RepT, DimDcl=(DimName, FundUnitName [, OtherUnitDcl...])):
+// Arg: (DimDcl=(DimName, FundUnitName [, OtherUnitDcl...])):
 //
 #ifdef  GET_DIM_NAME_COMMA
 #undef  GET_DIM_NAME_COMMA
 #endif
 // NB: "DimDcl" is already enclosed in ()s, so "GET_DIM_NAME" is applied by
 // juxtaposition. Also note the COMMA separator:
-#define GET_DIM_NAME_COMMA(_RepT, DimDcl) GET_DIM_NAME DimDcl ,
+#define GET_DIM_NAME_COMMA(DimDcl) GET_DIM_NAME DimDcl ,
 
 #ifdef  GET_DIM_NAME
 #undef  GET_DIM_NAME
@@ -241,7 +254,7 @@
 #undef  GET_OTHER_UNITS
 #endif
 #define GET_OTHER_UNITS(DimName, _FundUnitName, ...) \
-  FOR_EACH_OTHER_UNIT(GET_UNIT_NAME_COMMA, _RepT, DimName, __VA_ARGS__)
+  FOR_EACH_OTHER_UNIT(GET_UNIT_NAME_COMMA, DimName, __VA_ARGS__)
 
 //---------------------------------------------------------------------------//
 // "GET_UNIT_NAME*", "GET_UNIT_VAL":                                         //
@@ -251,7 +264,7 @@
 #endif
 // NB: "UnitDcl" is already enclosed in ()s, so "GET_UNIT_NAME" is applied by
 // juxtaposition. Also note the COMMA separator:
-#define GET_UNIT_NAME_COMMA(_DimName, _FundUnitName, UnitDcl) \
+#define GET_UNIT_NAME_COMMA(_DimName, UnitDcl) \
   GET_UNIT_NAME UnitDcl ,
 
 #ifdef  GET_UNIT_NAME
@@ -268,19 +281,19 @@
 // "MK_DIM_UNITS":                                                           //
 //---------------------------------------------------------------------------//
 // This is also an "Action" for use with "FOR_EACH_DIM".
-// Arg: (RepT, DimDcl=(DimName,  FundUnitName [, OtherUnitDcl...])),
-//            UnitDcl=(UnitName, UnitValInFundUnits)  :
+// Arg: (DimDcl=(DimName,  FundUnitName [, OtherUnitDcl...])),
+//       UnitDcl=(UnitName, UnitValInFundUnits)  :
 // That is, again, "DimDcl" is already enclosed in ()s:
 //
 #ifdef  MK_DIM_UNITS
 #undef  MK_DIM_UNITS
 #endif
-#define MK_DIM_UNITS(RepT, DimDcl) \
+#define MK_DIM_UNITS(DimDcl) \
   /*-----------------------------------------------------------------------*/ \
   /* Check that this Dim is within the limits:                             */ \
   /*-----------------------------------------------------------------------*/ \
-  static_assert(unsigned(DimsE::GET_DIM_NAME DimDcl) <         \
-                DimTypes::Bits::NDims, "Too many Dimensions: " \
+  static_assert(unsigned(DimsE::GET_DIM_NAME DimDcl) < DimQ_MaxDims, \
+                "Too many Dimensions: " \
                 STRINGIFY_NAME(GET_DIM_NAME DimDcl)); \
   /*-----------------------------------------------------------------------*/ \
   /* "{Dim}UnitsE" Enum:                                                   */ \
@@ -293,9 +306,9 @@
   /*-----------------------------------------------------------------------*/ \
   /* "UnitName", "UnitScale"... specialisations for Fund and Other Units:  */ \
   /*-----------------------------------------------------------------------*/ \
-  MK_UNIT_IMPL( RepT, GET_DIM_NAME DimDcl,   GET_FUND_UNIT DimDcl, 1.0)     \
+  MK_UNIT_IMPL( GET_DIM_NAME DimDcl,   GET_FUND_UNIT DimDcl, 1.0)     \
   \
-  FOR_EACH_OTHER_UNIT(MK_ANOTHER_UNIT, RepT, GET_DIM_NAME  DimDcl,          \
+  FOR_EACH_OTHER_UNIT(MK_ANOTHER_UNIT, GET_DIM_NAME  DimDcl,          \
                       GET_OTHER_UNITS_DCLS   DimDcl) \
   \
   /*-----------------------------------------------------------------------*/ \
@@ -304,31 +317,35 @@
   static_assert \
     (unsigned(MK_UNITS_ENUM_NAME DimDcl::GET_FUND_UNIT DimDcl) == 0); \
   using GET_DIM_NAME DimDcl = \
-     DimTypes::DimQ \
-    <DimTypes::Bits::DimExp(unsigned(DimsE::GET_DIM_NAME DimDcl)),    \
-     DimTypes::Bits::MkUnit(unsigned(DimsE::GET_DIM_NAME DimDcl), 0), \
-     RepT>; \
+     DimTypes::DimQ   \
+    <DimQ_Encs::DimExp(unsigned(DimsE::GET_DIM_NAME DimDcl)),    \
+     DimQ_Encs::MkUnit(unsigned(DimsE::GET_DIM_NAME DimDcl), 0), \
+     DimQ_RepT,       \
+     DimQ_MaxDims>;   \
   /*-----------------------------------------------------------------------*/ \
   /* Simplified Conversion: "To_{DimName}" (assuming the FundUnit):        */ \
   /*-----------------------------------------------------------------------*/ \
   template<uint64_t E, uint64_t U> \
   constexpr DimTypes::DimQ   \
     <E, \
-     DimTypes::Bits::SetUnit(U, unsigned(DimsE:: GET_DIM_NAME DimDcl), 0),  \
-     RepT> \
-  MK_CONV_FUNC_NAME0 DimDcl (DimTypes::DimQ<E,U,RepT> a_dimq) \
+     DimQ_Encs::SetUnit(U, unsigned(DimsE:: GET_DIM_NAME DimDcl), 0),      \
+     DimQ_RepT,        \
+     DimQ_MaxDims>     \
+  MK_CONV_FUNC_NAME0 DimDcl  \
+  (DimTypes::DimQ<E, U, DimQ_RepT, DimQ_MaxDims> a_dimq) \
   { \
-    constexpr unsigned Dim       = unsigned(DimsE::GET_DIM_NAME  DimDcl);   \
-    constexpr unsigned OldUnit   = DimTypes::Bits::GetFld    (U, Dim);      \
+    constexpr unsigned Dim       = unsigned(DimsE::GET_DIM_NAME  DimDcl);  \
+    constexpr unsigned OldUnit   = DimQ_Encs::GetFld(U, Dim);      \
     constexpr auto     ExpNumDen = \
-      DimTypes::Bits::GetNumerAndDenom(DimTypes::Bits::GetFld(E, Dim));     \
+      DimQ_Encs::GetNumerAndDenom (DimQ_Encs::GetFld(E, Dim));     \
     constexpr int      Numer     = ExpNumDen.first;  \
     constexpr unsigned Denom     = ExpNumDen.second; \
     return \
-      DimTypes::DimQ<E, DimTypes::Bits::SetUnit(U, Dim, 0), RepT>           \
+      DimTypes::DimQ \
+      <E, DimQ_Encs::SetUnit(U, Dim, 0), DimQ_RepT, DimQ_MaxDims>  \
       ( \
         a_dimq.Magnitude() * \
-        DimTypes::Bits::FracPow<Numer, Denom, RepT>     \
+        DimQ_Encs::FracPow<Numer, Denom, DimQ_RepT>     \
           /* OldScale / NewScale: */ \
           (UnitScale<Dim, OldUnit> / UnitScale<Dim, 0>) \
       ); \
@@ -340,17 +357,17 @@
 #ifdef  MK_ANOTHER_UNIT
 #undef  MK_ANOTHER_UNIT
 #endif
-#define MK_ANOTHER_UNIT(RepT, DimName, UnitDcl)  \
-        MK_UNIT_IMPL(   RepT, DimName, \
+#define MK_ANOTHER_UNIT(DimName, UnitDcl)  \
+        MK_UNIT_IMPL(   DimName, \
                         GET_UNIT_NAME  UnitDcl, GET_UNIT_VAL UnitDcl)
 
 #ifdef  MK_UNIT_IMPL
 #undef  MK_UNIT_IMPL
 #endif
-#define MK_UNIT_IMPL(RepT, DimName, UnitName, UnitVal) \
-  static_assert(unsigned(MK_UNITS_ENTRY_NAME(DimName,UnitName)) <=      \
-                DimTypes::Bits::PMask, "Too many Units for " \
-                STRINGIFY_NAME(DimName)); \
+#define MK_UNIT_IMPL(DimName, UnitName, UnitVal) \
+  static_assert(unsigned(MK_UNITS_ENTRY_NAME(DimName,UnitName)) <= \
+                DimQ_Encs::PMask, \
+                "Too many Units for " STRINGIFY_NAME(DimName)); \
   /*-----------------------------------------------------------------------*/ \
   /* "UnitNameStr" Specialisation for this Unit:                           */ \
   /*-----------------------------------------------------------------------*/ \
@@ -363,24 +380,25 @@
   /* "UnitScale" Specialisation for this Unit:                             */ \
   /*-----------------------------------------------------------------------*/ \
   template<> \
-  inline constexpr RepT UnitScale     \
+  inline constexpr DimQ_RepT UnitScale     \
     <unsigned(DimsE::DimName), \
-     unsigned(MK_UNITS_ENTRY_NAME(DimName,UnitName))> = RepT(UnitVal); \
+     unsigned(MK_UNITS_ENTRY_NAME(DimName,UnitName))> = DimQ_RepT(UnitVal);   \
   /*-----------------------------------------------------------------------*/ \
   /* Convenience Type and Literals for this Dim and Unit:                  */ \
   /*-----------------------------------------------------------------------*/ \
   using MK_DIMQ_TYPE_ALIAS(DimName, UnitName) = \
      DimTypes::DimQ \
-    <DimTypes::Bits::DimExp(unsigned(DimsE::DimName)), \
-     DimTypes::Bits::MkUnit(unsigned(DimsE::DimName),  \
-                            unsigned(MK_UNITS_ENTRY_NAME(DimName,UnitName))), \
-     RepT>; \
+    <DimQ_Encs::DimExp(unsigned(DimsE::DimName)), \
+     DimQ_Encs::MkUnit(unsigned(DimsE::DimName),  \
+                       unsigned(MK_UNITS_ENTRY_NAME(DimName,UnitName))), \
+     DimQ_RepT,     \
+     DimQ_MaxDims>; \
   /* NB: Literal suffix is the UnitName. Thus, identical UnitNames for     */ \
   /* different Units are NOT allowed (the stopper is precisely HERE!).     */ \
   /* This should normally be OK:                                           */ \
-  constexpr MK_DIMQ_TYPE_ALIAS(DimName, UnitName) operator       \
+  constexpr MK_DIMQ_TYPE_ALIAS(DimName, UnitName) operator            \
     MK_LITERAL_OP(UnitName) (long double a_v)          \
-    { return MK_DIMQ_TYPE_ALIAS(DimName, UnitName)(RepT(a_v)); } \
+    { return MK_DIMQ_TYPE_ALIAS(DimName, UnitName)(DimQ_RepT(a_v)); } \
   /*-----------------------------------------------------------------------*/ \
   /* Conversion function for DimQs: "To_{DimName}_{UnitName}:              */ \
   /*-----------------------------------------------------------------------*/ \
@@ -388,27 +406,30 @@
   constexpr DimTypes::DimQ   \
     <E, \
      /* The Target Unit:  */ \
-     DimTypes::Bits::SetUnit \
+     DimQ_Encs::SetUnit        \
       (U, unsigned(DimsE::DimName), \
-          unsigned(MK_UNITS_ENTRY_NAME(DimName,UnitName))),  \
-     RepT> \
-  MK_CONV_FUNC_NAME(DimName,UnitName) (DimTypes::DimQ<E,U,RepT> a_dimq)    \
+          unsigned(MK_UNITS_ENTRY_NAME(DimName,UnitName))),    \
+     DimQ_RepT,     \
+     DimQ_MaxDims>  \
+  MK_CONV_FUNC_NAME(DimName,UnitName) \
+  (DimTypes::DimQ<E, U, DimQ_RepT, DimQ_MaxDims> a_dimq)       \
   { \
-    constexpr unsigned Dim       = unsigned(DimsE::DimName); \
-    constexpr unsigned OldUnit   = DimTypes::Bits::GetFld     (U, Dim);    \
+    constexpr unsigned Dim       = unsigned(DimsE::DimName);   \
+    constexpr unsigned OldUnit   = DimQ_Encs::GetFld(U, Dim);  \
     constexpr unsigned NewUnit   = \
-      unsigned(MK_UNITS_ENTRY_NAME(DimName,UnitName));       \
+      unsigned(MK_UNITS_ENTRY_NAME(DimName,UnitName));         \
     constexpr auto     ExpNumDen = \
-      DimTypes::Bits::GetNumerAndDenom(DimTypes::Bits::GetFld(E, Dim));    \
-    constexpr int      Numer     = ExpNumDen.first;  \
-    constexpr unsigned Denom     = ExpNumDen.second; \
+      DimQ_Encs::GetNumerAndDenom(DimQ_Encs::GetFld(E, Dim));  \
+    constexpr int      Numer     = ExpNumDen.first;            \
+    constexpr unsigned Denom     = ExpNumDen.second;           \
     return \
-      DimTypes::DimQ<E, DimTypes::Bits::SetUnit(U, Dim, NewUnit),  RepT>   \
+      DimTypes::DimQ \
+      <E, DimQ_Encs::SetUnit(U, Dim, NewUnit), DimQ_RepT, DimQ_MaxDims> \
       ( \
         a_dimq.Magnitude() * \
-        DimTypes::Bits::FracPow<Numer, Denom, RepT>  \
-          /* OldScale / NewScale: */                 \
-          (UnitScale<Dim, OldUnit> / UnitScale<Dim, NewUnit>) \
+        DimQ_Encs::FracPow<Numer, Denom>                       \
+          /* OldScale / NewScale: */                           \
+          (UnitScale<Dim, OldUnit> / UnitScale<Dim, NewUnit>)  \
       ); \
   }
 
@@ -469,26 +490,27 @@
 #ifdef  MK_DIMQ_OUTPUT
 #undef  MK_DIMQ_OUTPUT
 #endif
-#define MK_DIMQ_OUTPUT(RepT) \
+#define MK_DIMQ_OUTPUT \
   /*-----------------------------------------------------------------------*/ \
   /* "Put": Safe outputting of a "DimQ" into a given Buffer:               */ \
   /*-----------------------------------------------------------------------*/ \
-  template<uint64_t E, uint64_t U>     \
+  template<uint64_t E, uint64_t U>  \
   char* Put \
   ( \
-    DimTypes::DimQ<E, U, RepT> a_dimq, \
-    char*                      a_buff, \
-    char const*                a_end   \
+    DimTypes::DimQ<E, U, DimQ_RepT, DimQ_MaxDims> a_dimq, \
+    char*                                         a_buff, \
+    char const*                                   a_end   \
   ) \
   { \
-    char* curr = a_buff;               \
-    /* Available buffer size: */       \
-    int   N    = 0;                    \
-    CHECK_N /* Sets N */               \
+    char* curr = a_buff;           \
+    /* Available buffer size: */   \
+    int   N    = 0;                \
+    CHECK_N /* Sets N */           \
     /* First, the Magnitude (Real or Complex): */ \
-    curr = DimTypes::Bits::PutMagnitude(curr, N, a_dimq.Magnitude());        \
+    curr = DimQ_Encs::PutMagnitude(curr, N, a_dimq.Magnitude());         \
     CHECK_N \
-    /* Now the Units and Exponents, until the maximum (HARD-WIRED HERE!): */ \
+    /* Now the Units and Exponents, up to the AbsoluteMaxDims-1 = 8: */  \
+    /* Dims >= DimQ_MaxDims will be safely ignored:                  */  \
     PUT_UNIT_AND_EXP_STR(0) \
     PUT_UNIT_AND_EXP_STR(1) \
     PUT_UNIT_AND_EXP_STR(2) \
@@ -496,7 +518,8 @@
     PUT_UNIT_AND_EXP_STR(4) \
     PUT_UNIT_AND_EXP_STR(5) \
     PUT_UNIT_AND_EXP_STR(6) \
-    static_assert(DimTypes::Bits::NDims == 7);       \
+    PUT_UNIT_AND_EXP_STR(7) \
+    PUT_UNIT_AND_EXP_STR(8) \
     /* For safety, always 0-terminate the buffer: */ \
     CHECK_N \
     *curr = '\0'; \
@@ -507,9 +530,10 @@
   /*-----------------------------------------------------------------------*/ \
   /* XXX: Are 64 bytes OK for most use cases? */     \
   template<size_t Sz = 64, uint64_t E, uint64_t U>   \
-  inline std::array<char, Sz> ToStr(DimTypes::DimQ<E, U, RepT> a_dimq)   \
+  inline std::array<char, Sz> ToStr   \
+    (DimTypes::DimQ<E, U, DimQ_RepT, DimQ_MaxDims> a_dimq) \
   { \
-    std::array<char, Sz> buff;  \
+    std::array<char, Sz> buff;        \
     char const*          buffEnd = buff.data() + Sz; \
     DEBUG_ONLY(char* realEnd =) Put<E, U>(a_dimq, buff.data(), buffEnd); \
     assert(realEnd < buffEnd && *realEnd == '\0');   \
@@ -520,40 +544,44 @@
   /*-----------------------------------------------------------------------*/ \
   template<uint64_t E, uint64_t U> \
   std::ostream& operator<< \
-    (std::ostream& a_os, DimTypes::DimQ<E, U, RepT> a_dimq) \
-    { return a_os << ToStr(a_dimq).data(); }
+  ( \
+     std::ostream& a_os,   \
+     DimTypes::DimQ<E, U, DimQ_RepT, DimQ_MaxDims> a_dimq \
+  ) \
+  { return a_os << ToStr(a_dimq).data(); }
 
 //---------------------------------------------------------------------------//
 // "PUT_UNIT_AND_EXP_STR":                                                   //
 //---------------------------------------------------------------------------//
-// For use in the context of "MK_DIMQ_OUTPUT" above:
+// For use in the context of "MK_DIMQ_OUTPUT":
 //
 #ifdef  PUT_UNIT_AND_EXP_STR
 #undef  PUT_UNIT_AND_EXP_STR
 #endif
 #define PUT_UNIT_AND_EXP_STR(Dim) \
+  /* NB: We may have Dim >= DimQ_MaxDims, but in that case, we do nothing: */ \
+  if constexpr(Dim < DimQ_MaxDims) \
   { \
-    static_assert(Dim < DimTypes::Bits::NDims); \
-    constexpr auto NumDen =  \
-        DimTypes::Bits::GetNumerAndDenom(DimTypes::Bits::GetFld(E,Dim)); \
-    constexpr int      Numer = NumDen.first;  \
-    constexpr unsigned Denom = NumDen.second; \
+    constexpr auto     NumDen = DimQ_Encs::GetNumerAndDenom \
+                               (DimQ_Encs::GetFld(E,Dim));  \
+    constexpr int      Numer  = NumDen.first;   \
+    constexpr unsigned Denom  = NumDen.second;  \
     /* NB: Units are only relevant if the exponent is non-0: */ \
     if constexpr(Numer != 0) \
     { \
       /* Output the UnitName, preceded by a space: */ \
-      curr += snprintf(curr, size_t(N), " %s", \
-                       UnitNameStr<Dim, DimTypes::Bits::GetFld(U,Dim)>); \
+      curr += snprintf(curr, size_t(N), " %s",   \
+                       UnitNameStr<Dim, DimQ_Encs::GetFld(U,Dim)>); \
       CHECK_N \
       /* Output the Exponent, unless it is 1: */ \
       if constexpr(!(Numer == 1 && Denom == 1))  \
       { \
-        constexpr bool brackets =  Numer < 0 || Denom != 1; \
+        constexpr bool brackets =  Numer < 0 || Denom != 1;  \
         curr += snprintf(curr, size_t(N), brackets ? "^(%d" : "^%d", Numer); \
         CHECK_N \
         if constexpr(Denom != 1) \
         { \
-          curr += snprintf(curr, size_t(N), "/%u", Denom); \
+          curr += snprintf(curr, size_t(N), "/%u", Denom);   \
           CHECK_N \
         } \
         if constexpr(brackets)   \
@@ -595,13 +623,14 @@
 #define MK_DIMS_FMT(DIMS_NS) \
   namespace std \
   { \
-    template<uint64_t E, uint64_t U, typename RepT> \
-    struct formatter<DimTypes::DimQ<E, U, RepT>>    \
+    template<uint64_t E, uint64_t U> \
+    struct formatter<DimTypes::DimQ<E, U, DimQ_RepT, DimQ_MaxDims>>     \
     { \
       constexpr auto parse(std::format_parse_context& a_ctx) \
         { return a_ctx.begin(); } \
       \
-      auto format(DimTypes::DimQ<E, U, RepT> a_dimq, format_context& a_ctx) \
+      auto format(DimTypes::DimQ<E, U, DimQ_RepT, DimQ_MaxDims> a_dimq, \
+                  format_context&                               a_ctx)  \
       const \
       { \
         return std::format_to(a_ctx.out(), "{}", \

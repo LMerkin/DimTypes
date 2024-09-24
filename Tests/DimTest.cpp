@@ -18,7 +18,7 @@ namespace
 # pragma  clang diagnostic ignored "-Wunused-const-variable"
 # endif
   DECLARE_DIMS(
-    double,
+    double, 8,
     (Len,  m,   (km,  1000.0),  (AU, 1.495978706996262e+11)),
     (Time, sec, (day, 86400.0)),
     (Mass, kg)
@@ -33,7 +33,7 @@ MK_DIMS_FMT()
 int main()
 {
   using namespace std;
-  printf("MaxHeight=%d\n\n", DimTypes::Bits::MaxHeight);
+  printf("MaxHeight=%d\n\n", DimQ_Encs::MaxHeight);
 
   //=========================================================================//
   // Astronomical Constants (from DE423):                                    //
