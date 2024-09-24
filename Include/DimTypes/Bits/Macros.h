@@ -345,8 +345,8 @@
       <E, DimQ_Encs::SetUnit(U, Dim, 0), DimQ_RepT, DimQ_MaxDims>  \
       ( \
         a_dimq.Magnitude() * \
-        DimQ_Encs::FracPow<Numer, Denom, DimQ_RepT>     \
-          /* OldScale / NewScale: */ \
+        DimQ_Encs::FracPow<Numer, Denom> \
+          /* OldScale / NewScale: */     \
           (UnitScale<Dim, OldUnit> / UnitScale<Dim, 0>) \
       ); \
   }
@@ -624,13 +624,15 @@
   namespace std \
   { \
     template<uint64_t E, uint64_t U> \
-    struct formatter<DimTypes::DimQ<E, U, DimQ_RepT, DimQ_MaxDims>>     \
+    struct formatter<DimTypes::DimQ  \
+      <E, U, DIMS_NS::DimQ_RepT, DIMS_NS::DimQ_MaxDims>>     \
     { \
       constexpr auto parse(std::format_parse_context& a_ctx) \
         { return a_ctx.begin(); } \
       \
-      auto format(DimTypes::DimQ<E, U, DimQ_RepT, DimQ_MaxDims> a_dimq, \
-                  format_context&                               a_ctx)  \
+      auto format(DimTypes::DimQ  \
+                  <E, U, DIMS_NS::DimQ_RepT, DIMS_NS::DimQ_MaxDims> a_dimq, \
+                  format_context&                                   a_ctx)  \
       const \
       { \
         return std::format_to(a_ctx.out(), "{}", \
