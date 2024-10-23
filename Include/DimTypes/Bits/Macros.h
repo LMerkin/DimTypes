@@ -533,9 +533,9 @@
   inline std::array<char, Sz> ToStr   \
     (DimTypes::DimQ<E, U, DimQ_RepT, DimQ_MaxDims> a_dimq) \
   { \
-    std::array<char, Sz> buff;        \
-    char const*          buffEnd = buff.data() + Sz; \
-    DEBUG_ONLY(char* realEnd =) Put<E, U>(a_dimq, buff.data(), buffEnd); \
+    std::array<char, Sz>   buff;        \
+    char const*            buffEnd = buff.data() + Sz; \
+    [[maybe_unused]] char* realEnd = Put<E, U>(a_dimq, buff.data(), buffEnd); \
     assert(realEnd < buffEnd && *realEnd == '\0');   \
     return buff;    \
   } \
