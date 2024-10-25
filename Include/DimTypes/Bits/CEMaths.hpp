@@ -146,8 +146,9 @@ namespace DimTypes::Bits::CEMaths
   // "ApproxEqual":                                                          //
   //-------------------------------------------------------------------------//
   template<typename F>
-  constexpr bool ApproxEqual(F a_x, F a_y)
+  constexpr bool ApproxEqual(F a_x, F a_y, F a_tol = Eps<F> * F(100.0))
   {
+    assert(a_tol >= F(0.0));
     F err =
       Abs
       (
@@ -155,7 +156,7 @@ namespace DimTypes::Bits::CEMaths
         ? a_x - a_y
         : a_x / a_y - F(1.0)
       );
-    return err < Eps<F> * F(100.0);
+    return err < a_tol;
   }
 
   //=========================================================================//
