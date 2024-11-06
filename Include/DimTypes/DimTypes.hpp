@@ -322,13 +322,16 @@ namespace DimTypes
     constexpr bool IsPos   () const  { return m_val >  RepT(0.0); }
 
     // Approximate Equality:
-    template<uint64_t V>
-    constexpr bool ApproxEquals(DimQ<E, V, RepT, MaxDims> a_right) const
+    template<uint64_t V, RepT Tol = Bits::CEMaths::Eps<RepT> * RepT(100.0)>
+    constexpr bool ApproxEquals
+    (
+      DimQ<E, V, RepT, MaxDims> a_right,
+      RepT                      a_tol = Bits::CEMaths::Eps<RepT> * RepT(100.0)
+    )
+    const
     {
       static_assert(En::UnitsOK(E,U,V), "ERROR: Units do not unify");
-      // NB: The Tolerance is 100*Eps. It is absolute for the LHS < 1, and
-      // relative otherwise:
-      return Bits::CEMaths::ApproxEqual(m_val, a_right.m_val);
+      return Bits::CEMaths::ApproxEqual(m_val, a_right.m_val, a_tol);
     }
   };
   // End "DimQ" class
