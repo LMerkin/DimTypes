@@ -33,7 +33,7 @@ MK_DIMS_FMT()
 int main()
 {
   using namespace std;
-  printf("MaxHeight=%d\n\n", DimQ_Encs::MaxHeight);
+  printf("MaxHeight=%u\n\n", DimQ_Encs::MaxHeight);
 
   //=========================================================================//
   // Astronomical Constants (from DE423):                                    //
