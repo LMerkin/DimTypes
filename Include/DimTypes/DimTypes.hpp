@@ -167,14 +167,15 @@ namespace DimTypes
     }
   
     //-----------------------------------------------------------------------//
-    // "Abs":
+    // "Abs", "Floor", "Ceil", "Round":                                      //
     //-----------------------------------------------------------------------//
-    // XXX: It is currently provided for Real "RepT" only (for Complex "RepT",
-    // comparison with 0 will cause a compilation error), because Complex sem-
-    // antics is quite different anyway:
+    // XXX: They are currently provided for Real "RepT" only (for Complex
+    // "RepT", the corresp ops will cause compilation errors):
     //
-    constexpr  DimQ Abs  () const
-      { return DimQ((m_val < RepT(0.0)) ? (-m_val): m_val); }
+    constexpr  DimQ Abs  () const { return DimQ(Bits::CEMaths::Abs  (m_val)); }
+    constexpr  DimQ Floor() const { return DimQ(Bits::CEMaths::Floor(m_val)); }
+    constexpr  DimQ Ceil () const { return DimQ(Bits::CEMaths::Ceil (m_val)); }
+    constexpr  DimQ Round() const { return DimQ(Bits::CEMaths::Round(m_val)); }
 
     //=======================================================================//
     // Arithmetic operations which result in Dimensions change:              //
