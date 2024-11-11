@@ -435,7 +435,11 @@ namespace DimTypes
   using Bits::CEMaths::Pi_4;
 
   using Bits::CEMaths::Abs;
+  using Bits::CEMaths::Floor;
+  using Bits::CEMaths::Ceil;
+  using Bits::CEMaths::Round;
   using Bits::CEMaths::ApproxEqual;
+
   using Bits::CEMaths::Sqr;
   using Bits::CEMaths::Cube;
   using Bits::CEMaths::Exp;
