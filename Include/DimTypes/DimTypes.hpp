@@ -27,7 +27,7 @@ namespace DimTypes
 
     // Encodings to be used:
     using En =   Bits::Encodings<RepT, MaxDims>;
-  
+
   public:
     //=======================================================================//
     // Ctors and Accessors:                                                  //
@@ -35,7 +35,7 @@ namespace DimTypes
     // Non-Default Ctor: Lifting a value into "DimQ" (by default, 0):
     //
     constexpr explicit DimQ(RepT val = RepT(0.0)): m_val(val) {}
-  
+
     // Copy Ctor:
     constexpr DimQ(DimQ const& a_right): m_val(a_right.m_val) {}
 
@@ -57,13 +57,13 @@ namespace DimTypes
     // with the unitary magnitude:
     //
     constexpr DimQ UnitOf() const           { return DimQ(RepT(1.0));  }
-  
+
     // Getting the exponent code (this is primarily for testing):
     constexpr uint64_t GetDimsCode () const { return E; }
-  
+
     // Getting the Units code (also for testing):
     constexpr uint64_t GetUnitsCode() const { return U; }
-  
+
     // The Magnitude of the dimensioned quantity (ie its value expressed in the
     // corresp dimensioned units). The magnitude is by itself dimension-less.
     // XXX: direct access to the dimension-less magnitude  may seem  to be an
@@ -71,7 +71,7 @@ namespace DimTypes
     // its unit), so we provide direct access to it for efficiency:
     //
     constexpr RepT Magnitude() const  { return m_val; }
-  
+
     // The following function converts "DimQ" to the Underlying Field Type
     // ("RepT"), but ONLY if the arg is actually dimension-less:
     constexpr explicit operator RepT() const
@@ -83,7 +83,7 @@ namespace DimTypes
     // NB:  In addition, for some types (eg Angles expressed in Radians), the
     // user may allow direct conversion into "RepT" by specialising the above
     // operator method...
-  
+
     //=======================================================================//
     // Arithmetic Operations -- Dimensions Unchanged:                        //
     //=======================================================================//
@@ -100,18 +100,18 @@ namespace DimTypes
     {
       static_assert(E == F,             "ERROR: +: Different Dims");
       static_assert(En::UnitsOK(E,U,V), "ERROR: +: Units do not unify");
-      return DimQ(m_val + a_right.Magnitude());
+      return DimQ(m_val + a_right.m_val);
     }
-  
+
     template<uint64_t F, uint64_t V>
     constexpr DimQ& operator+= (DimQ<F,V,RepT,MaxDims> a_right)
     {
       static_assert(E == F,             "ERROR: +=: Different Dims");
       static_assert(En::UnitsOK(E,U,V), "ERROR: +=: Units do not unify");
-      m_val += a_right.Magnitude();
+      m_val += a_right.m_val;
       return *this;
     }
-  
+
     // Subtraction of "DimQs":
     // Same constraints as for addition:
     template<uint64_t F, uint64_t V>
@@ -119,18 +119,18 @@ namespace DimTypes
     {
       static_assert(E == F,             "ERROR: -: Different Dims");
       static_assert(En::UnitsOK(E,U,V), "ERROR: -: Units do not unify");
-      return DimQ(m_val - a_right.Magnitude());
+      return DimQ(m_val - a_right.m_val);
     }
-  
+
     template<uint64_t F, uint64_t V>
     constexpr DimQ& operator-=(DimQ<F,V,RepT,MaxDims> a_right)
     {
-      static_assert(E == F,             "ERROR: -= : Different Dims");
-      static_assert(En::UnitsOK(E,U,V), "ERROR: -= Units do not unify");
-      m_val -= a_right.Magnitude();
+      static_assert(E == F,             "ERROR: -=: Different Dims");
+      static_assert(En::UnitsOK(E,U,V), "ERROR: -=: Units do not unify");
+      m_val -= a_right.m_val;
       return *this;
     }
-  
+
     //-----------------------------------------------------------------------//
     // Multiplication and Division by a Dimension-Less Factor:               //
     //-----------------------------------------------------------------------//
@@ -142,30 +142,30 @@ namespace DimTypes
     // Multiplication:
     constexpr  DimQ operator*(RepT a_right) const
       { return DimQ(m_val * a_right); }
-  
+
     constexpr DimQ& operator*= (RepT a_right)
     {
       m_val *= a_right;
       return *this;
     }
-  
+
     constexpr friend DimQ operator* (RepT a_left, DimQ a_right)
-      { return DimQ(a_left * a_right.Magnitude()); }
-  
+      { return DimQ(a_left * a_right.m_val); }
+
     // In particular, Unary Negation:
     constexpr  DimQ operator- () const
       { return DimQ(- m_val); }
-  
+
     // Division by a Dimension-Less Factor:
     constexpr  DimQ operator/   (RepT a_right) const
       { return DimQ(m_val / a_right); }
-  
+
     constexpr  DimQ& operator/= (RepT a_right)
     {
       m_val /= a_right;
       return *this;
     }
-  
+
     //-----------------------------------------------------------------------//
     // "Abs", "Floor", "Ceil", "Round":                                      //
     //-----------------------------------------------------------------------//
@@ -200,7 +200,7 @@ namespace DimTypes
                    MaxDims>
              (m_val * a_right.Magnitude());
     }
-  
+
     // Division of "DimQ"s:
     // Dimension exponents are subtracted. Same treatment of units as for mult:
     template<uint64_t F, uint64_t V>
@@ -216,14 +216,14 @@ namespace DimTypes
                    MaxDims>
              (m_val / a_right.Magnitude());
     }
-  
+
     constexpr friend DimQ<En::SubExp(0UL,E), U, RepT, MaxDims>
     operator/ (RepT a_left, DimQ a_right)
     {
       return DimQ<En::SubExp(0UL,E), U, RepT, MaxDims>
-                 (a_left / a_right.Magnitude());
+                 (a_left / a_right.m_val);
     }
-  
+
     // Integral and Rational Powers -- the power must be given by constant exprs
     // so it is analysable at compile time:
     // NB: for applying these methods from outside "DimQ",  explicit  "template
@@ -285,6 +285,15 @@ namespace DimTypes
     constexpr DimQ<En::DivExp(E,3), U, RepT, MaxDims> CbRt() const
       { return RPow<1,3>(); }
 
+    // "ATan2" on "DimQs": "y" is *this, "x" is the explicit arg:
+    template<uint64_t F, uint64_t V>
+    constexpr RepT ATan2(DimQ<F,V,RepT,MaxDims> a_x) const
+    {
+      static_assert(E == F,             "ERROR: ATan2: Different Dims");
+      static_assert(En::UnitsOK(E,U,V), "ERROR: ATan2: Units do not unify");
+      return Bits::CEMaths::ATan2(m_val, a_x.m_val);
+    }
+
     //-----------------------------------------------------------------------//
     // Comparison operators:                                                 //
     //-----------------------------------------------------------------------//
@@ -303,7 +312,7 @@ namespace DimTypes
     constexpr bool operator Op (DimQ<E, V, RepT, MaxDims> a_right) const \
     { \
       static_assert(En::UnitsOK(E,U,V), "ERROR: Units do not unify"); \
-      return m_val Op a_right.Magnitude(); \
+      return m_val Op a_right.m_val; \
     }
     DIMQ_CMP(==)
     DIMQ_CMP(!=)
@@ -311,7 +320,7 @@ namespace DimTypes
     DIMQ_CMP(>=)
     DIMQ_CMP(<)
     DIMQ_CMP(<=)
-  
+
     constexpr bool IsZero  () const  { return m_val == RepT(0.0);   }
     constexpr bool IsFinite() const  { return std::isfinite(m_val); }
 
@@ -351,15 +360,15 @@ namespace DimTypes
 
   template <uint64_t E, uint64_t U, typename RepT, unsigned  MaxDims>
   constexpr uint64_t GetDimsCode (DimQ<E, U, RepT, MaxDims>  a_dimq)
-    { return a_dimq.GetDimsCode();  }
+    { return a_dimq .GetDimsCode();  }
 
   template <uint64_t E, uint64_t U, typename RepT, unsigned  MaxDims>
   constexpr uint64_t GetUnitsCode(DimQ<E, U, RepT, MaxDims>  a_dimq)
     { return a_dimq.GetUnitsCode(); }
-  
+
   template <uint64_t E, uint64_t U, typename RepT, unsigned  MaxDims>
   constexpr RepT     Magnitude   (DimQ<E, U, RepT, MaxDims>  a_dimq)
-    { return a_dimq.Magnitude();    }
+    { return a_dimq .Magnitude();    }
 
   template <uint64_t E, uint64_t U, typename RepT, unsigned  MaxDims>
   constexpr DimQ<E, U, RepT, MaxDims> Abs  (DimQ<E, U, RepT, MaxDims> a_right)
@@ -417,6 +426,11 @@ namespace DimTypes
   template< uint64_t E, uint64_t  U, typename RepT, unsigned MaxDims>
   constexpr bool IsPos   (DimQ<E, U, RepT, MaxDims> a_right)
     { return a_right.IsPos();     }
+
+  template< uint64_t E, uint64_t  U, typename RepT, unsigned MaxDims>
+  constexpr RepT ATan2
+    (DimQ<E, U, RepT, MaxDims> a_y, DimQ<E, U, RepT, MaxDims> a_x)
+    { return a_y.ATan2(a_x); }
 
   //=========================================================================//
   // Lifted "constexpr" Mathematical Functions:                              //
