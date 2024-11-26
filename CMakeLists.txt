@@ -7,8 +7,8 @@
 #=============================================================================#
 # Export flags for convenience when using Vim's YCM plugin:
 #
-CMAKE_MINIMUM_REQUIRED(VERSION 3.23)
-CMAKE_POLICY(          VERSION 3.23)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.30)
+CMAKE_POLICY(          VERSION 3.30)
 
 IF (NOT UNIX)
   MESSAGE(FATAL_ERROR "Non-UNIX platforms are not supported")
