@@ -349,7 +349,19 @@
           /* OldScale / NewScale: */     \
           (UnitScale<Dim, OldUnit> / UnitScale<Dim, 0>) \
       ); \
-  }
+  } \
+  /*-----------------------------------------------------------------------*/ \
+  /* For Convenience: Checking if "DimQ" is an "Elementary" Dim;           */ \
+  /* The Unit Does Not Matter:                                             */ \
+  /*-----------------------------------------------------------------------*/ \
+  template<typename T> \
+  constexpr inline bool MK_IS_ANY DimDcl = false;     \
+  \
+  template<uint64_t E, uint64_t U>                    \
+  constexpr inline bool MK_IS_ANY DimDcl    \
+    <DimTypes::DimQ<E, U, DimQ_RepT, DimQ_MaxDims>> = \
+    (E == DimTypes::Bits::Encodings<DimQ_RepT, DimQ_MaxDims>::DimExp \
+          (unsigned(DimsE::GET_DIM_NAME DimDcl)));
 
 //---------------------------------------------------------------------------//
 // "MK_ANOTHER_UNIT", "MK_UNIT_IMPL":                                        //
@@ -455,6 +467,11 @@
 #undef  MK_DIMQ_TYPE_ALIAS
 #endif
 #define MK_DIMQ_TYPE_ALIAS(DimName, UnitName)   DimName##_##UnitName
+
+#ifdef  MK_IS_ANY
+#undef  MK_IS_ANY
+#endif
+#define MK_IS_ANY(DimName, _FundUnitName, ...)  IsAny##DimName
 
 #ifdef  MK_LITERAL_OP
 #undef  MK_LITERAL_OP
