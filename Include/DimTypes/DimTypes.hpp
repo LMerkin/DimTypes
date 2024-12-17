@@ -469,5 +469,16 @@ namespace DimTypes
   using Bits::CEMaths::SqRt;
   using Bits::CEMaths::CbRt;
   using Bits::CEMaths::Pow;
+
+  // We also need overaloadings for "IsZero", "IsPos", "IsNeg" for "RepT"
+  // (XXX: will not instantiate for Complex types):
+  template<typename RepT>
+  constexpr bool IsZero(RepT a_right) { return a_right == RepT(0.0); }
+
+  template<typename RepT>
+  constexpr bool IsPos (RepT a_right) { return a_right >  RepT(0.0); }
+
+  template<typename RepT>
+  constexpr bool IsNeg (RepT a_right) { return a_right <  RepT(0.0); }
 }
 // End namespace DimTypes
