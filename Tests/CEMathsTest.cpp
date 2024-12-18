@@ -47,8 +47,6 @@ namespace
   template<typename F>
   inline void TestFuncs(char const* a_title)
   {
-    using Bits::CEMaths::Eps;
-
     assert (a_title != nullptr);
     std::cout << "======= " << a_title << " =======" << std::endl;
     std::cout << "Eps="     << Eps<F>  << std::endl;

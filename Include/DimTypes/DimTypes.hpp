@@ -332,11 +332,11 @@ namespace DimTypes
     constexpr bool IsPos   () const  { return m_val >  RepT(0.0); }
 
     // Approximate Equality:
-    template<uint64_t V, RepT Tol = Bits::CEMaths::Eps<RepT> * RepT(100.0)>
+    template<uint64_t V>
     constexpr bool ApproxEquals
     (
       DimQ<E, V, RepT, MaxDims> a_right,
-      RepT                      a_tol = Bits::CEMaths::Eps<RepT> * RepT(100.0)
+      RepT                      a_tol = Bits::CEMaths::DefaultTol<RepT>
     )
     const
     {
@@ -438,6 +438,7 @@ namespace DimTypes
   using Bits::CEMaths::NaN;
   using Bits::CEMaths::Inf;
   using Bits::CEMaths::Eps;
+  using Bits::CEMaths::DefaultTol;
 
   using Bits::CEMaths::SqRt2;
   using Bits::CEMaths::SqRt1_2;
