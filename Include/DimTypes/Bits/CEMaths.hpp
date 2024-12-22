@@ -1559,6 +1559,60 @@ namespace DimTypes::Bits::CEMaths
   }
 
   //=========================================================================//
+  // Hyperbolic and Inverse Hyperbolic Functions:                            //
+  //=========================================================================//
+  template<typename F>
+  constexpr F SinH (F a_x)
+  {
+    static_assert(std::is_floating_point_v<F>);
+    F ex = Exp(a_x);
+    return (ex - F(1.0) / ex) / F(2.0);
+  }
+
+  template<typename F>
+  constexpr F CosH (F a_x)
+  {
+    static_assert(std::is_floating_point_v<F>);
+    F ex = Exp(a_x);
+    return (ex + F(1.0) / ex) / F(2.0);
+  }
+
+  template<typename F>
+  constexpr F TanH (F a_x)
+  {
+    static_assert(std::is_floating_point_v<F>);
+    F ex2 = Exp(2.0 * a_x);
+    return (ex2 - F(1.0)) / (ex2 + F(1.0));
+  }
+
+  // XXX: The Inverse Hyperbolic Functions are currently implemented for Real
+  // args only:
+  //
+  template<typename F>
+  constexpr F ASinH(F a_x)
+  {
+    static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
+    return Log(a_x + SqRt(Sqr(a_x) + F(1.0)));
+  }
+
+  template<typename F>
+  constexpr F ACosH(F a_x)
+  {
+    static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
+    assert(a_x >= F(1.0));
+    // Return the non-negative root:
+    return Log(a_x + SqRt(Sqr(a_x) - F(1.0)));
+  }
+
+  template<typename F>
+  constexpr F ATanH(F a_x)
+  {
+    static_assert(std::is_floating_point_v<F> && !IsComplex<F>);
+    assert(Abs(a_x) < F(1.0));
+    return F(0.5) * Log((F(1.0) + a_x) / (F(1.0) - a_x));
+  }
+
+  //=========================================================================//
   // Complex Functions:                                                      //
   //=========================================================================//
   // The templates below specifically match "std::complex" args.

@@ -459,27 +459,39 @@ namespace DimTypes
   using Bits::CEMaths::Cube;
   using Bits::CEMaths::Exp;
   using Bits::CEMaths::Log;
+
   using Bits::CEMaths::Cos;
   using Bits::CEMaths::Sin;
+  using Bits::CEMaths::CosSin;
   using Bits::CEMaths::Tan;
   using Bits::CEMaths::ATan;
   using Bits::CEMaths::ATan2;
   using Bits::CEMaths::ASin;
   using Bits::CEMaths::ACos;
-  using Bits::CEMaths::CosSin;
+
   using Bits::CEMaths::SqRt;
   using Bits::CEMaths::CbRt;
   using Bits::CEMaths::Pow;
 
-  // We also need overaloadings for "IsZero", "IsPos", "IsNeg" for "RepT"
-  // (XXX: will not instantiate for Complex types):
+  using Bits::CEMaths::CosH;
+  using Bits::CEMaths::SinH;
+  using Bits::CEMaths::TanH;
+  using Bits::CEMaths::ACosH;
+  using Bits::CEMaths::ASinH;
+  using Bits::CEMaths::ATanH;
+
+  // We also need overaloadings for "IsZero", "IsPos", "IsNeg" and "IsFinite"
+  // for "RepT" (XXX: will not instantiate for Complex types):
   template<typename RepT>
-  constexpr bool IsZero(RepT a_right) { return a_right == RepT(0.0); }
+  constexpr bool IsZero  (RepT a_x) { return a_x == RepT(0.0); }
 
   template<typename RepT>
-  constexpr bool IsPos (RepT a_right) { return a_right >  RepT(0.0); }
+  constexpr bool IsPos   (RepT a_x) { return a_x >  RepT(0.0); }
 
   template<typename RepT>
-  constexpr bool IsNeg (RepT a_right) { return a_right <  RepT(0.0); }
+  constexpr bool IsNeg   (RepT a_x) { return a_x <  RepT(0.0); }
+
+  template<typename RepT>
+  constexpr bool IsFinite(RepT a_x) { return std::isfinite(a_x); }
 }
 // End namespace DimTypes
