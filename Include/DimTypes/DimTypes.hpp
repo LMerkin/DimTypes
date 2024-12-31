@@ -323,6 +323,7 @@ namespace DimTypes
 
     constexpr bool IsZero  () const  { return m_val == RepT(0.0);   }
     constexpr bool IsFinite() const  { return std::isfinite(m_val); }
+    constexpr bool IsNaN   () const  { return std::isnan   (m_val); }
 
     // NB: The following methods will not compile if the field "RepT" is not
     // ordered (eg for complex numbers). However, if they  are not  actually
@@ -428,6 +429,10 @@ namespace DimTypes
     { return a_right.IsPos();     }
 
   template< uint64_t E, uint64_t  U, typename RepT, unsigned MaxDims>
+  constexpr bool IsNaN   (DimQ<E, U, RepT, MaxDims> a_right)
+    { return a_right.IsNaN();     }
+
+  template< uint64_t E, uint64_t  U, typename RepT, unsigned MaxDims>
   constexpr RepT ATan2
     (DimQ<E, U, RepT, MaxDims> a_y, DimQ<E, U, RepT, MaxDims> a_x)
     { return a_y.ATan2(a_x); }
@@ -480,8 +485,8 @@ namespace DimTypes
   using Bits::CEMaths::ASinH;
   using Bits::CEMaths::ATanH;
 
-  // We also need overaloadings for "IsZero", "IsPos", "IsNeg" and "IsFinite"
-  // for "RepT" (XXX: will not instantiate for Complex types):
+  // We also need overaloadings for "IsZero", "IsPos", "IsNeg", "IsFinite" and
+  // "IsNaN" for "RepT" (XXX: will not instantiate for Complex types):
   template<typename RepT>
   constexpr bool IsZero  (RepT a_x) { return a_x == RepT(0.0); }
 
@@ -493,5 +498,8 @@ namespace DimTypes
 
   template<typename RepT>
   constexpr bool IsFinite(RepT a_x) { return std::isfinite(a_x); }
+
+  template<typename RepT>
+  constexpr bool IsNaN   (RepT a_x) { return std::isnan(a_x); }
 }
 // End namespace DimTypes
