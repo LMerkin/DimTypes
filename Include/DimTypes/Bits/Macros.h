@@ -197,6 +197,11 @@
   FOR_EACH_DIM(MK_DIM_UNITS, __VA_ARGS__) \
   \
   /*-----------------------------------------------------------------------*/ \
+  /* Create a "DimLess" Type:                                              */ \
+  /*-----------------------------------------------------------------------*/ \
+  using DimLess = DimQ<0, 0, RepT, DimQ_MaxDims>; \
+  \
+  /*-----------------------------------------------------------------------*/ \
   /* Finally, generate a "DimQ" output function.                           */ \
   /* It uses the above-generated templates:                                */ \
   /*-----------------------------------------------------------------------*/ \
@@ -350,11 +355,6 @@
           (UnitScale<Dim, OldUnit> / UnitScale<Dim, 0>) \
       ); \
   } \
-  /* Also, for convenience, "To_{DimName}"  converter is generated for the    \
-     "RepT";   but since the latter is Dim-Less, it is a mere identify func:  \
-  */ \
-  constexpr DimQ_RepT MK_CONV_FUNC_NAME0 DimDcl (DimQ_RepT a_rep) \
-    { return a_rep; } \
   /*-----------------------------------------------------------------------*/ \
   /* For Convenience: Checking if "DimQ" is an "Elementary" Dim;           */ \
   /* The Unit Does Not Matter:                                             */ \
@@ -448,12 +448,7 @@
           /* OldScale / NewScale: */                           \
           (UnitScale<Dim, OldUnit> / UnitScale<Dim, NewUnit>)  \
       ); \
-  } \
-  /* Again,  for convenience, "To_{DimName}_{UnitName}" is also defined for \
-     "RepT", but this is a mere identity function: \
-  */ \
-  constexpr DimQ_RepT MK_CONV_FUNC_NAME(DimName,UnitName) (DimQ_RepT a_rep) \
-    { return a_rep; }
+  }
 
 //===========================================================================//
 // NAME CONCATENATIONS AND STRINGIFICATION:                                  //

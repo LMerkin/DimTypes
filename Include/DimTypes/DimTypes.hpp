@@ -361,7 +361,7 @@ namespace DimTypes
 
   template <uint64_t E, uint64_t U, typename RepT, unsigned  MaxDims>
   constexpr uint64_t GetDimsCode (DimQ<E, U, RepT, MaxDims>  a_dimq)
-    { return a_dimq .GetDimsCode();  }
+    { return a_dimq .GetDimsCode(); }
 
   template <uint64_t E, uint64_t U, typename RepT, unsigned  MaxDims>
   constexpr uint64_t GetUnitsCode(DimQ<E, U, RepT, MaxDims>  a_dimq)
@@ -369,15 +369,15 @@ namespace DimTypes
 
   template <uint64_t E, uint64_t U, typename RepT, unsigned  MaxDims>
   constexpr RepT     Magnitude   (DimQ<E, U, RepT, MaxDims>  a_dimq)
-    { return a_dimq .Magnitude();    }
+    { return a_dimq .Magnitude();   }
 
   template <uint64_t E, uint64_t U, typename RepT, unsigned  MaxDims>
   constexpr DimQ<E, U, RepT, MaxDims> Abs  (DimQ<E, U, RepT, MaxDims> a_right)
-    { return a_right.Abs();         }
+    { return a_right.Abs();   }
 
   template< uint64_t E, uint64_t U, typename RepT, unsigned  MaxDims>
   constexpr DimQ<E, U, RepT, MaxDims> Floor(DimQ<E, U, RepT, MaxDims> a_right)
-    { return a_right.Floor();  }
+    { return a_right.Floor(); }
 
   template< uint64_t E, uint64_t U, typename RepT, unsigned  MaxDims>
   constexpr DimQ<E, U, RepT, MaxDims> Ceil (DimQ<E, U, RepT, MaxDims> a_right)
