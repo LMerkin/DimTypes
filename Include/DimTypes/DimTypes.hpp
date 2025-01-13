@@ -36,6 +36,11 @@ namespace DimTypes
     //
     constexpr explicit DimQ(RepT val = RepT(0.0)): m_val(val) {}
 
+    // And for DimLess qtys only, we allow IMPLICIT lifting from "RepT":
+    constexpr          DimQ(RepT val = RepT(0.0)) requires(E==0 && U==0)
+    : m_val(val)
+    {}
+
     // Copy Ctor:
     constexpr DimQ(DimQ const& a_right): m_val(a_right.m_val) {}
 
