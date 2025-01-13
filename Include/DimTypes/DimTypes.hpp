@@ -132,7 +132,7 @@ namespace DimTypes
     }
 
     //-----------------------------------------------------------------------//
-    // Multiplication and Division by a Dimension-Less Factor:               //
+    // Multiplication and Division by a "RepT":                              //
     //-----------------------------------------------------------------------//
     // NB: the following method can be used to create new dimensioned values
     // from the fundamental units. XXX: when used this way, it is slighly in-
@@ -156,7 +156,7 @@ namespace DimTypes
     constexpr  DimQ operator- () const
       { return DimQ(- m_val); }
 
-    // Division by a Dimension-Less Factor:
+    // Division by a "RepT":
     constexpr  DimQ operator/   (RepT a_right) const
       { return DimQ(m_val / a_right); }
 
@@ -181,7 +181,7 @@ namespace DimTypes
     // Arithmetic operations which result in Dimensions change:              //
     //=======================================================================//
     //-----------------------------------------------------------------------//
-    // Multiplication and Division of "DimQ"s:                               //
+    // Multiplication of "DimQ"s:                                            //
     //-----------------------------------------------------------------------//
     // Dimension exponents are added (or subtracted) up; units must unify;
     // afterwards, units of zero-exp dims are reset, otherwise false type-che-
@@ -201,7 +201,9 @@ namespace DimTypes
              (m_val * a_right.Magnitude());
     }
 
-    // Division of "DimQ"s:
+    //-----------------------------------------------------------------------//
+    // Division of "DimQ"s:                                                  //
+    //-----------------------------------------------------------------------//
     // Dimension exponents are subtracted. Same treatment of units as for mult:
     template<uint64_t F, uint64_t V>
     constexpr DimQ<En::SubExp(E,F),
@@ -224,14 +226,18 @@ namespace DimTypes
                  (a_left / a_right.m_val);
     }
 
-    // Integral and Rational Powers -- the power must be given by constant exprs
+    //-----------------------------------------------------------------------//
+    // Integral and Rational Powers:                                         //
+    //-----------------------------------------------------------------------//
+    // the power must be given by constant exprs
     // so it is analysable at compile time:
     // NB: for applying these methods from outside "DimQ",  explicit  "template
     // pow" expr is required, otherwise the template is not syntactically recog-
     // nised!
     // NB: "CleanUpUnits" is required in case if M==0:
-    //
-    // "IPow": Integral Power:
+    //-----------------------------------------------------------------------//
+    // "IPow": Integral Power:                                               //
+    //-----------------------------------------------------------------------//
     template<int M>
     constexpr DimQ<En::MultExp(E,M), En::CleanUpUnits(En::MultExp(E,M), U),
                    RepT,             MaxDims>
@@ -243,7 +249,9 @@ namespace DimTypes
             (En::template IntPow<M>(m_val));
     }
 
-    // "Sqr" and "Cube" are particularly-important case of "IPow":
+    //-----------------------------------------------------------------------//
+    // "Sqr" and "Cube" are particularly-important case of "IPow":           //
+    //-----------------------------------------------------------------------//
     constexpr DimQ<En::MultExp(E,2), En::CleanUpUnits(En::MultExp(E,2), U),
                    RepT,             MaxDims>
     Sqr()  const
@@ -254,9 +262,11 @@ namespace DimTypes
     Cube() const
       { return IPow<3>(); }
 
-    // "RPow": (General) Rational Power. In general it is NOT "constexpr" for
-    // C++ < 26, but it is "constexpr"  if it can be reduced to a composition
-    // of "SqRt" and "CbRt":
+    //-----------------------------------------------------------------------//
+    // "RPow": (General) Rational Power:                                     //
+    //-----------------------------------------------------------------------//
+    // XXX: In general it is NOT "constexpr" for C++ < 26, but it is "constexpr"
+    // if it can be reduced to a composition of "SqRt" and "CbRt":
     //
     template<int M, int N>
     constexpr DimQ<En::DivExp(En::MultExp(E,M),N),
@@ -277,15 +287,49 @@ namespace DimTypes
             (En::template FracPow<M, N>(m_val));
     }
 
-    // Shortcuts: "SqRt" and "CbRt". Here M==1, so "CleanUpUnits" is not
-    // required:
+    //-----------------------------------------------------------------------//
+    // Shortcuts: "SqRt" and "CbRt":                                         //
+    //-----------------------------------------------------------------------//
+    // Here M==1, so "CleanUpUnits" is not required:
     constexpr DimQ<En::DivExp(E,2), U, RepT, MaxDims> SqRt() const
       { return RPow<1,2>(); }
 
     constexpr DimQ<En::DivExp(E,3), U, RepT, MaxDims> CbRt() const
       { return RPow<1,3>(); }
 
-    // "ATan2" on "DimQs": "y" is *this, "x" is the explicit arg:
+    //-----------------------------------------------------------------------//
+    // Unary DimLess Elementary Functions:                                   //
+    //-----------------------------------------------------------------------//
+#   ifdef  DIMLESS_UNARY_FUNC
+#   undef  DIMLESS_UNARY_FUNC
+#   endif
+#   define DIMLESS_UNARY_FUNC(FuncName) \
+    constexpr DimQ<0, 0, RepT, MaxDims> FuncName(DimQ a_x) const \
+    { \
+      static_assert(E==0, "ERROR: " #FuncName ": Must be DimLess"); \
+      return  DimQ<0, 0, RepT, MaxDims>(Bits::CEMaths::FuncName(a_x.m_val)); \
+    }
+    DIMLESS_UNARY_FUNC(Exp)
+    DIMLESS_UNARY_FUNC(Log)
+    DIMLESS_UNARY_FUNC(Cos)
+    DIMLESS_UNARY_FUNC(Sin)
+    DIMLESS_UNARY_FUNC(Tan)
+    DIMLESS_UNARY_FUNC(ATan)
+    DIMLESS_UNARY_FUNC(ASin)
+    DIMLESS_UNARY_FUNC(ACos)
+    DIMLESS_UNARY_FUNC(CosH)
+    DIMLESS_UNARY_FUNC(SinH)
+    DIMLESS_UNARY_FUNC(TanH)
+    DIMLESS_UNARY_FUNC(ACosH)
+    DIMLESS_UNARY_FUNC(ASinH)
+    DIMLESS_UNARY_FUNC(ATanH)
+#   undef DIMLESS_UNARY_FUNC
+
+    //-----------------------------------------------------------------------//
+    // "ATan2" on "DimQs":                                                   //
+    //-----------------------------------------------------------------------//
+    // "y" is *this, "x" is the explicit arg:
+    //
     template<uint64_t F, uint64_t V>
     constexpr RepT ATan2(DimQ<F,V,RepT,MaxDims> a_x) const
     {
@@ -462,44 +506,39 @@ namespace DimTypes
 
   using Bits::CEMaths::Sqr;
   using Bits::CEMaths::Cube;
-  using Bits::CEMaths::Exp;
-  using Bits::CEMaths::Log;
-
-  using Bits::CEMaths::Cos;
-  using Bits::CEMaths::Sin;
-  using Bits::CEMaths::CosSin;
-  using Bits::CEMaths::Tan;
-  using Bits::CEMaths::ATan;
-  using Bits::CEMaths::ATan2;
-  using Bits::CEMaths::ASin;
-  using Bits::CEMaths::ACos;
-
   using Bits::CEMaths::SqRt;
   using Bits::CEMaths::CbRt;
   using Bits::CEMaths::Pow;
 
-  using Bits::CEMaths::CosH;
-  using Bits::CEMaths::SinH;
-  using Bits::CEMaths::TanH;
-  using Bits::CEMaths::ACosH;
-  using Bits::CEMaths::ASinH;
-  using Bits::CEMaths::ATanH;
+  using Bits::CEMaths::CosSin;
+  using Bits::CEMaths::ATan2;
 
-  // We also need overaloadings for "IsZero", "IsPos", "IsNeg", "IsFinite" and
-  // "IsNaN" for "RepT" (XXX: will not instantiate for Complex types):
-  template<typename RepT>
-  constexpr bool IsZero  (RepT a_x) { return a_x == RepT(0.0); }
+  //-------------------------------------------------------------------------//
+  // The following functions are available on both "RepT" and DimLess qtys:  //
+  //-------------------------------------------------------------------------//
+# ifdef  DIMLESS_UNARY_FUNC
+# undef  DIMLESS_UNARY_FUNC
+# endif
+# define DIMLESS_UNARY_FUNC(FuncName) \
+  using Bits::CEMaths::FuncName;      \
+  template<uint64_t U, typename RepT, unsigned MaxDims> \
+  DimQ<0, 0, RepT, MaxDims> FuncName(DimQ<0, U, RepT, MaxDims> a_x) \
+    { return a_x.FuncName(); }
 
-  template<typename RepT>
-  constexpr bool IsPos   (RepT a_x) { return a_x >  RepT(0.0); }
-
-  template<typename RepT>
-  constexpr bool IsNeg   (RepT a_x) { return a_x <  RepT(0.0); }
-
-  template<typename RepT>
-  constexpr bool IsFinite(RepT a_x) { return std::isfinite(a_x); }
-
-  template<typename RepT>
-  constexpr bool IsNaN   (RepT a_x) { return std::isnan(a_x); }
+  DIMLESS_UNARY_FUNC(Exp)
+  DIMLESS_UNARY_FUNC(Log)
+  DIMLESS_UNARY_FUNC(Cos)
+  DIMLESS_UNARY_FUNC(Sin)
+  DIMLESS_UNARY_FUNC(Tan)
+  DIMLESS_UNARY_FUNC(ATan)
+  DIMLESS_UNARY_FUNC(ASin)
+  DIMLESS_UNARY_FUNC(ACos)
+  DIMLESS_UNARY_FUNC(CosH)
+  DIMLESS_UNARY_FUNC(SinH)
+  DIMLESS_UNARY_FUNC(TanH)
+  DIMLESS_UNARY_FUNC(ACosH)
+  DIMLESS_UNARY_FUNC(ASinH)
+  DIMLESS_UNARY_FUNC(ATanH)
+# undef DIMLESS_UNARY_FUNC
 }
 // End namespace DimTypes
