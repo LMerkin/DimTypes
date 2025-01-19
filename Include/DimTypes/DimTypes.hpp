@@ -545,5 +545,26 @@ namespace DimTypes
   DIMLESS_UNARY_FUNC(ASinH)
   DIMLESS_UNARY_FUNC(ATanH)
 # undef DIMLESS_UNARY_FUNC
+
+  // It is also useful to define the following predicates on the "RepT":
+  template<typename RepT> bool IsZero(RepT a_x)
+  requires  (std::is_floating_point_v<RepT>)
+    { return a_x == RepT(0.0); }
+
+  template<typename RepT> bool IsPos(RepT a_x)
+  requires  (std::is_floating_point_v<RepT>)
+    { return a_x >  RepT(0.0); }
+
+  template<typename RepT> bool IsNeg(RepT a_x)
+  requires (std::is_floating_point_v<RepT>)
+    { return a_x <  RepT(0.0); }
+
+  template<typename RepT> bool IsNaN(RepT a_x)
+  requires (std::is_floating_point_v<RepT>)
+    { return std::isnan(a_x); }
+
+  template<typename RepT> bool IsFinite(RepT a_x)
+  requires (std::is_floating_point_v<RepT>)
+    { return std::isfinite(a_x); }
 }
 // End namespace DimTypes
