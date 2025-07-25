@@ -370,6 +370,9 @@ namespace DimTypes
     DIMQ_CMP(<)
     DIMQ_CMP(<=)
 
+    //-----------------------------------------------------------------------//
+    // Tests:                                                                //
+    //-----------------------------------------------------------------------//
     constexpr bool IsZero  () const  { return m_val == RepT(0.0);   }
     constexpr bool IsFinite() const  { return std::isfinite(m_val); }
     constexpr bool IsNaN   () const  { return std::isnan   (m_val); }
@@ -381,7 +384,9 @@ namespace DimTypes
     constexpr bool IsNeg   () const  { return m_val <  RepT(0.0); }
     constexpr bool IsPos   () const  { return m_val >  RepT(0.0); }
 
-    // Approximate Equality:
+    //-----------------------------------------------------------------------//
+    // Approximate Equality:                                                 //
+    //-----------------------------------------------------------------------//
     template<uint64_t V>
     constexpr bool ApproxEquals
     (
@@ -566,5 +571,14 @@ namespace DimTypes
   template<typename RepT> bool IsFinite(RepT a_x)
   requires (std::is_floating_point_v<RepT>)
     { return std::isfinite(a_x); }
+
+  //-------------------------------------------------------------------------//
+  // Generic "Min" and "Max":                                                //
+  //-------------------------------------------------------------------------//
+  template<typename T>
+  constexpr T Min(T a_x, T a_y) { return (a_x < a_y) ? a_x : a_y; }
+
+  template<typename T>
+  constexpr T Max(T a_x, T a_y) { return (a_x > a_y) ? a_x : a_y; }
 }
 // End namespace DimTypes
