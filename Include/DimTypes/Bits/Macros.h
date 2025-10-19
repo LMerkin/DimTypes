@@ -211,6 +211,33 @@
 // Helper Methods for "DECLARE_DIMS":                                        //
 //===========================================================================//
 //---------------------------------------------------------------------------//
+// "PREVENT_BOGUS_CLANG_WARNINGS_{B,E}":                                     //
+//---------------------------------------------------------------------------//
+// NB: Use _Pragma, not #pragma, in the macro bodies:
+//
+#ifdef  PREVENT_BOGUS_CLANG_WARNINGS_B
+#undef  PREVENT_BOGUS_CLANG_WARNINGS_B
+#endif
+#ifdef  __clang__
+#define PREVENT_BOGUS_CLANG_WARNINGS_B \
+  _Pragma("clang diagnostic push") \
+  _Pragma("clang diagnostic ignored \"-Wunsafe-buffer-usage\"") \
+  _Pragma("clang diagnostic ignored \"-Wunsafe-buffer-usage-in-libc-call\"")
+#else
+#define PREVENT_BOGUS_CLANG_WARNINGS_B
+#endif
+
+#ifdef  PREVENT_BOGUS_CLANG_WARNINGS_E
+#undef  PREVENT_BOGUS_CLANG_WARNINGS_E
+#endif
+#ifdef  __clang__
+#define PREVENT_BOGUS_CLANG_WARNINGS_E \
+  _Pragma("clang diagnostic pop")
+#else
+#define PREVENT_BOGUS_CLANG_WARNINGS_E
+#endif
+
+//---------------------------------------------------------------------------//
 // "GET_DIM_NAME_COMMA", "GET_DIM_NAME":                                     //
 //---------------------------------------------------------------------------//
 // This is an "Action" for use with "FOR_EACH_DIM".
@@ -555,9 +582,11 @@
   inline std::array<char, Sz> ToStr   \
     (DimTypes::DimQ<E, U, DimQ_RepT, DimQ_MaxDims> a_dimq) \
   { \
-    std::array<char, Sz>   buff;        \
+    std::array<char, Sz>   buff;      \
+    PREVENT_BOGUS_CLANG_WARNINGS_B    \
     char const*            buffEnd = buff.data() + Sz; \
     [[maybe_unused]] char* realEnd = Put<E, U>(a_dimq, buff.data(), buffEnd); \
+    PREVENT_BOGUS_CLANG_WARNINGS_E    \
     assert(realEnd < buffEnd && *realEnd == '\0');   \
     return buff;    \
   } \
@@ -592,6 +621,8 @@
     if constexpr(Numer != 0) \
     { \
       /* Output the UnitName, preceded by a space: */ \
+      /* CLang produces a warning here, but we know what we are doing: */ \
+      PREVENT_BOGUS_CLANG_WARNINGS_B \
       curr += snprintf(curr, size_t(N), " %s",   \
                        UnitNameStr<Dim, DimQ_Encs::GetFld(U,Dim)>); \
       CHECK_N \
@@ -613,6 +644,7 @@
           CHECK_N \
         } \
       } \
+      PREVENT_BOGUS_CLANG_WARNINGS_E \
     } \
   }
 //---------------------------------------------------------------------------//

@@ -5,6 +5,7 @@
 //===========================================================================//
 #pragma once
 #include "CEMaths.hpp"
+#include "Macros.h"
 #include <complex>
 #include <cstdio>
 #include <cmath>
@@ -228,8 +229,11 @@ namespace Bits
     // It turns out that the maximum height of a fraction respresentable in the
     // mod IPMod format (without collisions) is much less than IPMod:
     //
+    // Prevent bogus warnings in CLang (this function is invoked at compile-
+    // time, so the compiler would detect any erroneous behavior anyway):
     constexpr static unsigned FindMaxHeight()
     {
+      PREVENT_BOGUS_CLANG_WARNINGS_B
       bool taken[IPMod];
       for (int i = 0; i < IPMod; ++i)
         taken[i] = false;
@@ -258,6 +262,7 @@ namespace Bits
         taken[repC] = true;
       }
       return PMod-1;       // We will not really get here...
+      PREVENT_BOGUS_CLANG_WARNINGS_E
     }
 
   public:
@@ -511,6 +516,7 @@ namespace Bits
     // Generic Case:  A Real Value: convert it to "double":
     static char* PutMagnitude(char* a_buff, int a_n, RepT const& a_val)
     {
+      PREVENT_BOGUS_CLANG_WARNINGS_B
       assert(a_buff != nullptr && a_n > 0);
 
       if constexpr(CEMaths::IsComplex<RepT>)
@@ -525,7 +531,9 @@ namespace Bits
       }
       else
         // Generic Case:  A Real Value:
-        return a_buff +  snprintf(a_buff, size_t(a_n), "%.16e", double(a_val));
+        return a_buff + snprintf(a_buff, size_t(a_n), "%.16e", double(a_val));
+
+      PREVENT_BOGUS_CLANG_WARNINGS_E
     }
   };
   // End "Encodings" class

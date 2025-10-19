@@ -32,6 +32,8 @@ MK_DIMS_FMT()
 
 int main()
 {
+  PREVENT_BOGUS_CLANG_WARNINGS_B
+
   using namespace std;
   printf("MaxHeight=%u\n\n", DimQ_Encs::MaxHeight);
 
@@ -106,4 +108,6 @@ int main()
   cout << format("x/x  = {}", dl)      << endl;
   cout << format("c-x  = {}", cmx)     << endl;
   return 0;
+
+  PREVENT_BOGUS_CLANG_WARNINGS_E
 }
