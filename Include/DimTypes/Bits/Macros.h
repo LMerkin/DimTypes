@@ -213,7 +213,9 @@
 //---------------------------------------------------------------------------//
 // "PREVENT_BOGUS_CLANG_WARNINGS_{B,E}":                                     //
 //---------------------------------------------------------------------------//
-// NB: Use _Pragma, not #pragma, in the macro bodies:
+// NB: Use _Pragma, not #pragma, in the macro bodies.
+// XXX: Currently, this macro is UNUSED because the corresp warnings are always
+// turned OFF with CLang  -- otherwise we would need to use them far too often:
 //
 #ifdef  PREVENT_BOGUS_CLANG_WARNINGS_B
 #undef  PREVENT_BOGUS_CLANG_WARNINGS_B
@@ -583,10 +585,8 @@
     (DimTypes::DimQ<E, U, DimQ_RepT, DimQ_MaxDims> a_dimq) \
   { \
     std::array<char, Sz>   buff;      \
-    PREVENT_BOGUS_CLANG_WARNINGS_B    \
     char const*            buffEnd = buff.data() + Sz; \
     [[maybe_unused]] char* realEnd = Put<E, U>(a_dimq, buff.data(), buffEnd); \
-    PREVENT_BOGUS_CLANG_WARNINGS_E    \
     assert(realEnd < buffEnd && *realEnd == '\0');   \
     return buff;    \
   } \
@@ -622,7 +622,6 @@
     { \
       /* Output the UnitName, preceded by a space: */ \
       /* CLang produces a warning here, but we know what we are doing: */ \
-      PREVENT_BOGUS_CLANG_WARNINGS_B \
       curr += snprintf(curr, size_t(N), " %s",   \
                        UnitNameStr<Dim, DimQ_Encs::GetFld(U,Dim)>); \
       CHECK_N \
@@ -644,7 +643,6 @@
           CHECK_N \
         } \
       } \
-      PREVENT_BOGUS_CLANG_WARNINGS_E \
     } \
   }
 //---------------------------------------------------------------------------//

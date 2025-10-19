@@ -85,6 +85,8 @@ ELSEIF("${TOOL_CHAIN}" STREQUAL "CLang")
     MESSAGE(FATAL_ERROR "UnSupported BuildType: ${CMAKE_BUILD_TYPE}")
   ENDIF()
   # Other flags:
+  # XXX: We currently do not activate "unsafe buffer access" warnings because
+  # they appear to be misleading in almost all cases:
   SET(CXXFLAGS "${CXXFLAGS} \
     -march=native        -mtune=native        -std=gnu++23 \
     -Weverything         -Wno-c++98-compat    -Wno-c++98-compat-pedantic \
@@ -95,7 +97,8 @@ ELSEIF("${TOOL_CHAIN}" STREQUAL "CLang")
     -Wformat=2           -Wcast-align         -Wextra-semi \
     -Wunreachable-code-aggressive             -Wrange-loop-analysis \
     -Wpessimizing-move   -Wredundant-move     -Wno-double-promotion \
-    -Wno-float-equal     -Wno-switch-enum")
+    -Wno-float-equal     -Wno-switch-enum     -Wno-unsafe-buffer-usage \
+    -Wno-unsafe-buffer-usage-in-libc-call")
 
 #-----------------------------------------------------------------------------#
 ELSEIF("${TOOL_CHAIN}" STREQUAL "NVHPC")
