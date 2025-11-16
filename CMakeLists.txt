@@ -10,6 +10,13 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.27)
 CMAKE_POLICY(          VERSION 3.27)
 
+set(TOOL_CHAIN "GCC" CACHE STRING "ToolChain, currently supported: GCC (default), CLang, NVHPC")
+set_property(CACHE TOOL_CHAIN PROPERTY STRINGS GCC CLang NVHPC)
+set(PROJ_NAME "DimTypes" CACHE STRING "Project name")
+set(LIB_DIR "" CACHE STRING "Library output directory")
+set(BIN_DIR "" CACHE STRING "Executable output directory")
+option(UNCHECKED_MODE "Set UNCHECKED_MODE" OFF)
+
 IF (NOT UNIX)
   MESSAGE(FATAL_ERROR "Non-UNIX platforms are not supported")
 ENDIF()
@@ -17,11 +24,6 @@ ENDIF()
 #=============================================================================#
 # Project Settings:                                                           #
 #=============================================================================#
-IF (NOT CMAKE_CXX_COMPILER OR NOT TOOL_CHAIN OR
-    NOT CMAKE_BUILD_TYPE   OR NOT PROJ_NAME  OR
-    NOT LIB_DIR            OR NOT BIN_DIR    OR NOT DEFINED UNCHECKED_MODE)
-  MESSAGE(FATAL_ERROR "Required Definition(s) Missing")
-ENDIF()
 # NB: Also, CUDA_VER, CUDA_CC and CUDA_INCL may be passed from the CMake cmdl,
 # but it is not an error if no CUDA is provided...
 
@@ -34,9 +36,13 @@ PROJECT(${PROJ_NAME} LANGUAGES CXX)
 SET (CMAKE_EXPORT_COMPILE_COMMANDS ON)
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
 
-SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${LIB_DIR}")
-SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${LIB_DIR}")
-SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${BIN_DIR}")
+IF (LIB_DIR)
+  SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${LIB_DIR}")
+  SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${LIB_DIR}")
+ENDIF()
+IF (BIN_DIR)
+  SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${BIN_DIR}")
+ENDIF()
 
 #=============================================================================#
 # Compiler Settings:                                                          #
@@ -46,20 +52,6 @@ MESSAGE(STATUS "Configuring for the ${TOOL_CHAIN} ToolChain...")
 #-----------------------------------------------------------------------------#
 IF("${TOOL_CHAIN}" STREQUAL "GCC")
 #-----------------------------------------------------------------------------#
-  # Optimisation and debugging flags:
-  IF ("${CMAKE_BUILD_TYPE}"     STREQUAL "Release")
-    # NB: Do NOT use:
-    # "-ffast-math" option -- it will result in incorrect treatment of "NaN"s!
-    # -flto"               -- it intereacts in a strange way with header-only
-    #                         code!
-    SET(CXXFLAGS "-O3 -mavx2 -fno-semantic-interposition -fomit-frame-pointer")
-  ELSEIF ("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
-    SET(CXXFLAGS "-O2 -g")
-  ELSEIF ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-    SET(CXXFLAGS "-O0 -g -fstack-protector-strong")
-  ELSE()
-    MESSAGE(FATAL_ERROR "UnSupported BuildType: ${CMAKE_BUILD_TYPE}")
-  ENDIF()
   # Other flags:
   SET(CXXFLAGS "${CXXFLAGS} \
     -march=native        -mtune=native        -std=gnu++23 \
@@ -68,22 +60,18 @@ IF("${TOOL_CHAIN}" STREQUAL "GCC")
     -Woverloaded-virtual -Wctor-dtor-privacy  -Wnull-dereference \
     -Wlogical-op         -Wduplicated-cond    -Wduplicated-branches \
     -Wformat=2           -Wcast-align=strict")
+  # Optimisation and debugging flags:
+  # NB: Do NOT use for release build:
+  # "-ffast-math" option -- it will result in incorrect treatment of "NaN"s!
+  # -flto"               -- it intereacts in a strange way with header-only
+  #                         code!
+  SET(CXXFLAGS_RELEASE "-O3 -mavx2 -fno-semantic-interposition -fomit-frame-pointer ${CXXFLAGS}")
+  SET(CXXFLAGS_RELWITHDEB "-O2 -g ${CXXFLAGS}")
+  SET(CXXFLAGS_DEBUG "-O0 -g -fstack-protector-strong ${CXXFLAGS}")
 
 #-----------------------------------------------------------------------------#
 ELSEIF("${TOOL_CHAIN}" STREQUAL "CLang")
 #-----------------------------------------------------------------------------#
-  # Optimisation and debugging flags:
-  IF ("${CMAKE_BUILD_TYPE}"     STREQUAL "Release")
-    SET(CXXFLAGS "-O3 -mavx2 -fno-semantic-interposition -fomit-frame-pointer")
-  ELSEIF ("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
-    SET(CXXFLAGS "-O2 -g")
-  ELSEIF ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"  )
-    SET(CXXFLAGS
-        "-O0 -g -fstack-protector-strong -fsanitize=undefined,address \
-         -fno-omit-frame-pointer -DDEBUG")
-  ELSE()
-    MESSAGE(FATAL_ERROR "UnSupported BuildType: ${CMAKE_BUILD_TYPE}")
-  ENDIF()
   # Other flags:
   SET(CXXFLAGS "${CXXFLAGS} \
     -march=native        -mtune=native        -std=gnu++23 \
@@ -96,25 +84,24 @@ ELSEIF("${TOOL_CHAIN}" STREQUAL "CLang")
     -Wunreachable-code-aggressive             -Wrange-loop-analysis \
     -Wpessimizing-move   -Wredundant-move     -Wno-double-promotion \
     -Wno-float-equal     -Wno-switch-enum")
+  # Optimisation and debugging flags:
+  SET(CXXFLAGS_RELEASE "-O3 -mavx2 -fno-semantic-interposition -fomit-frame-pointer")
+  SET(CXXFLAGS_RELWITHDEB "-O2 -g")
+  SET(CXXFLAGS_DEBUG
+      "-O0 -g -fstack-protector-strong -fsanitize=undefined,address \
+       -fno-omit-frame-pointer -DDEBUG")
 
 #-----------------------------------------------------------------------------#
 ELSEIF("${TOOL_CHAIN}" STREQUAL "NVHPC")
 #-----------------------------------------------------------------------------#
-  # Optimisation and debugging flags:
-  IF ("${CMAKE_BUILD_TYPE}"     STREQUAL "Release")
-    SET(CXXFLAGS "-O3 -mavx2")
-  ELSEIF ("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
-    SET(CXXFLAGS "-O2 -g")
-  ELSEIF ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"  )
-    SET(CXXFLAGS "-O0 -g")
-  ELSE()
-    MESSAGE(FATAL_ERROR "UnSupported BuildType: ${CMAKE_BUILD_TYPE}")
-  ENDIF()
-
   # Other flags:
   SET(CXXFLAGS  "${CXXFLAGS} -march=native -mtune=native    -std=c++23 \
                 -Wno-switch-enum           -Wno-float-equal \
                 -Wno-missing-prototypes    -Wno-vla")
+  # Optimisation and debugging flags:
+  SET(CXXFLAGS_RELEASE "-O3 -mavx2")
+  SET(CXXFLAGS_RELWITHDEB "-O2 -g")
+  SET(CXXFLAGS_DEBUG "-O0 -g")
 
 #-----------------------------------------------------------------------------#
 ELSE()
@@ -125,11 +112,9 @@ ENDIF()
 # Compiler-Independent Compilation Env:                                       #
 #=============================================================================#
 # Reset the standard flags for the selected mode, to prevent a mix-up:
-SET(CMAKE_CXX_FLAGS_RELEASE        "")
-SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "")
-SET(CMAKE_CXX_FLAGS_DEBUG          "")
-
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXXFLAGS}")
+SET(CMAKE_CXX_FLAGS_RELEASE        "${CMAKE_CXX_FLAGS} ${CXXFLAGS_RELEASE}")
+SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS} ${CXXFLAGS_RELWITHDEB}")
+SET(CMAKE_CXX_FLAGS_DEBUG          "${CMAKE_CXX_FLAGS} ${CXXFLAGS_DEBUG}")
 
 ADD_DEFINITIONS(-DUNCHECKED_MODE=${UNCHECKED_MODE})
 IF (UNCHECKED_MODE)
@@ -166,6 +151,13 @@ SET(DIM_TESTS
   CEMathsTest
 )
 
+SET(SOURCES Include/DimTypes/DimTypes.hpp
+            Include/DimTypes/Bits/CEMaths.hpp
+            Include/DimTypes/Bits/Encodings.hpp
+            Include/DimTypes/Bits/Macros.h)
+add_library(${PROJ_NAME} INTERFACE ${SOURCES})
+
 FOREACH (DimTest ${DIM_TESTS})
   ADD_EXECUTABLE(${DimTest} Tests/${DimTest}.cpp)
+  target_link_libraries(${DimTest} ${PROJ_NAME})
 ENDFOREACH()
