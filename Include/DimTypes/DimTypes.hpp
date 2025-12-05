@@ -572,6 +572,9 @@ namespace DimTypes
   requires (std::is_floating_point_v<RepT>)
     { return std::isfinite(a_x); }
 
+  template<typename RepT> RepT Magnitude(RepT a_x)
+    { return a_x; }
+
   //-------------------------------------------------------------------------//
   // Generic "Min" and "Max":                                                //
   //-------------------------------------------------------------------------//
