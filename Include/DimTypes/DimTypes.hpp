@@ -387,6 +387,7 @@ namespace DimTypes
     //-----------------------------------------------------------------------//
     // Approximate Equality:                                                 //
     //-----------------------------------------------------------------------//
+    // "ApproxEquals" is a method:
     template<uint64_t V>
     constexpr bool ApproxEquals
     (
@@ -398,6 +399,17 @@ namespace DimTypes
       static_assert(En::UnitsOK(E,U,V), "ERROR: Units do not unify");
       return Bits::CEMaths::ApproxEqual(m_val, a_right.m_val, a_tol);
     }
+
+    // "ApproxEqual" is a friend (similar to "ApproxEqual" on "RepT", so the
+    // same call API can be used for both):
+    template<uint64_t V>
+    constexpr friend bool ApproxEqual
+    (
+      DimQ<E, U, RepT, MaxDims> a_left,
+      DimQ<E, V, RepT, MaxDims> a_right,
+      RepT                      a_tol = Bits::CEMaths::DefaultTol<RepT>
+    )
+    { return a_left.ApproxEquals(a_right, a_tol); }
   };
   // End "DimQ" class
 

@@ -177,10 +177,13 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // "ApproxEqual":                                                          //
   //-------------------------------------------------------------------------//
+  // XXX: This is for DimeLess types (currently floating-point ones):
   template<typename F>
+  requires std::is_floating_point_v<F>
   inline constexpr  F DefaultTol = Eps<F> * F(100.0);
 
   template<typename F>
+  requires std::is_floating_point_v<F>
   constexpr bool ApproxEqual(F a_x, F a_y, F a_tol = DefaultTol<F>)
   {
     assert(a_tol >= F(0.0));
