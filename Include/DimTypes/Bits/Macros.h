@@ -238,7 +238,7 @@
 #ifdef  MK_DIMQ_TYPE_ALIAS_T
 #undef  MK_DIMQ_TYPE_ALIAS_T
 #endif
-#define MK_DIMQ_TYPE_ALIAS_T(DimType, UnitName)  DimName##_##UnitName##T
+#define MK_DIMQ_TYPE_ALIAS_T(DimName, UnitName)  DimName##_##UnitName##_T
 
 #ifdef  MK_IS_ANY
 #undef  MK_IS_ANY

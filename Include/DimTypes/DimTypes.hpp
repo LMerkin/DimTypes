@@ -39,7 +39,7 @@ namespace DimTypes
     constexpr          DimQ()     : m_val(0.0) {}
 
     template<typename  R>
-    constexpr explicit DimQ(R val): m_val(val) {}
+    constexpr explicit DimQ(R val): m_val(RepT(val))          {}
 
     // Copy Ctor:
     constexpr DimQ(DimQ const& a_right): m_val(a_right.m_val) {}
@@ -506,7 +506,7 @@ namespace DimTypes
   // Conversion TO another Rep (from "RepT" to "ToR"):
   template< typename ToR,
             uint64_t E, uint64_t  U, typename RepT, unsigned MaxDims >
-  constexpr    DimQ <E,U,ToR,MaxDims> ToRep
+  constexpr    DimQ <E,U,ToR,MaxDims> ToRepT
       (DimQ<E,U,RepT,MaxDims> const&   a_right)
       { return DimQ <E,U,ToR,MaxDims> (a_right); }
 
