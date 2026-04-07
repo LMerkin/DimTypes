@@ -197,10 +197,11 @@
   FOR_EACH_DIM(MK_DIM_UNITS, __VA_ARGS__) \
   \
   /*-----------------------------------------------------------------------*/ \
-  /* Create a "DimLess" Type:                                              */ \
+  /* Create "DimLess" Types (monomorphic and RepT-polymorphic):            */ \
   /*-----------------------------------------------------------------------*/ \
   template<typename RepT> \
-  using DimLess = DimTypes::DimQ<0, 0, RepT, DimQ_MaxDims>; \
+  using DimLessT = DimTypes::DimQ<0, 0, RepT, DimQ_MaxDims>; \
+  using DimLess  = DimLessT <DimQ_DefRepT>;                  \
   \
   /*-----------------------------------------------------------------------*/ \
   /* Finally, generate a "DimQ" output function.                           */ \
@@ -211,6 +212,64 @@
 //===========================================================================//
 // Helper Methods for "DECLARE_DIMS":                                        //
 //===========================================================================//
+//---------------------------------------------------------------------------//
+// NAME CONCATENATIONS AND STRINGIFICATION:                                  //
+//---------------------------------------------------------------------------//
+// XXX: Why are they required in the first place?   That is, why can't we use
+// "##" concatenations directly in the calling macros? -- For some reason, in
+// the latter case,  component names may not get fully evaluated,  so we need
+// yet another level of macro invocation to force evaluation:
+//
+#ifdef  MK_UNITS_ENUM_NAME
+#undef  MK_UNITS_ENUM_NAME
+#endif
+#define MK_UNITS_ENUM_NAME(  DimName, _FundUnitName, ...) DimName##UnitsE
+
+#ifdef  MK_UNITS_ENTRY_NAME
+#undef  MK_UNITS_ENTRY_NAME
+#endif
+#define MK_UNITS_ENTRY_NAME( DimName, UnitName)  DimName##UnitsE::UnitName
+
+#ifdef  MK_DIMQ_TYPE_ALIAS
+#undef  MK_DIMQ_TYPE_ALIAS
+#endif
+#define MK_DIMQ_TYPE_ALIAS(  DimName, UnitName)  DimName##_##UnitName
+
+#ifdef  MK_DIMQ_TYPE_ALIAS_T
+#undef  MK_DIMQ_TYPE_ALIAS_T
+#endif
+#define MK_DIMQ_TYPE_ALIAS_T(DimType, UnitName)  DimName##_##UnitName##T
+
+#ifdef  MK_IS_ANY
+#undef  MK_IS_ANY
+#endif
+#define MK_IS_ANY(DimName, _FundUnitName, ...)   IsAny##DimName
+
+#ifdef  MK_LITERAL_OP
+#undef  MK_LITERAL_OP
+#endif
+#define MK_LITERAL_OP(UnitName)                  ""_##UnitName
+
+#ifdef  MK_CONV_FUNC_NAME
+#undef  MK_CONV_FUNC_NAME
+#endif
+#define MK_CONV_FUNC_NAME(DimName, UnitName)     To_##DimName##_##UnitName
+
+#ifdef  MK_CONV_FUNC_NAME0
+#undef  MK_CONV_FUNC_NAME0
+#endif
+#define MK_CONV_FUNC_NAME0(DimName, ...)         To_##DimName
+
+#ifdef  STRINGIFY_NAME
+#undef  STRINGIFY_NAME
+#endif
+#define STRINGIFY_NAME( SomeName) STRINGIFY_NAME1(SomeName)
+
+#ifdef  STRINGFFY_NAME1
+#undef  STRINGIFY_NAME1
+#endif
+#define STRINGIFY_NAME1(SomeName) #SomeName
+
 //---------------------------------------------------------------------------//
 // "PREVENT_BOGUS_CLANG_WARNINGS_{B,E}":                                     //
 //---------------------------------------------------------------------------//
@@ -257,6 +316,11 @@
 #undef  GET_DIM_NAME
 #endif
 #define GET_DIM_NAME(    DimName, _FundUnitName, ...)  DimName
+
+#ifdef  GET_DIM_NAME_T
+#undef  GET_DIM_NAME_T
+#endif
+#define GET_DIM_NAME_T(  DimName, _FundUnitName, ...)  DimName##T
 
 //---------------------------------------------------------------------------//
 // "GET_FUND_UNIT", "MK_FUND_UNIT_STR":                                      //
@@ -354,13 +418,17 @@
   static_assert \
     (unsigned(MK_UNITS_ENUM_NAME DimDcl::GET_FUND_UNIT DimDcl) == 0); \
   \
-  template<typename  RepT   = DimQ_DefRepT> \
-  using GET_DIM_NAME DimDcl = \
+  /* RepT-polymorphic version: */ \
+  template<typename    RepT>      \
+  using GET_DIM_NAME_T DimDcl =   \
      DimTypes::DimQ   \
     <DimQ_Encs<RepT>::DimExp(unsigned(DimsE::GET_DIM_NAME DimDcl)),    \
      DimQ_Encs<RepT>::MkUnit(unsigned(DimsE::GET_DIM_NAME DimDcl), 0), \
      RepT,            \
      DimQ_MaxDims>;   \
+  /* Monomorphic version:      */ \
+  using GET_DIM_NAME   DimDcl = \
+        GET_DIM_NAME_T DimDcl <DimQ_DefRepT>; \
   /*-----------------------------------------------------------------------*/ \
   /* Simplified Conversion: "To_{DimName}" (assuming the FundUnit):        */ \
   /*-----------------------------------------------------------------------*/ \
@@ -438,12 +506,12 @@
      RepT> = \
     RepT(UnitVal); \
   /*-----------------------------------------------------------------------*/ \
-  /* Convenience Type and Literals for this Dim and Unit:                  */ \
-  /* HERE the full user-level DimTypes are created; NB: "RepT" remains a   */ \
-  /*  template param, with "DimQ_DefRepT" being its default:               */ \
+  /* "DimQ" Type Alais for this Dim and Unit:                              */ \
+  /* HERE the full user-level DimTypes are created:                        */ \
   /*-----------------------------------------------------------------------*/ \
-  template<typename RepT =  DimQ_DefRepT> \
-  using MK_DIMQ_TYPE_ALIAS(DimName, UnitName) =   \
+  /* RepT-polymorphic version: */ \
+  template<typename RepT> \
+  using MK_DIMQ_TYPE_ALIAS_T(DimName, UnitName) =   \
      DimTypes::DimQ \
     <DimQ_Encs<RepT>::DimExp(unsigned(DimsE::DimName)), \
      DimQ_Encs<RepT>::MkUnit(unsigned(DimsE::DimName),  \
@@ -451,17 +519,24 @@
      RepT,          \
      DimQ_MaxDims>; \
   \
+  /* Monomorphic version: */ \
+  using MK_DIMQ_TYPE_ALIAS(  DimName, UnitName) = \
+        MK_DIMQ_TYPE_ALIAS_T(DimName, UnitName) <DimQ_DefRepT>; \
+  \
+  /*-----------------------------------------------------------------------*/ \
+  /* "DimQ" Literals:                                                      */ \
+  /*-----------------------------------------------------------------------*/ \
   /* NB: Literal suffix is the UnitName. Thus, identical UnitNames for     */ \
   /* different DimNames are NOT allowed (the stopper is precisely HERE!).  */ \
   /* This is what we should normally expect in physics, anyway.            */ \
   /* XXX: There is no way to specify the "RepT" explicitly here, so  use   */ \
-  /* the default; for the arg floating type, we MUST use "long double":    */ \
+  /* the default (DimQ_DefRepT); for the arg floating type,  we MUST use   */ \
+  /* "long double":                                                        */ \
   \
-  constexpr MK_DIMQ_TYPE_ALIAS(DimName, UnitName)<DimQ_DefRepT> operator \
+  constexpr MK_DIMQ_TYPE_ALIAS(DimName, UnitName) operator \
   MK_LITERAL_OP(UnitName) (long double a_v) \
   { \
-    return  MK_DIMQ_TYPE_ALIAS(DimName, UnitName)<DimQ_DefRepT> \
-            (DimQ_DefRepT(a_v)); \
+    return  MK_DIMQ_TYPE_ALIAS(DimName, UnitName) (DimQ_DefRepT(a_v));   \
   } \
   /*-----------------------------------------------------------------------*/ \
   /* Conversion function for DimQs: "To_{DimName}_{UnitName}:              */ \
@@ -496,59 +571,6 @@
           (UnitScale<Dim, OldUnit, RepT> / UnitScale<Dim, NewUnit, RepT>)  \
       ); \
   }
-
-//===========================================================================//
-// NAME CONCATENATIONS AND STRINGIFICATION:                                  //
-//===========================================================================//
-// XXX: Why are they required in the first place?   That is, why can't we use
-// "##" concatenations directly in the calling macros? -- For some reason, in
-// the latter case,  component names may not get fully evaluated,  so we need
-// yet another level of macro invocation to force evaluation:
-//
-#ifdef  MK_UNITS_ENUM_NAME
-#undef  MK_UNITS_ENUM_NAME
-#endif
-#define MK_UNITS_ENUM_NAME( DimName, _FundUnitName, ...) DimName##UnitsE
-
-#ifdef  MK_UNITS_ENTRY_NAME
-#undef  MK_UNITS_ENTRY_NAME
-#endif
-#define MK_UNITS_ENTRY_NAME(DimName, UnitName)  DimName##UnitsE::UnitName
-
-#ifdef  MK_DIMQ_TYPE_ALIAS
-#undef  MK_DIMQ_TYPE_ALIAS
-#endif
-#define MK_DIMQ_TYPE_ALIAS(DimName, UnitName)   DimName##_##UnitName
-
-#ifdef  MK_IS_ANY
-#undef  MK_IS_ANY
-#endif
-#define MK_IS_ANY(DimName, _FundUnitName, ...)  IsAny##DimName
-
-#ifdef  MK_LITERAL_OP
-#undef  MK_LITERAL_OP
-#endif
-#define MK_LITERAL_OP(UnitName)                 ""_##UnitName
-
-#ifdef  MK_CONV_FUNC_NAME
-#undef  MK_CONV_FUNC_NAME
-#endif
-#define MK_CONV_FUNC_NAME(DimName, UnitName)    To_##DimName##_##UnitName
-
-#ifdef  MK_CONV_FUNC_NAME0
-#undef  MK_CONV_FUNC_NAME0
-#endif
-#define MK_CONV_FUNC_NAME0(DimName, ...)        To_##DimName
-
-#ifdef  STRINGIFY_NAME
-#undef  STRINGIFY_NAME
-#endif
-#define STRINGIFY_NAME( SomeName) STRINGIFY_NAME1(SomeName)
-
-#ifdef  STRINGFFY_NAME1
-#undef  STRINGIFY_NAME1
-#endif
-#define STRINGIFY_NAME1(SomeName) #SomeName
 
 //===========================================================================//
 // "DimQ" Output Function. NB: it is NOT a "constexpr"!                      //

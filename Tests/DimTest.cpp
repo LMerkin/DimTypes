@@ -36,7 +36,7 @@ int main()
   PREVENT_BOGUS_CLANG_WARNINGS_B
 
   using namespace std;
-  printf("MaxHeight=%u\n\n", DimQ_Encs::MaxHeight);
+  printf("MaxHeight=%u\n\n", DimQ_Encs<double>::MaxHeight);
 
   //=========================================================================//
   // Astronomical Constants (from DE423):                                    //
