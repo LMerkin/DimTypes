@@ -16,6 +16,7 @@ namespace
 # pragma  clang diagnostic ignored "-Wunused-function"
 # pragma  clang diagnostic ignored "-Wunused-template"
 # pragma  clang diagnostic ignored "-Wunused-const-variable"
+# pragma  clang diagnostic ignored "-Wctad-maybe-unsupported"
 # endif
   DECLARE_DIMS(
     double, ,
@@ -63,7 +64,8 @@ int main()
     8.997011408268049e-10  / (1.0 + 1.0 / EMRat) *
     IPow<3>(1.0_AU) / IPow<2>(1.0_day);
 
-  auto tonne   = Mass(1000.0);  // Assuming "kg" which is the FundUnit
+  Mass   zero;
+  Mass   tonne = Mass(1000.0) + zero; // Assuming "kg" which is the FundUnit
   auto tn1     = CbRt(tonne);
   printf("CbRt(tonne) = %s\n", ToStr(tn1).data());
 

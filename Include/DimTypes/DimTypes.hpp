@@ -23,7 +23,7 @@ namespace DimTypes
   class DimQ
   {
   private:
-    RepT m_val;  // The actual value (magnitude)
+    RepT  m_val; // The actual value (magnitude)
 
     // Encodings to be used:
     using En =   Bits::Encodings<RepT, MaxDims>;
@@ -32,14 +32,14 @@ namespace DimTypes
     //=======================================================================//
     // Ctors and Accessors:                                                  //
     //=======================================================================//
-    // Non-Default Ctor: Lifting a value into "DimQ" (by default, 0):
+    // Non-Default Ctor: Lifting a value into "DimQ" (by default, 0). NB:  We
+    // DELIBERATELY DO NOT INFER the "RepT" from the type of the Ctor arg, as
+    // this may cause ambiguities in some cases:
     //
-    constexpr explicit DimQ(RepT val = RepT(0.0)): m_val(val) {}
+    constexpr          DimQ()     : m_val(0.0) {}
 
-    // And for DimLess qtys only, we allow IMPLICIT lifting from "RepT":
-    constexpr          DimQ(RepT val = RepT(0.0)) requires(E==0 && U==0)
-    : m_val(val)
-    {}
+    template<typename  R>
+    constexpr explicit DimQ(R val): m_val(val) {}
 
     // Copy Ctor:
     constexpr DimQ(DimQ const& a_right): m_val(a_right.m_val) {}
@@ -51,10 +51,10 @@ namespace DimTypes
       return *this;
     }
 
-    // Conversion from another Rep (but E and U must match):
+    // Conversion FROM another Rep (but E and U must match):
     template<typename R>
     constexpr explicit DimQ(DimQ<E,U,R,MaxDims> const& a_right)
-      : m_val(RepT(a_right.m_val))
+      : m_val(RepT(a_right.Magnitude()))
       {}
 
     // The dimensioned unit for the given dimensioned quantity. NB: This method
@@ -421,87 +421,94 @@ namespace DimTypes
   // resp arg "DimQ" obj is there.  So their visibility is very much like that
   // of "DimQ" methods:
   //
-  template <uint64_t E, uint64_t U, typename RepT, unsigned   MaxDims>
-  constexpr DimQ<E, U, RepT, MaxDims> UnitOf(DimQ<E, U, RepT, MaxDims> a_dimq)
+  template <uint64_t E, uint64_t U, typename RepT, unsigned   MaxDims >
+  constexpr DimQ<E, U, RepT, MaxDims> UnitOf(DimQ<E, U, RepT, MaxDims > a_dimq)
     { return a_dimq.UnitOf(); }
 
-  template <uint64_t E, uint64_t U, typename RepT, unsigned  MaxDims>
+  template <uint64_t E, uint64_t U, typename RepT, unsigned  MaxDims >
   constexpr uint64_t GetDimsCode (DimQ<E, U, RepT, MaxDims>  a_dimq)
     { return a_dimq .GetDimsCode(); }
 
-  template <uint64_t E, uint64_t U, typename RepT, unsigned  MaxDims>
+  template <uint64_t E, uint64_t U, typename RepT, unsigned  MaxDims >
   constexpr uint64_t GetUnitsCode(DimQ<E, U, RepT, MaxDims>  a_dimq)
     { return a_dimq.GetUnitsCode(); }
 
-  template <uint64_t E, uint64_t U, typename RepT, unsigned  MaxDims>
+  template <uint64_t E, uint64_t U, typename RepT, unsigned  MaxDims >
   constexpr RepT     Magnitude   (DimQ<E, U, RepT, MaxDims>  a_dimq)
     { return a_dimq .Magnitude();   }
 
-  template <uint64_t E, uint64_t U, typename RepT, unsigned  MaxDims>
-  constexpr DimQ<E, U, RepT, MaxDims> Abs  (DimQ<E, U, RepT, MaxDims> a_right)
+  template <uint64_t E, uint64_t U, typename RepT, unsigned  MaxDims >
+  constexpr DimQ<E, U, RepT, MaxDims> Abs  (DimQ<E, U, RepT, MaxDims > a_right)
     { return a_right.Abs();   }
 
-  template< uint64_t E, uint64_t U, typename RepT, unsigned  MaxDims>
-  constexpr DimQ<E, U, RepT, MaxDims> Floor(DimQ<E, U, RepT, MaxDims> a_right)
+  template< uint64_t E, uint64_t U, typename RepT, unsigned  MaxDims >
+  constexpr DimQ<E, U, RepT, MaxDims> Floor(DimQ<E, U, RepT, MaxDims > a_right)
     { return a_right.Floor(); }
 
-  template< uint64_t E, uint64_t U, typename RepT, unsigned  MaxDims>
-  constexpr DimQ<E, U, RepT, MaxDims> Ceil (DimQ<E, U, RepT, MaxDims> a_right)
+  template< uint64_t E, uint64_t U, typename RepT, unsigned  MaxDims >
+  constexpr DimQ<E, U, RepT, MaxDims> Ceil (DimQ<E, U, RepT, MaxDims > a_right)
     { return a_right.Ceil();  }
 
-  template< uint64_t E,  uint64_t U, typename RepT, unsigned MaxDims>
-  constexpr DimQ<E, U, RepT, MaxDims> Round(DimQ<E, U, RepT, MaxDims> a_right)
+  template< uint64_t E,  uint64_t U, typename RepT, unsigned MaxDims >
+  constexpr DimQ<E, U, RepT, MaxDims> Round(DimQ<E, U, RepT, MaxDims > a_right)
     { return a_right.Round(); }
 
   template<int M,  uint64_t E,  uint64_t U, typename RepT, unsigned MaxDims>
   constexpr auto IPow(DimQ<E, U, RepT, MaxDims> a_right)
     { return a_right.template IPow<M>(); }
 
-  template< uint64_t E, uint64_t U, typename RepT, unsigned MaxDims>
+  template< uint64_t E, uint64_t U, typename RepT, unsigned MaxDims >
   constexpr auto Sqr(DimQ<E, U, RepT, MaxDims>  a_right)
     { return a_right.Sqr(); }
 
-  template< uint64_t E, uint64_t U, typename RepT, unsigned MaxDims>
+  template< uint64_t E, uint64_t U, typename RepT, unsigned MaxDims >
   constexpr auto Cube(DimQ<E, U, RepT, MaxDims> a_right)
     { return a_right.Cube(); }
 
-  template<int M,  int N, uint64_t E, uint64_t U,
-           typename RepT, unsigned MaxDims>
+  template<int M,   int N, uint64_t E, uint64_t U,
+           typename RepT,  unsigned MaxDims>
   constexpr auto RPow(DimQ<E, U, RepT, MaxDims> a_right)
     { return a_right.template RPow<M,N>(); }
 
-  template< uint64_t E, uint64_t U, typename RepT, unsigned MaxDims>
+  template< uint64_t E, uint64_t U, typename RepT, unsigned MaxDims >
   constexpr auto SqRt(DimQ<E, U, RepT, MaxDims> a_right)
     { return a_right.SqRt(); }
 
-  template< uint64_t E, uint64_t U, typename RepT, unsigned MaxDims>
+  template< uint64_t E, uint64_t U, typename RepT, unsigned MaxDims >
   constexpr auto CbRt(DimQ<E, U, RepT, MaxDims> a_right)
     { return a_right.CbRt(); }
 
-  template< uint64_t E, uint64_t  U, typename RepT, unsigned MaxDims>
+  template< uint64_t E, uint64_t  U, typename RepT, unsigned MaxDims >
   constexpr bool IsZero  (DimQ<E, U, RepT, MaxDims> a_right)
     { return a_right.IsZero();    }
 
-  template< uint64_t E, uint64_t  U, typename RepT, unsigned MaxDims>
+  template< uint64_t E, uint64_t  U, typename RepT, unsigned MaxDims >
   constexpr bool IsFinite(DimQ<E, U,RepT, MaxDims>  a_right)
     { return a_right.IsFinite();  }
 
-  template< uint64_t E, uint64_t  U, typename RepT, unsigned MaxDims>
+  template< uint64_t E, uint64_t  U, typename RepT, unsigned MaxDims >
   constexpr bool IsNeg   (DimQ<E, U, RepT, MaxDims> a_right)
     { return a_right.IsNeg();     }
 
-  template< uint64_t E, uint64_t  U, typename RepT, unsigned MaxDims>
+  template< uint64_t E, uint64_t  U, typename RepT, unsigned MaxDims >
   constexpr bool IsPos   (DimQ<E, U, RepT, MaxDims> a_right)
     { return a_right.IsPos();     }
 
-  template< uint64_t E, uint64_t  U, typename RepT, unsigned MaxDims>
+  template< uint64_t E, uint64_t  U, typename RepT, unsigned MaxDims >
   constexpr bool IsNaN   (DimQ<E, U, RepT, MaxDims> a_right)
     { return a_right.IsNaN();     }
 
-  template< uint64_t E, uint64_t  U, typename RepT, unsigned MaxDims>
+  template< uint64_t E, uint64_t  U, typename RepT, unsigned MaxDims >
   constexpr RepT ATan2
     (DimQ<E, U, RepT, MaxDims> a_y, DimQ<E, U, RepT, MaxDims> a_x)
     { return a_y.ATan2(a_x); }
+
+  // Conversion TO another Rep (from "RepT" to "ToR"):
+  template< typename ToR,
+            uint64_t E, uint64_t  U, typename RepT, unsigned MaxDims >
+  constexpr    DimQ <E,U,ToR,MaxDims> ToRep
+      (DimQ<E,U,RepT,MaxDims> const&   a_right)
+      { return DimQ <E,U,ToR,MaxDims> (a_right); }
 
   //=========================================================================//
   // Lifted "constexpr" Mathematical Functions:                              //

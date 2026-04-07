@@ -98,7 +98,7 @@ ELSEIF("${TOOL_CHAIN}" STREQUAL "CLang")
     -Wunreachable-code-aggressive             -Wrange-loop-analysis \
     -Wpessimizing-move   -Wredundant-move     -Wno-double-promotion \
     -Wno-float-equal     -Wno-switch-enum     -Wno-unsafe-buffer-usage \
-    -Wno-unsafe-buffer-usage-in-libc-call")
+    -Wno-unsafe-buffer-usage-in-libc-call     -Wno-ctad-maybe-unsupported")
 
 #-----------------------------------------------------------------------------#
 ELSEIF("${TOOL_CHAIN}" STREQUAL "NVHPC")
