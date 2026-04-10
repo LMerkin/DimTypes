@@ -62,7 +62,7 @@ int main()
   //-------------------------------------------------------------------------//
   constexpr auto GME  =
     8.997011408268049e-10  / (1.0 + 1.0 / EMRat) *
-    IPow<3>(1.0_AU) / IPow<2>(1.0_day);
+    IPow<3>(1.0_AU)        / IPow<2>(1.0_day);
 
   Mass   zero;
   Mass   tonne = Mass(1000.0) + zero; // Assuming "kg" which is the FundUnit
