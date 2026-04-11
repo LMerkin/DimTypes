@@ -1,6 +1,6 @@
 // vim:ts=2:et
 //===========================================================================//
-//                        "DimTypes/Bits/Encodings.hpp":                     //
+//                             "DimTypes/Encodings.hpp":                     //
 //         Encoding/Decoding of Dimension Exponents and Unit Vectors         //
 //===========================================================================//
 #pragma once
@@ -12,9 +12,7 @@
 #include <cassert>
 #include <cstdint>
 
-namespace DimTypes
-{
-namespace Bits
+namespace DimTypes::Bits
 {
   //=========================================================================//
   // "Encodings": Zp Representation of Rationals, and more:                  //
@@ -115,7 +113,7 @@ namespace Bits
     constexpr static unsigned InverseModP(int n)
     {
       if (n % IPMod == 0)
-        throw "DimTypes::Bits::InverseModP: ERROR: UnInvertible arg";
+        throw "DimTypes::Bits::Encodings::InverseModP: ERROR: UnInvertible arg";
 
       int x = int(Normalise(n));
       int a = 1;
@@ -125,7 +123,7 @@ namespace Bits
       int d = 1;
       // Check failure will result in type error at compile time:
       if (!(0 <= x && x < y))
-        throw "DimTypes::Bits::InverseModP: LOGIC ERROR (1)";
+        throw "DimTypes::Bits::Encodings::InverseModP: LOGIC ERROR (1)";
 
       while (x != 0)
       {
@@ -134,7 +132,7 @@ namespace Bits
         y = x;
         x = r;
         if (!(0 <= x && x < y))  // As above
-          throw "DimTypes::Bits::InverseModP: LOGIC ERROR (2)";
+          throw "DimTypes::Bits::Encodings::InverseModP: LOGIC ERROR (2)";
         int a1 = c - q * a;
         int b1 = d - q * b;
         c = a;
@@ -211,7 +209,7 @@ namespace Bits
     {
       // Dividing bit flds of the exponent "E" by "n" modulo "PMod":
       if (n == 0)
-        throw "DimTypes::Bits::DivExp: LOGIC ERROR";
+        throw "DimTypes::Bits::Encodings::DivExp: LOGIC ERROR";
       if (n == 1)
         return E;
 
@@ -249,7 +247,7 @@ namespace Bits
 
         int      numerC   = IPMod  - numerP;     // Complement of Neg numer
         if (!(numerP > 0 && numerC > 0))
-          throw "DimTypes::Bits::FindMaxHeight: LOGIC ERROR";
+          throw "DimTypes::Bits::Encodings::FindMaxHeight: LOGIC ERROR";
 
         unsigned repP     = (unsigned(numerP) * invDenom) % PMod;
         unsigned repC     = (unsigned(numerC) * invDenom) % PMod;
@@ -291,7 +289,7 @@ namespace Bits
           int      numerC   = IPMod  - numerP; // Complement of Negative numer
 
           if (!(numerP > 0 && numerC > 0))
-            throw "DimTypes::Bits::GetNumerAndDenom: LOGIC ERROR";
+            throw "DimTypes::Bits::Encodings::GetNumerAndDenom: LOGIC ERROR";
 
           if ((unsigned(numerP) * invDenom) % PMod == rep)
             return std::make_pair(numerP,   unsigned(denom));
@@ -301,7 +299,8 @@ namespace Bits
       }
       // XXX: Can we get here without a success. Throwing an exception will
       // result in a type error at compile time:
-      throw "ERROR: DimTypes::Bits::GetNumerAndDenom: Rep Not Matched";
+      throw "ERROR: DimTypes::Biys::Encodings::GetNumerAndDenom: "
+            "Rep Not Matched";
     }
 
     //=======================================================================//
@@ -362,7 +361,8 @@ namespace Bits
                // same:
                (u == v)
                ? u
-               : throw "ERROR: DimTypes::Bits::UnifyUnits: Unification Failed"
+               : throw "ERROR: DimTypes::Bits::Encodings::UnifyUnits: "
+                       "Unification Failed"
             );
         // Put the unified units into the "res":
         res |= PutFld(unified, dim);
@@ -533,6 +533,4 @@ namespace Bits
   };
   // End "Encodings" class
 }
-// End namespace Bits
-}
-// End namespace DimTypes
+// End namespace DimTypes::Bits

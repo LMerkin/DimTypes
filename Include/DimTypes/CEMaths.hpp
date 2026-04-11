@@ -1,6 +1,6 @@
 // vim:ts=2:et
 //===========================================================================//
-//                                 "CEMaths.hpp":                            //
+//                            "DimTypes/CEMaths.hpp":                        //
 //      Standard Mathematical Functions as "constexpr"s, for C++ <= 23       //
 //===========================================================================//
 #pragma  once
@@ -13,16 +13,27 @@
 #include <type_traits>
 #include <iostream>
 
-namespace DimTypes::Bits::CEMaths
+namespace DimTypes::CEMaths
 {
+  //=========================================================================//
+  // IMPORTANT:                                                              //
+  //=========================================================================//
+  // It would be nice, for the "public" / "private" visibility control, to make
+  // "CEMaths" a class with static-only members, not a namespace.
+  // HOWEVER, this would prevent us from specialising the templates declared
+  // there -- and we really need that mechanism...
+  //
   //=========================================================================//
   // Elementary Functions, Utils:                                            //
   //=========================================================================//
   //-------------------------------------------------------------------------//
   // "IsComplex":                                                            //
   //-------------------------------------------------------------------------//
-  template<typename T> inline constexpr bool IsComplex = false;
-  template<typename T> inline constexpr bool IsComplex<std::complex<T>> = true;
+  template<typename T>
+  constexpr inline bool IsComplex                  = false;
+
+  template<typename T>
+  constexpr inline bool IsComplex<std::complex<T>> = true;
 
   //-------------------------------------------------------------------------//
   // "Abs":                                                                  //
@@ -37,7 +48,7 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // "Floor":                                                                //
   //-------------------------------------------------------------------------//
-  // XXX: Not really "constexpr" in CLang <= 19, and no emulation is currently
+  // XXX: Not really "constexpr" in CLang <= 21, and no emulation is currently
   // provided (TODO: not very difficult to implement):
   //
   template<typename F>
@@ -50,11 +61,11 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // "Ceil":                                                                 //
   //-------------------------------------------------------------------------//
-  // XXX: Not really "constexpr" in CLang <= 19, and no emulation is currently
+  // XXX: Not really "constexpr" in CLang <= 21, and no emulation is currently
   // provided (TODO: not very difficult to implement):
   //
   template<typename F>
-  constexpr F Ceil(F a_x)
+  constexpr F  Ceil(F a_x)
   requires(std::is_floating_point_v<F> && !IsComplex<F>)
   {
     return std::ceil(a_x);
@@ -63,7 +74,7 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // "Round":                                                                //
   //-------------------------------------------------------------------------//
-  // XXX: Not really "constexpr" in CLang <= 19, and no emulation is currently
+  // XXX: Not really "constexpr" in CLang <= 21, and no emulation is currently
   // provided (TODO: not very difficult to implement):
   //
   template<typename F>
@@ -76,8 +87,8 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // "FMod":                                                                 //
   //-------------------------------------------------------------------------//
-  // Again, in CLang <= 19, "std::fmod" is not "constexpr", so our own implem-
-  // entation is needed:
+  // Again, in CLang <= 21, "std::fmod" is not "constexpr", so our own implem-
+  // entation is needed. For Internal Use Only:
   //
   template<typename F>
   constexpr F FMod (F a_x, F a_y)
@@ -98,10 +109,6 @@ namespace DimTypes::Bits::CEMaths
 # endif
   }
 
-  // NB: "std::isinf", "std::isnan", "std::isfinite" are ALWAYS "constexpr" in
-  // compilers supporting C++ >= 23 (even in CLang <= 19 which is not entirely
-  // standard-complient), so there is no need to wrap them into our own impls...
-
   //-------------------------------------------------------------------------//
   // "Sqr", "Cube":                                                          //
   //-------------------------------------------------------------------------//
@@ -115,7 +122,7 @@ namespace DimTypes::Bits::CEMaths
   requires  (std::is_floating_point_v<F>)
     { return a_x == F(0.0); }
 
-  template<typename F> constexpr bool IsPos (F a_x)
+  template<typename F> constexpr bool IsPos(F a_x)
   requires  (std::is_floating_point_v<F> && !IsComplex<F>)
     { return a_x >  F(0.0); }
 
@@ -131,7 +138,11 @@ namespace DimTypes::Bits::CEMaths
   requires (std::is_floating_point_v<F> && !IsComplex<F>)
     { return std::isfinite(a_x); }
 
-  template<typename F> F Magnitude(F a_x)
+  template<typename F> constexpr bool IsInf(F a_x)
+  requires (std::is_floating_point_v<F> && !IsComplex<F>)
+    { return std::isinf(a_x); }
+
+  template<typename F> constexpr F    Magnitude(F a_x)
   requires (std::is_floating_point_v<F>)
     { return a_x; }
 
@@ -150,66 +161,75 @@ namespace DimTypes::Bits::CEMaths
   // Consts:                                                                 //
   //=========================================================================//
   // Infinity, NaN:
-  template<typename F> inline constexpr F Inf   = F(INFINITY);     // +oo
-  template<typename F> inline constexpr F NaN   = F(NAN);          // NaN
+  template<typename F> constexpr inline F Inf   = F(INFINITY);     // +oo
+  template<typename F> constexpr inline F NaN   = F(NAN);          // NaN
 
   // Eps:
-  template<typename F> inline constexpr F Eps;
-  template<> inline constexpr float       Eps<float>       = FLT_EPSILON;
-  template<> inline constexpr double      Eps<double>      = DBL_EPSILON;
-  template<> inline constexpr long double Eps<long double> = LDBL_EPSILON;
+  template<typename F> constexpr inline F Eps;
+
+  template<> constexpr inline float       Eps<float>       = FLT_EPSILON;
+  template<> constexpr inline double      Eps<double>      = DBL_EPSILON;
+  template<> constexpr inline long double Eps<long double> = LDBL_EPSILON;
 
   // Pi:
-  template<typename F> inline constexpr F Pi      = F(M_PIl);        // Pi
-  template<typename F> inline constexpr F TwoPi   = F(2.0L * M_PIl); // 2*Pi
-  template<typename F> inline constexpr F Pi_2    = F(M_PI_2l);      // Pi/2
-  template<typename F> inline constexpr F Pi_4    = F(M_PI_4l);      // Pi/4
+  template<typename F> constexpr inline F Pi      = F(M_PIl);        // Pi
+  template<typename F> constexpr inline F TwoPi   = F(2.0L * M_PIl); // 2*Pi
+  template<typename F> constexpr inline F Pi_2    = F(M_PI_2l);      // Pi/2
+  template<typename F> constexpr inline F Pi_4    = F(M_PI_4l);      // Pi/4
 
   // "Technical" Consts:
-  template<typename F> inline constexpr F SqRt2   = F(M_SQRT2l);     // SqRt(2)
-  template<typename F> inline constexpr F SqRt1_2 = F(M_SQRT1_2l);   // .../2
-  template<typename F> inline constexpr F Ln2     = F(M_LN2l);       // ln(2)
-  template<typename F> inline constexpr F Log2E   = F(M_LOG2El);     // log2(e)
+  template<typename F> constexpr inline F SqRt2   = F(M_SQRT2l);     // SqRt(2)
+  template<typename F> constexpr inline F SqRt1_2 = F(M_SQRT1_2l);   // .../2
+  // For Internal Use Only:
+  template<typename F> constexpr inline F Ln2     = F(M_LN2l);       // ln(2)
+  template<typename F> constexpr inline F Log2E   = F(M_LOG2El);     // log2(e)
+  template<typename F> constexpr inline F SqRt3;                     // SqRt(3)
+  template<typename F> constexpr inline F CbRt2;                     // CbRt(2)
+  template<typename F> constexpr inline F CbRt4;                     // CbRt(4)
+  template<typename F> constexpr inline F CbRt48;                    // CbRt(48)
+  template<typename F> constexpr inline F Ln3_4;                     // Ln(3/4),
 
-  template<typename F> inline constexpr F SqRt3;                     // SqRt(3)
-  template<typename F> inline constexpr F CbRt2;                     // CbRt(2)
-  template<typename F> inline constexpr F CbRt4;                     // CbRt(4)
-  template<typename F> inline constexpr F CbRt48;                    // CbRt(48)
-  template<typename F> inline constexpr F Ln3_4;                     // Ln(3/4),
-
-  // XXX: Suppress bogus warnings generated by CLang <= 19 on the following
-  // constant specialisations:
-  template<> inline constexpr long double SqRt3<long double>  =
+  template<> constexpr inline long double SqRt3<long double>  =
     1.73205080756887729353L;
-  template<> inline constexpr double      SqRt3<double>       =
+
+  template<> constexpr inline double      SqRt3<double>       =
     double(SqRt3<long  double>);
-  template<> inline constexpr float       SqRt3<float>        =
+
+  template<> constexpr  inline float       SqRt3<float>       =
     float (SqRt3<long  double>);
 
-  template<> inline constexpr long double CbRt2<long double>  =
+  template<> constexpr inline long double CbRt2<long double>  =
     1.25992104989487316477L;
-  template<> inline constexpr double      CbRt2<double>       =
+
+  template<> constexpr inline double      CbRt2<double>       =
     double(CbRt2<long double>);
-  template<> inline constexpr float       CbRt2<float>        =
+
+  template<> constexpr inline float       CbRt2<float>        =
     float (CbRt2<long double>);
 
-  template<> inline constexpr long double CbRt4<long double>  =
+  template<> constexpr inline long double CbRt4<long double>  =
     1.58740105196819947475L;
-  template<> inline constexpr double      CbRt4<double>       =
+
+  template<> constexpr inline double      CbRt4<double>       =
     double(CbRt4<long double>);
-  template<> inline constexpr float       CbRt4<float>        =
+
+  template<> constexpr inline float       CbRt4<float>        =
     float (CbRt4<long double>);
 
-  template<> inline constexpr long double CbRt48<long double> =
+  template<> constexpr inline long double CbRt48<long double> =
     3.63424118566427931778L;
-  template<> inline constexpr double      CbRt48<double>      =
+
+  template<> constexpr inline double      CbRt48<double>      =
     double(CbRt48<long double>);
+
   // CbRt48<float> is proibably not required
 
-  template<> inline constexpr long double Ln3_4<long double>  =
+  template<> constexpr inline long double Ln3_4<long double>  =
     -0.287682072451780927439L;
-  template<> inline constexpr double      Ln3_4<double>       =
+
+  template<> constexpr inline double      Ln3_4<double>       =
     double(Ln3_4<long  double>);
+
   // Ln3_4<float> is probably not required
 
   //-------------------------------------------------------------------------//
@@ -218,7 +238,7 @@ namespace DimTypes::Bits::CEMaths
   // XXX: This is for DimeLess types (currently floating-point ones):
   template<typename F>
   requires std::is_floating_point_v<F>
-  inline constexpr  F DefaultTol = Eps<F> * F(100.0);
+  constexpr inline  F DefaultTol  = Eps<F> * F(100.0);
 
   template<typename F>
   requires std::is_floating_point_v<F>
@@ -245,7 +265,7 @@ namespace DimTypes::Bits::CEMaths
   //=========================================================================//
   // The arg is assumed to be in [-0.5 .. 0.5]:
   //
-  template<typename F>
+  template<typename   F>
   constexpr F ExpPade(F a_x);
 
   //-------------------------------------------------------------------------//
@@ -364,20 +384,20 @@ namespace DimTypes::Bits::CEMaths
   // "LogPade":                                                              //
   //=========================================================================//
   // Pade approximants for log(x), 1/2 <= x < 1, centered at x = 3/4.
-  // Altermatively, we could use approximants centered at x=1, which would have
-  // "simpler" coeffs, but they would require higher orders for the same preci-
-  // sion, so would offer no real advantages, since  in both cases the approxi-
-  // mants are "dense":
+  // Altermatively, we could use approximants centered at x=1,   which would
+  // have "simpler" coeffs, but they would require higher orders for the same
+  // precision, so would offer no real advantages, since  in both cases the
+  // approximants are "dense":
   //
-  template<typename F>
+  template<typename   F>
   constexpr F LogPade(F a_x);
 
   //-------------------------------------------------------------------------//
   // LogPade<float>: 4th-Order Pade Approximant:                             //
   //-------------------------------------------------------------------------//
   // Eps<float> = 2^(-23) =~ 1.2e-7,
-  // the abs precision of the 4th-order approximant is ~6e-9 (yet, the 3rd-order
-  // one would be insufficient):
+  // the abs precision of the 4th-order approximant is ~6e-9 (yet, the 3rd-
+  // order one would be insufficient):
   //
   template<>
   constexpr float LogPade<float>(float a_x)
@@ -452,7 +472,7 @@ namespace DimTypes::Bits::CEMaths
   template<>
   constexpr long double LogPade<long double>(long double a_x)
   {
-    assert(0.5L  <= a_x && a_x < 1.0L);
+    assert(0.5L <= a_x && a_x < 1.0L);
 
     constexpr long double b10 =     1321205760.0L;
     constexpr long double b9  =    99090432000.0L;
@@ -497,7 +517,7 @@ namespace DimTypes::Bits::CEMaths
   //     coeffs, but of slighly lower degree;
   // from the computational efficiency point of view, method (a) is better!
   //
-  template<typename F>
+  template<typename   F>
   constexpr F CosPade(F a_x);
 
   //-------------------------------------------------------------------------//
@@ -581,7 +601,7 @@ namespace DimTypes::Bits::CEMaths
   // The arg is assumed to be in [0 .. Pi/4], centered at x=0 (same considera-
   // tions apply as for "CosPade"):
   //
-  template<typename F>
+  template<typename   F>
   constexpr F SinPade(F a_x);
 
   //-------------------------------------------------------------------------//
@@ -661,12 +681,13 @@ namespace DimTypes::Bits::CEMaths
   // Pade approximants for atan(x), |x| <= 1, centered at x = 0;
   // Compared to other elementary functions, atan(x) requires relatively
   // lengthy Pade approximants to achieve the required accuracy:
-  // XXX: A rational Pade approximation may not be the most efficient choice in
-  // this case; Chebyshev approximation constructed using the Remez algorithm
-  // might be better. However, it may not preserbe the exact value and derivat-
-  // ives at x=0. Anoher possibiliy is to use a muli-point atan approximation:
+  // XXX: A rational Pade approximation may not be the most efficient choice
+  // in this case; Chebyshev approximation constructed using the Remez algo-
+  // rithm might be better. However, it may not preserve the exact value and
+  // derivatives at x=0. Another possibiliy is to use a multi-point  atan(x)
+  // approximation:
   //
-  template<typename F>
+  template<typename    F>
   constexpr F ATanPade(F a_x);
 
   //-------------------------------------------------------------------------//
@@ -694,7 +715,7 @@ namespace DimTypes::Bits::CEMaths
     float            x2 = a_x * a_x;
     return
       (((((a11 * x2 + a9) * x2 + a7) * x2 + a5) * x2 + a3) * x2 + 1.0f) * a_x /
-       ((((b8  * x2 + b6) * x2 + b4) * x2 + b2) * x2 + 1.0f);
+      ((((b8   * x2 + b6) * x2 + b4) * x2 + b2) * x2 + 1.0f);
   }
 
   //-------------------------------------------------------------------------//
@@ -732,11 +753,13 @@ namespace DimTypes::Bits::CEMaths
 
     double            x2 = a_x * a_x;
     return
-      ((((((((((a21 * x2 + a19) * x2 + a17) * x2 + a15) * x2 + a13) * x2 + a11)
-                    * x2 +  a9) * x2 +  a7) * x2 +  a5) * x2 +  a3) * x2 + 1.0)
+      ((((((((((a21 * x2 + a19) * x2 + a17) * x2 + a15) * x2 + a13) * x2
+                         + a11) * x2 +  a9) * x2 +  a7) * x2 +  a5) * x2
+                         +  a3) * x2 + 1.0)
       * a_x /
-      ((((((((((b20 * x2 + b18) * x2 + b16) * x2 + b14) * x2 + b12) * x2 + b10)
-                    * x2 +  b8) * x2 +  b6) * x2 +  b4) * x2 +  b2) * x2 + 1.0);
+      ((((((((((b20 * x2 + b18) * x2 + b16) * x2 + b14) * x2 + b12) * x2
+                         + b10) * x2 +  b8) * x2 +  b6) * x2 +  b4) * x2
+                         +  b2) * x2 + 1.0);
   }
 
   //-------------------------------------------------------------------------//
@@ -779,14 +802,14 @@ namespace DimTypes::Bits::CEMaths
 
     long double            x2 = a_x * a_x;
     return
-      (((((((((((((a27 * x2 + a25) * x2 + a23) * x2 + a21) * x2 + a19)
-                       * x2 + a17) * x2 + a15) * x2 + a13) * x2 + a11)
-                       * x2 +  a9) * x2 +  a7) * x2 +  a5) * x2 +  a3)
-                       * x2 + 1.0L)
+      (((((((((((((a27 * x2 + a25) * x2 + a23) * x2 + a21) * x2 + a19) * x2
+                            + a17) * x2 + a15) * x2 + a13) * x2 + a11) * x2
+                            +  a9) * x2 +  a7) * x2 +  a5) * x2 +  a3) * x2
+                            + 1.0L)
       * a_x /
-       ((((((((((((b24 * x2 + b22) * x2 + b20) * x2 + b18) * x2 + b16)
-                       * x2 + b14) * x2 + b12) * x2 + b10) * x2 + b8)
-                       * x2 +  b6) * x2 +  b4) * x2 +  b2) * x2 + 1.0L);
+       ((((((((((((b24 * x2 + b22) * x2 + b20) * x2 + b18) * x2 + b16) * x2
+                            + b14) * x2 + b12) * x2 + b10) * x2 +  b8) * x2
+                            +  b6) * x2 +  b4) * x2 +  b2) * x2 + 1.0L);
   }
 
   //=========================================================================//
@@ -796,7 +819,7 @@ namespace DimTypes::Bits::CEMaths
   // Altermatively, we could use approximants centered at x=1, but that would
   // be disadvatageous (similar to "LogPade"):
   //
-  template<typename F>
+  template<typename    F>
   constexpr F SqRtPade(F a_x);
 
   //-------------------------------------------------------------------------//
@@ -912,7 +935,7 @@ namespace DimTypes::Bits::CEMaths
   // Altermatively, we could use approximants centered at x=1, but that would
   // be disadvatageous (similar to "LogPade" and "SqRt"):
   //
-  template<typename F>
+  template<typename    F>
   constexpr F CbRtPade(F a_x);
 
   //-------------------------------------------------------------------------//
@@ -1027,13 +1050,13 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // "Exp" for an arbitrary real arg:                                        //
   //-------------------------------------------------------------------------//
-  // XXX: In CLang <= 19,  this function  is STILL NOT "constexpr", because
+  // XXX: In CLang <= 21,  this function  is STILL NOT "constexpr", because
   // "std::modf" and "std::ldexp" are not -- so using it in the "constexpr"
   // context will fail:
   // XXX: Complex "Exp" has a separate specific implementation:
   //
   template<typename F>
-  constexpr F Exp(F a_x)
+  constexpr F   Exp(F a_x)
   requires(std::is_floating_point_v<F> && !IsComplex<F>)
   {
 # if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
@@ -1095,13 +1118,13 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // "Log" (Natural Logarithm) for an arbitrary real arg:                    //
   //-------------------------------------------------------------------------//
-  // XXX: In CLang <= 19,  this function  is STILL NOT "constexpr", because
+  // XXX: In CLang <= 21,  this function  is STILL NOT "constexpr", because
   // "std::modf" and "std::ldexp" are not -- so using it in the "constexpr"
   // context will fail:
   // XXX: Complex "Log" has a separate specific implementation:
   //
   template<typename F>
-  constexpr F Log(F a_x)
+  constexpr F   Log(F a_x)
   requires(std::is_floating_point_v<F> && !IsComplex<F>)
   {
 # if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
@@ -1144,13 +1167,13 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // Generic "Pow" for an arbitrary real arg:                                //
   //-------------------------------------------------------------------------//
-  // XXX: In CLang <= 19,  this function  is STILL NOT "constexpr",  because
+  // XXX: In CLang <= 21,  this function  is STILL NOT "constexpr",  because
   // "Exp" is not either -- so using it in the "constexpr" context will fail:
   // XXX: Complex "Pow" is not implemented yet. Also, for this generic imple-
   // mentation,   "a_x" is required to be positive:
   //
   template<typename F>
-  constexpr F Pow(F a_x, F a_y)
+  constexpr F   Pow(F a_x, F a_y)
   requires(std::is_floating_point_v<F> && !IsComplex<F>)
   {
     assert(a_x > 0);
@@ -1162,7 +1185,7 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // XXX: Complex "Cos" has a separate specific implementation:
   template<typename F>
-  constexpr F Cos(F a_x)
+  constexpr F   Cos(F a_x)
   requires(std::is_floating_point_v<F> && !IsComplex<F>)
   {
 # if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
@@ -1205,7 +1228,7 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // XXX: Complex "Sin" has a separate specific implementation:
   template<typename F>
-  constexpr F Sin(F a_x)
+  constexpr F   Sin(F a_x)
   requires(std::is_floating_point_v<F> && !IsComplex<F>)
   {
 # if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
@@ -1249,7 +1272,7 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // XXX: Complex "Tan" has a separate specific implementation:
   template<typename F>
-  constexpr F Tan(F a_x)
+  constexpr F   Tan(F a_x)
   requires(std::is_floating_point_v<F> && !IsComplex<F>)
   {
 # if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
@@ -1374,7 +1397,7 @@ namespace DimTypes::Bits::CEMaths
   // Complex "SqRt" has a separate specific implementation:
   //
   template<typename F>
-  constexpr F SqRt(F a_x)
+  constexpr F  SqRt(F a_x)
   requires(std::is_floating_point_v<F> && !IsComplex<F>)
   {
 # if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
@@ -1414,7 +1437,7 @@ namespace DimTypes::Bits::CEMaths
     }
     return std::ldexp(sqrtFX, n);
 #   else
-    // XXX: In CLang <= 19, "std::frexp" is not "constexpr", so another method
+    // XXX: In CLang <= 21, "std::frexp" is not "constexpr", so another method
     // is required: Use Hayley iterations which always converge:
     // Initial approximation of the root from above: Using the ineqiality bet-
     // ween the Arithmetic and Geometric Means (the other operand is 1):
@@ -1505,7 +1528,7 @@ namespace DimTypes::Bits::CEMaths
     }
     F y = std::ldexp(cbrtFX, n);
 #   else
-    // XXX: In CLang <= 19, "std::frexp" is not "constexpr", so another method
+    // XXX: In CLang <= 21, "std::frexp" is not "constexpr", so another method
     // is required: Use Hayley iterations which always converge:
     // Initial approximation of the root from above: Using the ineqiality bet-
     // ween the Arithmetic and Geometric Means (the other operands are 1, 1):
@@ -1650,7 +1673,7 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // Complex "Exp":                                                          //
   //-------------------------------------------------------------------------//
-  // XXX: Not really "constexpr" in CLang <= 19:
+  // XXX: Not really "constexpr" in CLang <= 21:
   //
   template<typename T>
   constexpr std::complex<T> Exp(std::complex<T> a_z)
@@ -1665,7 +1688,7 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // Complex "Cos":                                                          //
   //-------------------------------------------------------------------------//
-  // XXX: Not really "constexpr" in CLang <= 19:
+  // XXX: Not really "constexpr" in CLang <= 21:
   //
   template<typename T>
   constexpr std::complex<T> Cos(std::complex<T> a_z)
@@ -1685,7 +1708,7 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // Complex "Sin":                                                          //
   //-------------------------------------------------------------------------//
-  // XXX: Not really "constexpr" in CLang <= 19:
+  // XXX: Not really "constexpr" in CLang <= 21:
   //
   template<typename T>
   constexpr std::complex<T> Sin(std::complex<T> a_z)
@@ -1705,7 +1728,7 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // Complex "Cos" and "Sin" together (for efficiency):                      //
   //-------------------------------------------------------------------------//
-  // Returns (cos(z), sin(z)). XXX: Not really "constexpr" in CLang <= 19:
+  // Returns (cos(z), sin(z)). XXX: Not really "constexpr" in CLang <= 21:
   //
   template<typename T>
   constexpr std::pair<std::complex<T>, std::complex<T>>
@@ -1744,27 +1767,28 @@ namespace DimTypes::Bits::CEMaths
   //-------------------------------------------------------------------------//
   // Complex "Pow":                                                          //
   //-------------------------------------------------------------------------//
-  // XXX: Not really "constexpr" in CLang <= 19:
+  // XXX: Not really "constexpr" in CLang <= 21:
   //
   template<typename T>
-  constexpr  std::complex<T> Pow(std::complex<T> a_z, T a_p)
+  constexpr std::complex<T> Pow(std::complex<T> a_z, T a_p)
     { return std::pow(a_z, a_p); }
 
   //-------------------------------------------------------------------------//
   // Complex "SqRt":                                                         //
   //-------------------------------------------------------------------------//
-  // XXX: Also a placeholder as yet, NOT "constexpr" in CLang <= 19:
+  // XXX: Also a placeholder as yet, NOT "constexpr" in CLang <= 21:
   //
   template<typename T>
-  constexpr  std::complex<T> SqRt(std::complex<T> a_z)
+  constexpr std::complex<T> SqRt(std::complex<T> a_z)
     { return std::sqrt(a_z); }
 
   //-------------------------------------------------------------------------//
   // Complex "CbRt":                                                         //
   //-------------------------------------------------------------------------//
-  // XXX: Also a placeholder as yet, NOT "constexpr" in CLang <= 19:
+  // XXX: Also a placeholder as yet, NOT "constexpr" in CLang <= 21:
   //
   template<typename T>
-  constexpr  std::complex<T> CbRt(std::complex<T> a_z)
+  constexpr std::complex<T> CbRt(std::complex<T> a_z)
     { return std::pow(a_z, T(1)/T(3)); }
 }
+// End namespace DimTypes::CEMaths

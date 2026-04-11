@@ -1,6 +1,6 @@
 // vim:ts=2:et
 //===========================================================================//
-//                          "DimTypes/Bits/Macros.h":                        //
+//                              "DimTypes/Macros.h":                         //
 //                   Macros for Declaring Dimensions and Units               //
 //===========================================================================//
 #pragma  once
@@ -16,8 +16,7 @@
 //===========================================================================//
 // They can be invoked in any namespace where the corresp declarations need to
 // be placed. All names created by them are placed in the macro expansion con-
-// text, NOT in the "DimTypes" namespace:
-//
+// text:
 //===========================================================================//
 // "FOR_EACH_DIM":                                                           //
 //===========================================================================//
@@ -160,7 +159,91 @@
 #ifdef  DECLARE_DIMS
 #undef  DECLARE_DIMS
 #endif
-#define DECLARE_DIMS(DefRepT, MaxDims, ...) \
+#define DECLARE_DIMS(DefRepT, MaxDims, ...)  \
+  /*-----------------------------------------------------------------------*/ \
+  /* Import the DimTypes::CEMaths Elementary Functions and Consts:         */ \
+  /* IMPORTANT: Use "using" declarations, NOT "using namespace" directives */ \
+  /*   as the latter may cause obscure problems with overloading:          */ \
+  /*-----------------------------------------------------------------------*/ \
+  using DimTypes::CEMaths::IsComplex;   \
+  using DimTypes::CEMaths::Abs;         \
+  using DimTypes::CEMaths::Floor;       \
+  using DimTypes::CEMaths::Ceil;        \
+  using DimTypes::CEMaths::Round;       \
+  using DimTypes::CEMaths::Sqr;         \
+  using DimTypes::CEMaths::Cube;        \
+  using DimTypes::CEMaths::IsZero;      \
+  using DimTypes::CEMaths::IsPos;       \
+  using DimTypes::CEMaths::IsNeg;       \
+  using DimTypes::CEMaths::IsNaN;       \
+  using DimTypes::CEMaths::IsFinite;    \
+  using DimTypes::CEMaths::IsInf;       \
+  using DimTypes::CEMaths::Magnitude;   \
+  using DimTypes::CEMaths::Min;         \
+  using DimTypes::CEMaths::Max;         \
+  using DimTypes::CEMaths::Inf;         \
+  using DimTypes::CEMaths::NaN;         \
+  using DimTypes::CEMaths::Eps;         \
+  using DimTypes::CEMaths::Pi;          \
+  using DimTypes::CEMaths::TwoPi;       \
+  using DimTypes::CEMaths::Pi_2;        \
+  using DimTypes::CEMaths::Pi_4;        \
+  using DimTypes::CEMaths::SqRt2;       \
+  using DimTypes::CEMaths::DefaultTol;  \
+  using DimTypes::CEMaths::ApproxEqual; \
+  using DimTypes::CEMaths::Exp;         \
+  using DimTypes::CEMaths::Log;         \
+  using DimTypes::CEMaths::Pow;         \
+  using DimTypes::CEMaths::Cos;         \
+  using DimTypes::CEMaths::Sin;         \
+  using DimTypes::CEMaths::Tan;         \
+  using DimTypes::CEMaths::ATan;        \
+  using DimTypes::CEMaths::ATan2;       \
+  using DimTypes::CEMaths::SqRt;        \
+  using DimTypes::CEMaths::CbRt;        \
+  using DimTypes::CEMaths::ASin;        \
+  using DimTypes::CEMaths::ACos;        \
+  using DimTypes::CEMaths::SinH;        \
+  using DimTypes::CEMaths::CosH;        \
+  using DimTypes::CEMaths::TanH;        \
+  using DimTypes::CEMaths::ASinH;       \
+  using DimTypes::CEMaths::ACosH;       \
+  using DimTypes::CEMaths::ATanH;       \
+  using DimTypes::CEMaths::CosSin;      \
+  using DimTypes::ToRepT;               \
+  using DimTypes::Abs;                  \
+  using DimTypes::Floor;                \
+  using DimTypes::Ceil;                 \
+  using DimTypes::Round;                \
+  using DimTypes::ApproxEqual;          \
+  using DimTypes::IPow;                 \
+  using DimTypes::Sqr;                  \
+  using DimTypes::Cube;                 \
+  using DimTypes::RPow;                 \
+  using DimTypes::SqRt;                 \
+  using DimTypes::CbRt;                 \
+  using DimTypes::Exp;                  \
+  using DimTypes::Log;                  \
+  using DimTypes::Cos;                  \
+  using DimTypes::Sin;                  \
+  using DimTypes::Tan;                  \
+  using DimTypes::ATan;                 \
+  using DimTypes::ASin;                 \
+  using DimTypes::ACos;                 \
+  using DimTypes::CosH;                 \
+  using DimTypes::SinH;                 \
+  using DimTypes::TanH;                 \
+  using DimTypes::ACosH;                \
+  using DimTypes::ASinH;                \
+  using DimTypes::ATanH;                \
+  using DimTypes::IsZero;               \
+  using DimTypes::IsFinite;             \
+  using DimTypes::IsInf;                \
+  using DimTypes::IsNaN;                \
+  using DimTypes::IsNeg;                \
+  using DimTypes::IsPos;                \
+  using DimTypes::ATan2;                \
+  \
   /*-----------------------------------------------------------------------*/ \
   /* "DimQ_MaxDims", "DimQ_DefRepT" and "DimQ_Encs":                       */ \
   /*-----------------------------------------------------------------------*/ \
@@ -168,7 +251,7 @@
     ( unsigned{MaxDims} == 0 )   \
     ? DimTypes::Bits::DefMaxDims \
     : unsigned{MaxDims};         \
-  using DimQ_DefRepT = DefRepT;  \
+  using DimQ_DefRepT = DefRepT;    \
   template<typename RepT>        \
   using DimQ_Encs    = DimTypes::Bits::Encodings<RepT, DimQ_MaxDims>; \
   \
@@ -201,7 +284,7 @@
   /*-----------------------------------------------------------------------*/ \
   template<typename RepT> \
   using DimLessT = DimTypes::DimQ<0, 0, RepT, DimQ_MaxDims>; \
-  using DimLess  = DimLessT <DimQ_DefRepT>;                  \
+  using DimLess  = DimLessT <DimQ_DefRepT>; \
   \
   /*-----------------------------------------------------------------------*/ \
   /* Finally, generate a "DimQ" output function.                           */ \
@@ -412,7 +495,7 @@
   \
   /*-----------------------------------------------------------------------*/ \
   /* Convenience Type for this Dim (with the implicit FundUnit);           */ \
-  /* HERE the simplified DimTypes  (with the impl FundUnit) are created:   */ \
+  /* HERE the simplified "DimQ"s   (with the impl FundUnit) are created:   */ \
   /* NB:  the "RepT" remains a template params,  with the given default:   */ \
   /*-----------------------------------------------------------------------*/ \
   static_assert \
@@ -433,18 +516,18 @@
   /* Simplified Conversion: "To_{DimName}" (assuming the FundUnit):        */ \
   /*-----------------------------------------------------------------------*/ \
   template<uint64_t E, uint64_t U, typename RepT> \
-  constexpr DimTypes::DimQ   \
+  constexpr DimTypes::DimQ \
     <E, \
-     DimQ_Encs<RepT>::SetUnit(U, unsigned(DimsE:: GET_DIM_NAME DimDcl), 0),  \
-     RepT,            \
-     DimQ_MaxDims>    \
-  MK_CONV_FUNC_NAME0 DimDcl  \
-  (DimTypes::DimQ<E, U, RepT, DimQ_MaxDims> a_dimq) \
+     DimQ_Encs<RepT>::SetUnit(U, unsigned(DimsE:: GET_DIM_NAME DimDcl), 0), \
+     RepT,         \
+     DimQ_MaxDims> \
+  MK_CONV_FUNC_NAME0 DimDcl \
+    (DimTypes::DimQ<E, U, RepT, DimQ_MaxDims> const& a_dimq)  \
   { \
-    constexpr unsigned Dim       = unsigned(DimsE::GET_DIM_NAME  DimDcl);  \
-    constexpr unsigned OldUnit   = DimQ_Encs<RepT>::GetFld(U, Dim);        \
+    constexpr unsigned Dim       = unsigned(DimsE::GET_DIM_NAME  DimDcl);   \
+    constexpr unsigned OldUnit   = DimQ_Encs<RepT>::GetFld(U, Dim);         \
     constexpr auto     ExpNumDen = \
-      DimQ_Encs<RepT>::GetNumerAndDenom(DimQ_Encs<RepT>::GetFld(E, Dim));  \
+      DimQ_Encs<RepT>::GetNumerAndDenom(DimQ_Encs<RepT>::GetFld(E, Dim));   \
     constexpr int      Numer     = ExpNumDen.first;  \
     constexpr unsigned Denom     = ExpNumDen.second; \
     return \
@@ -466,7 +549,7 @@
   \
   template<uint64_t E, uint64_t U, typename RepT>  \
   constexpr inline bool MK_IS_ANY DimDcl    \
-    <DimTypes::DimQ<E,  U,  RepT, DimQ_MaxDims>> = \
+    <DimTypes::DimQ<E, U, RepT, DimQ_MaxDims>> =   \
     (E == DimTypes::Bits::Encodings<RepT, DimQ_MaxDims>::DimExp \
           (unsigned(DimsE::GET_DIM_NAME DimDcl)));
 
@@ -507,11 +590,11 @@
     RepT(UnitVal); \
   /*-----------------------------------------------------------------------*/ \
   /* "DimQ" Type Alais for this Dim and Unit:                              */ \
-  /* HERE the full user-level DimTypes are created:                        */ \
+  /* HERE the full user-level "DimQ" types are created:                    */ \
   /*-----------------------------------------------------------------------*/ \
   /* RepT-polymorphic version: */ \
   template<typename RepT> \
-  using MK_DIMQ_TYPE_ALIAS_T(DimName, UnitName) =   \
+  using MK_DIMQ_TYPE_ALIAS_T(DimName, UnitName) =       \
      DimTypes::DimQ \
     <DimQ_Encs<RepT>::DimExp(unsigned(DimsE::DimName)), \
      DimQ_Encs<RepT>::MkUnit(unsigned(DimsE::DimName),  \
@@ -551,10 +634,10 @@
      RepT,          \
      DimQ_MaxDims>  \
   MK_CONV_FUNC_NAME(DimName,UnitName) \
-  (DimTypes::DimQ<E, U, RepT, DimQ_MaxDims> a_dimq)            \
+  (DimTypes::DimQ<E, U, RepT, DimQ_MaxDims> const& a_dimq)     \
   { \
     constexpr unsigned Dim       = unsigned(DimsE::DimName);   \
-    constexpr unsigned OldUnit   = DimQ_Encs<RepT>::GetFld(U, Dim);  \
+    constexpr unsigned OldUnit   = DimQ_Encs<RepT>::GetFld(U, Dim);        \
     constexpr unsigned NewUnit   = \
       unsigned(MK_UNITS_ENTRY_NAME(DimName,UnitName));         \
     constexpr auto     ExpNumDen = \
@@ -585,12 +668,12 @@
   /*-----------------------------------------------------------------------*/ \
   /* "Put": Safe outputting of a "DimQ" into a given Buffer:               */ \
   /*-----------------------------------------------------------------------*/ \
-  template<uint64_t E, uint64_t U, typename RepT>  \
+  template<uint64_t E, uint64_t U, typename RepT> \
   char* Put \
   ( \
-    DimTypes::DimQ<E, U, RepT, DimQ_MaxDims> a_dimq, \
-    char*                                    a_buff, \
-    char const*                              a_end   \
+    DimTypes::DimQ<E, U, RepT, DimQ_MaxDims> const& a_dimq, \
+    char*                                           a_buff, \
+    char const*                                     a_end   \
   ) \
   { \
     char* curr = a_buff;           \
@@ -619,15 +702,15 @@
   /*-----------------------------------------------------------------------*/ \
   /* "ToStr": Conversion of "DimQ" into a fixed-size string:               */ \
   /*-----------------------------------------------------------------------*/ \
-  /* XXX: Are 64 bytes OK for most use cases? */ \
-  template<size_t Sz = 64, uint64_t E, uint64_t U, typename RepT>   \
-  inline std::array<char, Sz> ToStr   \
-    (DimTypes::DimQ<E, U, RepT, DimQ_MaxDims> a_dimq)  \
+  /* XXX: Are 64 bytes OK for most use cases? */   \
+  template<size_t Sz = 64, uint64_t E, uint64_t U, typename RepT> \
+  inline std::array<char, Sz> ToStr \
+    (DimTypes::DimQ<E, U, RepT, DimQ_MaxDims> const& a_dimq)      \
   { \
     std::array<char, Sz>   buff;      \
     char const*            buffEnd = buff.data() + Sz; \
     [[maybe_unused]] char* realEnd = Put<E, U>(a_dimq, buff.data(), buffEnd); \
-    assert(realEnd < buffEnd && *realEnd == '\0');   \
+    assert(realEnd < buffEnd && *realEnd == '\0');     \
     return buff;    \
   } \
   /*-----------------------------------------------------------------------*/ \
@@ -636,8 +719,8 @@
   template<uint64_t E, uint64_t U, typename RepT> \
   std::ostream& operator<< \
   ( \
-     std::ostream& a_os,   \
-     DimTypes::DimQ<E, U, RepT, DimQ_MaxDims> a_dimq \
+     std::ostream&                         a_os,            \
+     DimTypes::DimQ<E, U, RepT, DimQ_MaxDims> const& a_dimq \
   ) \
   { return a_os << ToStr(a_dimq).data(); }
 
@@ -703,32 +786,31 @@
 // Creates a Formatter (for use with "std::format") for "DimQ"s previously dec-
 // lared by "DECLARE_DIMS". Because the Formatter requires specialisation of a
 // class declared in "std", it cannot in general be created  in "DECLARE_DIMS"
-// itself, since the latter macro may be invoked inside any namespace "DIMS_NS".
+// itself, since the latter macro may be invoked inside any namespace "USER_NS".
 // We thus need a separate macro, "MK_DIMS_FMT". It is to be invoked OUTSIDE of
 // any namespaces, and after the  "DECLARE_DIMS" declaration.   The name of the
-// namespace ("DIMS_NS") in which "DECLARE_DIMS" was invoked, if exists, must be
+// namespace ("USER_NS") in which "DECLARE_DIMS" was invoked, if exists, must be
 // passed to "MK_DIMS_FMT". This is an unpleasant hack...
 //
 #ifdef  MK_DIMS_FMT
 #undef  MK_DIMS_FMT
 #endif
-#define MK_DIMS_FMT(DIMS_NS) \
+#define MK_DIMS_FMT(USER_NS) \
   namespace std \
   { \
-    template<uint64_t E, uint64_t U, typename RepT> \
-    struct formatter<DimTypes::DimQ      \
-      <E, U, RepT, DIMS_NS::DimQ_MaxDims>> \
+    template<uint64_t E,  uint64_t U,  typename RepT> \
+    struct formatter<DimTypes::DimQ<E, U, RepT, USER_NS::DimQ_MaxDims>> \
     { \
-      constexpr auto parse(std::format_parse_context& a_ctx) \
+      constexpr auto parse(std::format_parse_context& a_ctx)  \
         { return a_ctx.begin(); } \
       \
-      auto format(DimTypes::DimQ  \
-                  <E, U, RepT, DIMS_NS::DimQ_MaxDims> a_dimq, \
-                  format_context& a_ctx) \
+      auto format \
+        (DimTypes::DimQ<E, U, RepT, USER_NS::DimQ_MaxDims> const& a_dimq, \
+         format_context&                                          a_ctx)  \
       const \
       { \
         return std::format_to(a_ctx.out(), "{}", \
-               DIMS_NS::ToStr(a_dimq).data());   \
+               USER_NS::ToStr(a_dimq).data());   \
       } \
     };  \
   }

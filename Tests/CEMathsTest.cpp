@@ -8,6 +8,7 @@
 #include <iostream>
 
 using namespace DimTypes;
+using namespace DimTypes::CEMaths;
 
 namespace
 {
