@@ -14,6 +14,15 @@
 
 namespace DimTypes::Bits
 {
+  // OUR STANDARD LOOKUP / OVERLOADING PATTERN:
+  // Bring in an entity from CEMaths, but overloaded (same-named) entities may
+  // also exist in the context -- overloading resolution will then be performed:
+  //
+  using CEMaths::IsComplex;
+  using CEMaths::SqRt;
+  using CEMaths::CbRt;
+  using CEMaths::Pow;
+
   //=========================================================================//
   // "Encodings": Zp Representation of Rationals, and more:                  //
   //=========================================================================//
@@ -299,7 +308,7 @@ namespace DimTypes::Bits
       }
       // XXX: Can we get here without a success. Throwing an exception will
       // result in a type error at compile time:
-      throw "ERROR: DimTypes::Biys::Encodings::GetNumerAndDenom: "
+      throw "ERROR: DimTypes::Bits::Encodings::GetNumerAndDenom: "
             "Rep Not Matched";
     }
 
@@ -407,6 +416,10 @@ namespace DimTypes::Bits
     //-----------------------------------------------------------------------//
     // Power Expr with a Natural Degree:                                     //
     //-----------------------------------------------------------------------//
+#   ifdef __clang__
+#   pragma clang diagnostic push
+#   pragma clang diagnostic ignored "-Wnrvo"
+#   endif
     template<int M>
     constexpr static RepT IntPow(RepT a_x)
     {
@@ -426,6 +439,9 @@ namespace DimTypes::Bits
       else
         return halfPow2;
     }
+#   ifdef __clang__
+#   pragma clang diagnostic pop
+#   endif
 
   private:
     //-----------------------------------------------------------------------//
@@ -459,11 +475,11 @@ namespace DimTypes::Bits
         return IntPow<M>(a_x);
       else
       if constexpr(N % 2 == 0)
-        return FracPow23<M, N/2>(CEMaths::SqRt<RepT>(a_x));
+        return FracPow23<M, N/2>(SqRt(a_x));
       else
       {
         static_assert(N % 3 == 0, "FracPow23: N != Mults(2,3)");
-        return FracPow23<M, N/3>(CEMaths::CbRt<RepT>(a_x));
+        return FracPow23<M, N/3>(CbRt(a_x));
       }
     }
 
@@ -491,16 +507,16 @@ namespace DimTypes::Bits
       if constexpr(Only2and3(N1))
         return FracPow23<M1, N1>(a_x);
       else
-      if constexpr(CEMaths::IsComplex<RepT>)
+      if constexpr(IsComplex<RepT>)
       {
         // If "RepT" is "complex", the type of the degree is still the underly-
         // ing real one:
         using P = typename  RepT::value_type;
-        return CEMaths::Pow<RepT>(a_x, P(M1)/P(N1));
+        return Pow(a_x, P(M1)/P(N1));
       }
       else
         // Otherwise, use the generic real "Pow":
-        return CEMaths::Pow<RepT>(a_x, RepT(M1) / RepT(N1));
+        return Pow(a_x, RepT(M1) / RepT(N1));
     }
 
     //=======================================================================//
@@ -516,7 +532,7 @@ namespace DimTypes::Bits
     {
       assert(a_buff != nullptr && a_n > 0);
 
-      if constexpr(CEMaths::IsComplex<RepT>)
+      if constexpr(IsComplex<RepT>)
       {
         // Special Case:  A Complex Value:
         double  magRe  = double(a_val.real());

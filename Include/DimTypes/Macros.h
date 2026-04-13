@@ -165,85 +165,8 @@
   /* IMPORTANT: Use "using" declarations, NOT "using namespace" directives */ \
   /*   as the latter may cause obscure problems with overloading:          */ \
   /*-----------------------------------------------------------------------*/ \
-  using DimTypes::CEMaths::IsComplex;   \
-  using DimTypes::CEMaths::Abs;         \
-  using DimTypes::CEMaths::Floor;       \
-  using DimTypes::CEMaths::Ceil;        \
-  using DimTypes::CEMaths::Round;       \
-  using DimTypes::CEMaths::Sqr;         \
-  using DimTypes::CEMaths::Cube;        \
-  using DimTypes::CEMaths::IsZero;      \
-  using DimTypes::CEMaths::IsPos;       \
-  using DimTypes::CEMaths::IsNeg;       \
-  using DimTypes::CEMaths::IsNaN;       \
-  using DimTypes::CEMaths::IsFinite;    \
-  using DimTypes::CEMaths::IsInf;       \
-  using DimTypes::CEMaths::Magnitude;   \
-  using DimTypes::CEMaths::Min;         \
-  using DimTypes::CEMaths::Max;         \
-  using DimTypes::CEMaths::Inf;         \
-  using DimTypes::CEMaths::NaN;         \
-  using DimTypes::CEMaths::Eps;         \
-  using DimTypes::CEMaths::Pi;          \
-  using DimTypes::CEMaths::TwoPi;       \
-  using DimTypes::CEMaths::Pi_2;        \
-  using DimTypes::CEMaths::Pi_4;        \
-  using DimTypes::CEMaths::SqRt2;       \
-  using DimTypes::CEMaths::DefaultTol;  \
-  using DimTypes::CEMaths::ApproxEqual; \
-  using DimTypes::CEMaths::Exp;         \
-  using DimTypes::CEMaths::Log;         \
-  using DimTypes::CEMaths::Pow;         \
-  using DimTypes::CEMaths::Cos;         \
-  using DimTypes::CEMaths::Sin;         \
-  using DimTypes::CEMaths::Tan;         \
-  using DimTypes::CEMaths::ATan;        \
-  using DimTypes::CEMaths::ATan2;       \
-  using DimTypes::CEMaths::SqRt;        \
-  using DimTypes::CEMaths::CbRt;        \
-  using DimTypes::CEMaths::ASin;        \
-  using DimTypes::CEMaths::ACos;        \
-  using DimTypes::CEMaths::SinH;        \
-  using DimTypes::CEMaths::CosH;        \
-  using DimTypes::CEMaths::TanH;        \
-  using DimTypes::CEMaths::ASinH;       \
-  using DimTypes::CEMaths::ACosH;       \
-  using DimTypes::CEMaths::ATanH;       \
-  using DimTypes::CEMaths::CosSin;      \
-  using DimTypes::ToRepT;               \
-  using DimTypes::Abs;                  \
-  using DimTypes::Floor;                \
-  using DimTypes::Ceil;                 \
-  using DimTypes::Round;                \
-  using DimTypes::ApproxEqual;          \
-  using DimTypes::IPow;                 \
-  using DimTypes::Sqr;                  \
-  using DimTypes::Cube;                 \
-  using DimTypes::RPow;                 \
-  using DimTypes::SqRt;                 \
-  using DimTypes::CbRt;                 \
-  using DimTypes::Exp;                  \
-  using DimTypes::Log;                  \
-  using DimTypes::Cos;                  \
-  using DimTypes::Sin;                  \
-  using DimTypes::Tan;                  \
-  using DimTypes::ATan;                 \
-  using DimTypes::ASin;                 \
-  using DimTypes::ACos;                 \
-  using DimTypes::CosH;                 \
-  using DimTypes::SinH;                 \
-  using DimTypes::TanH;                 \
-  using DimTypes::ACosH;                \
-  using DimTypes::ASinH;                \
-  using DimTypes::ATanH;                \
-  using DimTypes::IsZero;               \
-  using DimTypes::IsFinite;             \
-  using DimTypes::IsInf;                \
-  using DimTypes::IsNaN;                \
-  using DimTypes::IsNeg;                \
-  using DimTypes::IsPos;                \
-  using DimTypes::ATan2;                \
-  \
+  IMPORT_CEMATHS_FUNCS                  \
+  IMPORT_DIMTYPES_FUNCS                 \
   /*-----------------------------------------------------------------------*/ \
   /* "DimQ_MaxDims", "DimQ_DefRepT" and "DimQ_Encs":                       */ \
   /*-----------------------------------------------------------------------*/ \

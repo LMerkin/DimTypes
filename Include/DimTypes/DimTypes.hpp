@@ -4,15 +4,17 @@
 //          Types for Physical Dimensions and Dimensioned Quantities         //
 //===========================================================================//
 #pragma  once
+#include "ValidRepTs.h"
 #include "CEMaths.hpp"
 #include "Encodings.hpp"
 #include "Macros.h"
 
 namespace DimTypes
 {
-  // OUR STANDARD PATTERN:
+  // OUR STANDARD LOOKUP / OVERLOADING PATTERN (similar to "CEMaths.hpp"):
   // Bring in an entity from CEMaths, but overloaded (same-named) entities may
   // also exist in the context -- overloading resolution will then be performed:
+  //
   using CEMaths::IsComplex;
   using CEMaths::DefaultTol;
   using CEMaths::ApproxEqual;
@@ -28,6 +30,7 @@ namespace DimTypes
   // "MaxDims" can be 7, 8 or 9:
   //
   template<uint64_t E, uint64_t U, typename RepT, unsigned MaxDims>
+  requires IsValidDimQRepT<RepT>
   class DimQ
   {
   private:
@@ -46,10 +49,11 @@ namespace DimTypes
     // Non-Default Ctor:
     // Lifting a value of type "R" into "DimQ".  We DELIBERATELY DO NOT INFER
     // the "RepT" from the type of the Ctor arg, as this may cause ambiguities
-    // in some cases.  "R" is required to be a floating-point type to avoid a
-    // conflict with the Copy Ctor below (where "R" is "DimQ" itself):
+    // in some cases.  "R" is required to be a "valid RepT" (but not nrcessar-
+    // ili the "RepT" itself) to avoid a conflict with the Copy Ctor below
+    // (where "R" is "DimQ" itself):
     template<typename  R>
-    constexpr explicit DimQ(R const& val) requires(std::is_floating_point_v<R>)
+    constexpr explicit DimQ(R const& val) requires(IsValidDimQRepT<R>)
     : m_val(RepT(val)) {}
   
     // Copy Ctor and assignment are auto-generated:
@@ -61,7 +65,7 @@ namespace DimTypes
     // the "DimQ" itself):
     template<typename R>
     constexpr DimQ operator= (R const& a_right)
-    requires(E == 0 && std::is_floating_point_v<R>)
+    requires(E == 0 && IsValidDimQRepT<R>)
     {
       m_val = RepT(a_right);
       return *this;
@@ -498,3 +502,44 @@ namespace DimTypes
   }
 }
 // End namespace DimTypes
+//===========================================================================//
+// Deferred Import of "DimTypes" Elementary Functions (on "DimQ"):           //
+//===========================================================================//
+#ifdef  IMPORT_DIMTYPES_FUNCS
+#undef  IMPORT_DIMTYPES_FUNCS
+#endif
+#define IMPORT_DIMTYPES_FUNCS           \
+  using DimTypes::ToRepT;               \
+  using DimTypes::Abs;                  \
+  using DimTypes::Floor;                \
+  using DimTypes::Ceil;                 \
+  using DimTypes::Round;                \
+  using DimTypes::ApproxEqual;          \
+  using DimTypes::IPow;                 \
+  using DimTypes::Sqr;                  \
+  using DimTypes::Cube;                 \
+  using DimTypes::RPow;                 \
+  using DimTypes::SqRt;                 \
+  using DimTypes::CbRt;                 \
+  using DimTypes::Exp;                  \
+  using DimTypes::Log;                  \
+  using DimTypes::Cos;                  \
+  using DimTypes::Sin;                  \
+  using DimTypes::Tan;                  \
+  using DimTypes::ATan;                 \
+  using DimTypes::ASin;                 \
+  using DimTypes::ACos;                 \
+  using DimTypes::CosH;                 \
+  using DimTypes::SinH;                 \
+  using DimTypes::TanH;                 \
+  using DimTypes::ACosH;                \
+  using DimTypes::ASinH;                \
+  using DimTypes::ATanH;                \
+  using DimTypes::IsZero;               \
+  using DimTypes::IsFinite;             \
+  using DimTypes::IsInf;                \
+  using DimTypes::IsNaN;                \
+  using DimTypes::IsNeg;                \
+  using DimTypes::IsPos;                \
+  using DimTypes::ATan2;
+
