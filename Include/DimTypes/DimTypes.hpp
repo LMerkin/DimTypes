@@ -52,8 +52,8 @@ namespace DimTypes
     // in some cases.  "R" is required to be a "valid RepT" (but not nrcessar-
     // ili the "RepT" itself) to avoid a conflict with the Copy Ctor below
     // (where "R" is "DimQ" itself):
-    template<typename  R>
-    constexpr explicit DimQ(R const& val) requires(IsValidDimQRepT<R>)
+    template<typename  R> requires(IsValidDimQRepT<R>)
+    constexpr explicit DimQ(R const& val)
     : m_val(RepT(val)) {}
   
     // Copy Ctor and assignment are auto-generated:
@@ -63,10 +63,10 @@ namespace DimTypes
     // If the assignment LHS is DimLess, the RHS may be of any floating-point
     // type "R"   (again, this constraint is required to avoid confusion with
     // the "DimQ" itself):
-    template<typename R>
+    template<typename R> requires(IsValidDimQRepT<R>)
     constexpr DimQ operator= (R const& a_right)
-    requires(E == 0 && IsValidDimQRepT<R>)
     {
+      static_assert(E == 0, "ERROR: =: LHS must be DimLess");
       m_val = RepT(a_right);
       return *this;
     }
@@ -74,7 +74,7 @@ namespace DimTypes
     // Non-Default Ctor:
     // Conversion FROM another Rep (but E, U and MaxDims must match); this is
     // actually an "Extended Copy Ctor":
-    template<typename  FromR>
+    template<typename  FromR> requires(IsValidDimQRepT<FromR>)
     constexpr explicit DimQ(DimQ<E, U, FromR, MaxDims> const& a_right)
       : m_val(RepT(a_right.Magnitude()))
       {}
@@ -101,10 +101,11 @@ namespace DimTypes
   
     // The following function converts "DimQ" to the Underlying Field Type
     // ("RepT"), but ONLY if the arg is actually dimension-less:
-    constexpr explicit operator RepT() const
+    template<typename R> requires(IsValidDimQRepT<R>)
+    constexpr explicit   operator R() const
     {
-      static_assert(E == 0, "Must be a DimLess qty");
-      return m_val;
+      static_assert(E == 0, "ERROR: operator R: Must be a DimLess qty");
+      return R(m_val);
     }
   
     // NB:  In addition, for some types (eg Angles expressed in Radians), the
@@ -159,7 +160,7 @@ namespace DimTypes
     }
   
     //-----------------------------------------------------------------------//
-    // Multiplication and Division by a "RepT":                              //
+    // Multiplication and Division by some "R":                              //
     //-----------------------------------------------------------------------//
     // NB: the following method can be used to create new dimensioned values
     // from the fundamental units. XXX: when used this way, it is slighly in-
@@ -167,26 +168,30 @@ namespace DimTypes
     // impact of that should be negligible:
     //
     // Multiplication:
-    constexpr  DimQ operator*   (RepT const& a_right) const
-      { return DimQ(m_val * a_right); }
+    template<typename R> requires(IsValidDimQRepT<R>)
+    constexpr  DimQ operator*    (R const& a_right) const
+      { return DimQ(m_val   * RepT(a_right)); }
   
-    constexpr  DimQ& operator*= (RepT const& a_right)
+    template<typename R> requires(IsValidDimQRepT<R>)
+    constexpr  DimQ& operator*=  (R const& a_right)
     {
-      m_val *= a_right;
-      return *this;
+      m_val *= RepT(a_right);
+      return  *this;
     }
   
     // In particular, Unary Negation:
     constexpr  DimQ operator- () const
       { return DimQ(- m_val); }
   
-    // Division by a "RepT":
-    constexpr  DimQ operator/   (RepT const& a_right) const
-      { return DimQ(m_val / a_right); }
+    // Division by "R":
+    template<typename R> requires(IsValidDimQRepT<R>)
+    constexpr  DimQ operator/    (R const& a_right) const
+      { return DimQ(m_val   / RepT(a_right)); }
   
-    constexpr  DimQ& operator/= (RepT const& a_right)
+    template<typename R> requires(IsValidDimQRepT<R>)
+    constexpr  DimQ& operator/=  (R const& a_right)
     {
-      m_val /= a_right;
+      m_val /= RepT(a_right);
       return *this;
     }
   
@@ -330,19 +335,20 @@ namespace DimTypes
   //-------------------------------------------------------------------------//
   // Multiplication, Division:                                               //
   //-------------------------------------------------------------------------//
-  template<uint64_t  E, uint64_t U, typename RepT, unsigned MaxDims>
+  template<typename R, uint64_t E, uint64_t U, typename RepT, unsigned MaxDims>
+  requires(IsValidDimQRepT<R>)
   constexpr
   DimQ<E, U, RepT, MaxDims> operator*
-    (RepT const& a_left, DimQ<E, U, RepT, MaxDims> const& a_right)
-    { return DimQ<E, U, RepT, MaxDims>(a_left * a_right.Magnitude()); }
+    (R const& a_left, DimQ<E, U, RepT, MaxDims> const& a_right)
+    { return DimQ<E, U, RepT, MaxDims>(RepT(a_left)  * a_right.Magnitude()); }
   
-  template<uint64_t  E, uint64_t U, typename RepT, unsigned MaxDims>
-  constexpr auto
-  operator/ (RepT const& a_left, DimQ<E, U,  RepT, MaxDims> const& a_right)
+  template<typename R, uint64_t E, uint64_t U, typename RepT, unsigned MaxDims>
+  constexpr auto    // Using "auto" here for brievity
+  operator/ (R const& a_left, DimQ<E, U,  RepT, MaxDims> const& a_right)
   {
     using  En = Bits::Encodings <RepT, MaxDims>;
     return DimQ<En::SubExp(0UL,E),  U, RepT, MaxDims>
-               (a_left / a_right.Magnitude());
+               (RepT(a_left) / a_right.Magnitude());
   }
   
   //-------------------------------------------------------------------------//
@@ -439,7 +445,7 @@ namespace DimTypes
   template<uint64_t E, uint64_t U, typename RepT, unsigned MaxDims>    \
   constexpr RepT FuncName(DimQ<E, U, RepT, MaxDims> const& a_right)    \
   { \
-    static_assert(E == 0, "ERROR: Must be DimLess"); \
+    static_assert(E == 0, "ERROR: UnaryFunc: Must be a DimLess qty");  \
     /* NB: The following call to "FuncName" MAY OR MAY NOT BE from */  \
     /* "CEMaths"! */ \
     return FuncName(a_right.Magnitude()); \
