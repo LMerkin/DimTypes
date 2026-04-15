@@ -343,6 +343,7 @@ namespace DimTypes
     { return DimQ<E, U, RepT, MaxDims>(RepT(a_left)  * a_right.Magnitude()); }
   
   template<typename R, uint64_t E, uint64_t U, typename RepT, unsigned MaxDims>
+  requires(IsValidDimQRepT<R>)
   constexpr auto    // Using "auto" here for brievity
   operator/ (R const& a_left, DimQ<E, U,  RepT, MaxDims> const& a_right)
   {
