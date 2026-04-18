@@ -230,8 +230,9 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // "ApproxEqual":                                                          //
   //-------------------------------------------------------------------------//
-  // XXX: This is for DimeLess types (currently floating-point ones):
-  template<typename F> requires std::is_floating_point_v<F>
+  // NB: No constraint for "F" in "DefaultTol", because it may be partially-
+  // specialised further:
+  template<typename F>
   constexpr inline  F DefaultTol  = Eps<F> * F(100.0);
 
   template<typename F> requires std::is_floating_point_v<F>
@@ -1346,29 +1347,38 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // "ATan2" for an arbitrary real arg:                                      //
   //-------------------------------------------------------------------------//
-  // The args must be real:
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
-  constexpr F ATan2(F a_y, F a_x)
+  // The args must be Real.
+  // First, the "hand-made" implementation which can be re-used for non-elemen-
+  // tary-floating-point "F":
+  //
+  template<typename F> requires(!IsComplex<F>)
+  constexpr F ATan2_HandMade(F const& a_y, F const& a_x)
   {
-# if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
     // "a_y" has the sign of Sin, "a_x" has the sign of Cos:
     // XXX: this impl is NOT completely conformant to that of std::atan2; some
     // edge cases are handled differently here:
     return
-      (a_x >  F(0.0))                     // 1st and 4th Quadrants
-      ? ATan<F>(a_y  /  a_x)
+      (a_x > F(0.0))                    // 1st and 4th Quadrants
+      ? ATan(a_y  /  a_x)
       :
       (a_x <  F(0.0))
       ? ((a_y >= F(0.0))
-         ? ATan<F>(a_y  / a_x) + Pi<F>    // 2nd Quadrant
-         : ATan<F>(a_y  / a_x) - Pi<F>)   // 3rd Quadrant
+         ? ATan(a_y  / a_x) + Pi<F>    // 2nd Quadrant
+         : ATan(a_y  / a_x) - Pi<F>)   // 3rd Quadrant
       :
       ((a_y > F(0.0))
-       ?  Pi_2<F>                         // Pos Y Axis
+       ?  Pi_2<F>                      // Pos Y Axis
        :
-       (a_y < F(0.0))                     // Neg Y Axis
+       (a_y < F(0.0))                  // Neg Y Axis
        ? -Pi_2<F>
-       : NaN<F>);                         // 0/0 is UNDEFINED
+       : NaN<F>);                      // 0/0 is UNDEFINED
+  }
+
+  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
+  constexpr F ATan2(F a_y, F a_x)
+  {
+# if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
+    return ATan2_HandMade(a_y, a_x);
 # else
     // Use the standard impl:
     return std::atan2(a_y, a_x);
@@ -1774,50 +1784,51 @@ namespace DimTypes::CEMaths
 #ifdef  IMPORT_CEMATHS_FUNCS
 #undef  IMPORT_CEMATHS_FUNCS
 #endif
-#define IMPORT_CEMATHS_FUNCS            \
-  using DimTypes::CEMaths::IsComplex;   \
-  using DimTypes::CEMaths::Abs;         \
-  using DimTypes::CEMaths::Floor;       \
-  using DimTypes::CEMaths::Ceil;        \
-  using DimTypes::CEMaths::Round;       \
-  using DimTypes::CEMaths::Sqr;         \
-  using DimTypes::CEMaths::Cube;        \
-  using DimTypes::CEMaths::IsZero;      \
-  using DimTypes::CEMaths::IsPos;       \
-  using DimTypes::CEMaths::IsNeg;       \
-  using DimTypes::CEMaths::IsNaN;       \
-  using DimTypes::CEMaths::IsFinite;    \
-  using DimTypes::CEMaths::IsInf;       \
-  using DimTypes::CEMaths::Magnitude;   \
-  using DimTypes::CEMaths::Min;         \
-  using DimTypes::CEMaths::Max;         \
-  using DimTypes::CEMaths::Inf;         \
-  using DimTypes::CEMaths::NaN;         \
-  using DimTypes::CEMaths::Eps;         \
-  using DimTypes::CEMaths::Pi;          \
-  using DimTypes::CEMaths::TwoPi;       \
-  using DimTypes::CEMaths::Pi_2;        \
-  using DimTypes::CEMaths::Pi_4;        \
-  using DimTypes::CEMaths::SqRt2;       \
-  using DimTypes::CEMaths::DefaultTol;  \
-  using DimTypes::CEMaths::ApproxEqual; \
-  using DimTypes::CEMaths::Exp;         \
-  using DimTypes::CEMaths::Log;         \
-  using DimTypes::CEMaths::Pow;         \
-  using DimTypes::CEMaths::Cos;         \
-  using DimTypes::CEMaths::Sin;         \
-  using DimTypes::CEMaths::Tan;         \
-  using DimTypes::CEMaths::ATan;        \
-  using DimTypes::CEMaths::ATan2;       \
-  using DimTypes::CEMaths::SqRt;        \
-  using DimTypes::CEMaths::CbRt;        \
-  using DimTypes::CEMaths::ASin;        \
-  using DimTypes::CEMaths::ACos;        \
-  using DimTypes::CEMaths::SinH;        \
-  using DimTypes::CEMaths::CosH;        \
-  using DimTypes::CEMaths::TanH;        \
-  using DimTypes::CEMaths::ASinH;       \
-  using DimTypes::CEMaths::ACosH;       \
-  using DimTypes::CEMaths::ATanH;       \
+#define IMPORT_CEMATHS_FUNCS                \
+  using DimTypes::CEMaths::IsComplex;       \
+  using DimTypes::CEMaths::Abs;             \
+  using DimTypes::CEMaths::Floor;           \
+  using DimTypes::CEMaths::Ceil;            \
+  using DimTypes::CEMaths::Round;           \
+  using DimTypes::CEMaths::Sqr;             \
+  using DimTypes::CEMaths::Cube;            \
+  using DimTypes::CEMaths::IsZero;          \
+  using DimTypes::CEMaths::IsPos;           \
+  using DimTypes::CEMaths::IsNeg;           \
+  using DimTypes::CEMaths::IsNaN;           \
+  using DimTypes::CEMaths::IsFinite;        \
+  using DimTypes::CEMaths::IsInf;           \
+  using DimTypes::CEMaths::Magnitude;       \
+  using DimTypes::CEMaths::Min;             \
+  using DimTypes::CEMaths::Max;             \
+  using DimTypes::CEMaths::Inf;             \
+  using DimTypes::CEMaths::NaN;             \
+  using DimTypes::CEMaths::Eps;             \
+  using DimTypes::CEMaths::Pi;              \
+  using DimTypes::CEMaths::TwoPi;           \
+  using DimTypes::CEMaths::Pi_2;            \
+  using DimTypes::CEMaths::Pi_4;            \
+  using DimTypes::CEMaths::SqRt2;           \
+  using DimTypes::CEMaths::DefaultTol;      \
+  using DimTypes::CEMaths::ApproxEqual;     \
+  using DimTypes::CEMaths::Exp;             \
+  using DimTypes::CEMaths::Log;             \
+  using DimTypes::CEMaths::Pow;             \
+  using DimTypes::CEMaths::Cos;             \
+  using DimTypes::CEMaths::Sin;             \
+  using DimTypes::CEMaths::Tan;             \
+  using DimTypes::CEMaths::ATan;            \
+  using DimTypes::CEMaths::ATan2;           \
+  using DimTypes::CEMaths::ATan2_HandMade;  \
+  using DimTypes::CEMaths::SqRt;            \
+  using DimTypes::CEMaths::CbRt;            \
+  using DimTypes::CEMaths::ASin;            \
+  using DimTypes::CEMaths::ACos;            \
+  using DimTypes::CEMaths::SinH;            \
+  using DimTypes::CEMaths::CosH;            \
+  using DimTypes::CEMaths::TanH;            \
+  using DimTypes::CEMaths::ASinH;           \
+  using DimTypes::CEMaths::ACosH;           \
+  using DimTypes::CEMaths::ATanH;           \
   using DimTypes::CEMaths::CosSin;
 
