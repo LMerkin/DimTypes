@@ -97,7 +97,7 @@ namespace DimTypes
     // unsafe feature but it could be emulated anyway (by dividing the qty by
     // its unit), so we provide the direct access for efficiency:
     //
-    constexpr RepT Magnitude() const  { return m_val; }
+    constexpr RepT const& Magnitude() const { return m_val; }
   
     // The following function converts "DimQ" to the Underlying Field Type
     // ("RepT"), but ONLY if the arg is actually dimension-less:
