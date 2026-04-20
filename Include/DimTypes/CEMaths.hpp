@@ -38,11 +38,9 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // "Abs":                                                                  //
   //-------------------------------------------------------------------------//
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
-  constexpr F Abs(F a_x)
-  {
-    return  std::abs(a_x);
-  }
+  template<typename F> requires(std::is_floating_point_v<F>)
+  constexpr F Abs  (F  a_x)
+    { return  std::abs(a_x); }
 
   //-------------------------------------------------------------------------//
   // "Floor":                                                                //
@@ -50,11 +48,9 @@ namespace DimTypes::CEMaths
   // XXX: Not really "constexpr" in CLang <= 21, and no emulation is currently
   // provided (TODO: not very difficult to implement):
   //
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
-  constexpr F Floor(F a_x)
-  {
-    return std::floor(a_x);
-  }
+  template<typename  F> requires(std::is_floating_point_v<F>)
+  constexpr  F Floor(F  a_x)
+    { return std::floor(a_x); }
 
   //-------------------------------------------------------------------------//
   // "Ceil":                                                                 //
@@ -62,11 +58,9 @@ namespace DimTypes::CEMaths
   // XXX: Not really "constexpr" in CLang <= 21, and no emulation is currently
   // provided (TODO: not very difficult to implement):
   //
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
-  constexpr F  Ceil(F a_x)
-  {
-    return std::ceil(a_x);
-  }
+  template<typename F> requires(std::is_floating_point_v<F>)
+  constexpr  F Ceil(F  a_x)
+    { return std::ceil(a_x); }
 
   //-------------------------------------------------------------------------//
   // "Round":                                                                //
@@ -74,11 +68,9 @@ namespace DimTypes::CEMaths
   // XXX: Not really "constexpr" in CLang <= 21, and no emulation is currently
   // provided (TODO: not very difficult to implement):
   //
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
+  template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F Round(F a_x)
-  {
-    return std::round(a_x);
-  }
+    { return std::round(a_x); }
 
   //-------------------------------------------------------------------------//
   // "FMod":                                                                 //
@@ -86,7 +78,7 @@ namespace DimTypes::CEMaths
   // Again, in CLang <= 21, "std::fmod" is not "constexpr", so our own implem-
   // entation is needed. For Internal Use Only:
   //
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
+  template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F FMod (F a_x, F a_y)
   {
 # if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
@@ -97,7 +89,7 @@ namespace DimTypes::CEMaths
     // Convert "q" to "unsigned long" -- it is always rounded down:
     using  ULong = unsigned long;
     ULong  u = ULong(q);
-    F      r = std::max(a_x - F(u) * a_y, F(0.0));
+    F      r = Max(a_x - F(u) * a_y, F(0.0));
     return r;
 # else
     return std::fmod(a_x, a_y);
@@ -117,23 +109,23 @@ namespace DimTypes::CEMaths
   constexpr bool IsZero(F a_x)
     { return a_x == F(0.0); }
 
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
+  template<typename F> requires(std::is_floating_point_v<F>)
   constexpr bool IsPos(F a_x)
     { return a_x >  F(0.0); }
 
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
+  template<typename F> requires(std::is_floating_point_v<F>)
   constexpr bool IsNeg(F a_x)
     { return a_x <  F(0.0); }
 
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
+  template<typename F> requires(std::is_floating_point_v<F>)
   constexpr bool IsNaN(F a_x)
     { return std::isnan(a_x); }
 
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
+  template<typename F> requires(std::is_floating_point_v<F>)
   constexpr bool IsFinite(F a_x)
     { return std::isfinite(a_x); }
 
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
+  template<typename F> requires(std::is_floating_point_v<F>)
   constexpr bool IsInf(F a_x)
     { return std::isinf(a_x); }
 
@@ -235,10 +227,10 @@ namespace DimTypes::CEMaths
   template<typename F>
   constexpr inline  F DefaultTol  = Eps<F> * F(100.0);
 
-  template<typename F> requires std::is_floating_point_v<F>
+  template<typename F> requires(std::is_floating_point_v<F>)
   constexpr bool ApproxEqual(F a_x, F a_y, F a_tol = DefaultTol<F>)
   {
-    assert(a_tol >= F(0.0));
+    assert(IsPos(a_tol));
     F err =
       Abs
       (
@@ -291,7 +283,7 @@ namespace DimTypes::CEMaths
     float  se  = t4  + t2  + 1.0f;
     float  so  = t3  + t1;
     float  res = (se + so) / (se - so);
-    assert(res > 0.0f);
+    assert(IsPos(res));
     return res;
   }
 
@@ -329,7 +321,7 @@ namespace DimTypes::CEMaths
     double se  = 1.0 + t2  + t4 + t6;
     double so  = t1  + t3  + t5;
     double res = (se + so) / (se - so);
-    assert(res > 0.0);
+    assert(IsPos(res));
     return res;
   }
 
@@ -370,7 +362,7 @@ namespace DimTypes::CEMaths
     long double se   = t6  + t4  + t2 + 1.0L;
     long double so   = t7  + t5  + t3 + t1;
     long double res  = (se + so) / (se - so);
-    assert     (res > 0.0L);
+    assert     (IsPos(res));
     return res;
   }
 
@@ -413,7 +405,7 @@ namespace DimTypes::CEMaths
     float res =
       ((((a4 * a_x + a3) * a_x + a2) * a_x + a1) * a_x + a0) /
       ((((b4 * a_x + b3) * a_x + b2) * a_x + b1) * a_x + b0);
-    assert(res < 0.0f);
+    assert(IsNeg(res));
     return res;
   }
 
@@ -453,7 +445,7 @@ namespace DimTypes::CEMaths
                  * a_x + a2) * a_x + a1) * a_x + a0) /
       ((((((((b8 * a_x + b7) * a_x + b6) * a_x + b5) * a_x + b4) * a_x + b3)
                  * a_x + b2) * a_x + b1) * a_x + b0);
-    assert(res < 0.0L);
+    assert(IsNeg(res));
     return res;
   }
 
@@ -498,7 +490,7 @@ namespace DimTypes::CEMaths
       /
       ((((((((((b10 * a_x + b9) * a_x + b8) * a_x + b7) * a_x + b6) * a_x + b5)
                     * a_x + b4) * a_x + b3) * a_x + b2) * a_x + b1) * a_x + b0);
-    assert(res < 0.0L);
+    assert(IsNeg(res));
     return res;
   }
 
@@ -607,7 +599,7 @@ namespace DimTypes::CEMaths
   template<>
   constexpr float SinPade<float>(float a_x)
   {
-    assert(0 <= a_x && a_x < Pi_4<float> + float(10.0 * Eps<float>));
+    assert(0.0 <= a_x && a_x < Pi_4<float> + 10.0f * Eps<float>);
     constexpr float a4 = float( 551.0 / 166320.0);
     constexpr float a2 = float(- 53.0 /    396.0);
     constexpr float b4 = float(   5.0 /  11088.0);
@@ -627,7 +619,7 @@ namespace DimTypes::CEMaths
   template<>
   constexpr double SinPade<double>(double a_x)
   {
-    assert(0 <= a_x && a_x < Pi_4<double> + 100.0 * Eps<double>);
+    assert(0.0 <= a_x && a_x < Pi_4<double> + 100.0 * Eps<double>);
 
     constexpr double a6 = - 62077121.0 /   1727021696400.0;
     constexpr double a4 =    9713777.0 /      2242885320.0;
@@ -652,7 +644,7 @@ namespace DimTypes::CEMaths
   template<>
   constexpr long double SinPade<long double>(long double a_x)
   {
-    assert(0 <= a_x && a_x < Pi_4<long double> + 100.0L * Eps<long double>);
+    assert(0.0 <= a_x && a_x < Pi_4<long double> + 100.0L * Eps<long double>);
 
     constexpr long double a8 =  4585922449.0L / 15605159573203200.0L;
     constexpr long double a6 = - 269197963.0L /     3940696861920.0L;
@@ -1049,7 +1041,7 @@ namespace DimTypes::CEMaths
   // context will fail:
   // XXX: Complex "Exp" has a separate specific implementation:
   //
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
+  template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F   Exp(F a_x)
   {
 # if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
@@ -1057,7 +1049,7 @@ namespace DimTypes::CEMaths
     if (std::isnan(a_x))
       return NaN<F>;
     if (std::isinf(a_x))
-      return (a_x > 0) ? Inf<F> : F(0);
+      return IsPos(a_x) ? Inf<F> : F(0.0);
 
     // Generic Case:
     // First, change the base from E to 2, to make it easier to represent the
@@ -1073,7 +1065,7 @@ namespace DimTypes::CEMaths
     if (intgY > F(INT_MAX))
       return Inf<F>;
     if (intgY < F(INT_MIN))
-      return F(0);
+      return F(0.0);
 
     // Generic Case:
     int n = int(intgY);
@@ -1116,15 +1108,15 @@ namespace DimTypes::CEMaths
   // context will fail:
   // XXX: Complex "Log" has a separate specific implementation:
   //
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
-  constexpr F   Log(F a_x)
+  template<typename F> requires(std::is_floating_point_v<F>)
+  constexpr F   Log(F  a_x)
   {
 # if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
     // Special Cases:
-    if (std::isnan(a_x) || a_x < 0)
+    if (std::isnan(a_x) || IsNeg(a_x))
       return NaN<F>;
 
-    if (a_x == 0)
+    if (IsZero(a_x))
       return -Inf<F>;
 
     if (a_x == F(1.0))
@@ -1132,12 +1124,12 @@ namespace DimTypes::CEMaths
 
     if (std::isinf(a_x))
     {
-      assert(a_x > 0);
+      assert(IsPos(a_x));
       return  Inf<F>;
     }
     // Generic Case:
     // Get the Base-2 exponent and the normalised fractional part of "a_x":
-    assert(std::isfinite(a_x) && a_x > 0);
+    assert(std::isfinite(a_x) && IsPos(a_x));
     int e2X   = INT_MIN;
     F   fracX = std::frexp(a_x, &e2X);
     assert(0.5 <= fracX && fracX < F(1) && e2X != INT_MIN);
@@ -1145,7 +1137,7 @@ namespace DimTypes::CEMaths
     // Then log(x) = log(2^e2X  * fracX) = e2X * log(2) + log(fracX),
     // so expand     log(fracX) in the vicinity of fracX = 3/4:
     F logFX = LogPade<F>(fracX);
-    assert(logFX < 0);
+    assert(IsNeg(logFX));
 
     // From "e2X" (which is actually the main part of the Base-2 log of
     // "a_x"), get back to the natural log:
@@ -1164,25 +1156,35 @@ namespace DimTypes::CEMaths
   // XXX: Complex "Pow" is not implemented yet. Also, for this generic imple-
   // mentation,   "a_x" is required to be positive:
   //
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
-  constexpr F   Pow(F a_x, F a_y)
+  template<typename F> requires(std::is_floating_point_v<F>)
+  constexpr F   Pow(F a_x, F a_p)
   {
-    assert(a_x > 0);
-    return Exp<F>(a_y * Log<F>(a_x));
+# if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
+    assert(!IsNeg(a_x));
+    return
+      (LIKELY(  IsPos(a_x))
+      ? Exp(a_y * Log(a_x))
+      :
+      (IsZero(a_x) && !IsZero(a_p))
+      ? F(0.0)
+      : throw std::invalid_argument("Pow");
+# else
+    return std::pow(a_x, a_p);
+# endif
   }
 
   //-------------------------------------------------------------------------//
   // "Cos" for an arbitrary real arg:                                        //
   //-------------------------------------------------------------------------//
   // XXX: Complex "Cos" has a separate specific implementation:
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
+  template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F   Cos(F a_x)
   {
 # if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
     if (!std::isfinite(a_x))
       return NaN<F>;
 
-    // First, normalise the arg to the interval [0; +00):
+    // First, normalise the arg to the interval [0; +oo):
     a_x = Abs(a_x);
 
     // Then normalise it to the interval [0..2*Pi) (full period):
@@ -1217,15 +1219,15 @@ namespace DimTypes::CEMaths
   // "Sin" for an arbitrary real arg:                                        //
   //-------------------------------------------------------------------------//
   // XXX: Complex "Sin" has a separate specific implementation:
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
+  template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F   Sin(F a_x)
   {
 # if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
     if (!std::isfinite(a_x))
       return NaN<F>;
 
-    // First, normalise the arg to the interval [0; +00):
-    bool  chSgn =  (a_x < 0);
+    // First, normalise the arg to the interval [0; +oo):
+    bool  chSgn =  IsNeg(a_x);
     if (chSgn)
       a_x = - a_x;
 
@@ -1260,15 +1262,15 @@ namespace DimTypes::CEMaths
   // "Tan" for an arbitrary real arg:                                        //
   //-------------------------------------------------------------------------//
   // XXX: Complex "Tan" has a separate specific implementation:
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
+  template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F   Tan(F a_x)
   {
 # if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
     if (!std::isfinite(a_x))
       return NaN<F>;
 
-    // First, normalise the arg to the interval [0; +00):
-    bool  chSgn =  (a_x < 0);
+    // First, normalise the arg to the interval [0; +oo):
+    bool  chSgn = IsNeg(a_x);
     if (chSgn)
       a_x = - a_x;
 
@@ -1307,15 +1309,15 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // NB:  This function is ALWAYS "constexpr", even in CLang:
   // XXX: Complex "ATan" is not implemented yet:
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
+  template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F ATan (F a_x)
   { 
 # if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
-    if (a_x == F(0.0))
-      return   F(0.0);
+    if (IsZero(a_x))
+      return F(0.0);
 
     bool chSgn = false;
-    if (a_x <  F(0.0))
+    if (IsNeg(a_x))
     {
       a_x = - a_x;
       chSgn = true;
@@ -1358,23 +1360,23 @@ namespace DimTypes::CEMaths
     // XXX: this impl is NOT completely conformant to that of std::atan2; some
     // edge cases are handled differently here:
     return
-      (a_x > F(0.0))                    // 1st and 4th Quadrants
-      ? ATan(a_y  /  a_x)
+      IsPos(a_x)                       // 1st and 4th Quadrants
+      ? ATan(a_y     / a_x)
       :
-      (a_x <  F(0.0))
-      ? ((a_y >= F(0.0))
+      IsNeg(a_x)
+      ? (!IsNeg(a_y)
          ? ATan(a_y  / a_x) + Pi<F>    // 2nd Quadrant
          : ATan(a_y  / a_x) - Pi<F>)   // 3rd Quadrant
       :
-      ((a_y > F(0.0))
-       ?  Pi_2<F>                      // Pos Y Axis
-       :
-       (a_y < F(0.0))                  // Neg Y Axis
-       ? -Pi_2<F>
-       : NaN<F>);                      // 0/0 is UNDEFINED
+      IsPos(a_y)
+      ?  Pi_2<F>                       // Pos Y Axis
+      :
+      IsNeg(a_y)                       // Neg Y Axis
+      ? -Pi_2<F>
+      : NaN<F>;                        // 0/0 is UNDEFINED
   }
 
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
+  template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F ATan2(F a_y, F a_x)
   {
 # if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
@@ -1391,34 +1393,34 @@ namespace DimTypes::CEMaths
   // NB: This function is ALWAYS "constexpr", even in CLang:
   // Complex "SqRt" has a separate specific implementation:
   //
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
+  template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F  SqRt(F a_x)
   {
 # if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
     // Special Cases:
-    if (!(a_x >= 0))
+    if (IsNeg(a_x))
       return NaN<F>;
 
-    if (a_x == 0 || a_x == F(1.0))
+    if (IsZero(a_x) || a_x == F(1.0))
       return a_x;
 
     if (std::isinf(a_x))
     {
-      assert(a_x > 0);
+      assert(IsPos(a_x));
       return  Inf<F>;
     }
     // Generic Case:
     //
 #   if (!defined(__clang__))
     // Get the Base-2 exponent and the normalised fractional part of "a_x":
-    assert(std::isfinite(a_x) && a_x > 0);
+    assert(std::isfinite(a_x) && IsPos(a_x));
     int e2X   = INT_MIN;
     F   fracX = std::frexp(a_x, &e2X);
-    assert(0.5 <= fracX && fracX < F(1) && e2X != INT_MIN);
+    assert(0.5 <= fracX && fracX < F(1.0) && e2X != INT_MIN);
 
     // Get the Pade approximant of SqRt(fracX):
     F sqrtFX = SqRtPade<F>(fracX);
-    assert(0 < sqrtFX && sqrtFX < F(1.0) + Eps<F>);
+    assert(F(0.0) < sqrtFX && sqrtFX < F(1.0) + Eps<F>);
 
     // Then the exponent of the result is e2X/2:
     int n = e2X / 2;
@@ -1447,7 +1449,7 @@ namespace DimTypes::CEMaths
 
       // "ry" is a relative correction applied to "y":
       F ry = c - F(1.0);
-      if (ry < 0)
+      if (IsNeg(ry))
         ry = - ry;
       if (ry < F(50.0) * Eps<F>)
         break;
@@ -1465,33 +1467,33 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // NB:  This function is ALWAYS "constexpr", even in CLang:
   // XXX: Complex "CbRt" has a separate specific implementation:
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
+  template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F CbRt (F a_x)
   {
 # if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
     if (std::isinf(a_x))
-      return (a_x > 0) ? Inf<F> : -Inf<F>;
+      return IsPos(a_x) ? Inf<F> : -Inf<F>;
     else
-    if (a_x == 0)
+    if (IsZero(a_x))
       return F(0.0);
     // NaN is not considered specifically...
 
     // Generic Case:
-    bool chSgn = (a_x < 0);
+    bool chSgn = IsNeg(a_x);
     if (chSgn)
       a_x = - a_x;
-    assert(a_x > 0);
+    assert(IsPos(a_x));
 
 #   if (!defined(__clang__))
     // Get the Base-2 exponent and the normalised fractional part of "a_x":
-    assert(std::isfinite(a_x) && a_x > 0);
+    assert(std::isfinite(a_x) && IsPos(a_x));
     int e2X   = INT_MIN;
     F   fracX = std::frexp(a_x, &e2X);
-    assert(0.5 <= fracX && fracX < F(1) && e2X != INT_MIN);
+    assert(F(0.5) <= fracX && fracX < F(1.0) && e2X != INT_MIN);
 
     // Get the Pade approximant of CbRt(fracX):
     F cbrtFX = CbRtPade<F>(fracX);
-    assert(0 < cbrtFX && cbrtFX < F(1.0) + Eps<F>);
+    assert(F(0.0) < cbrtFX && cbrtFX < F(1.0) + Eps<F>);
 
     // Then the exponent of the result is e2X/3:
     int n = e2X / 3;
@@ -1537,7 +1539,7 @@ namespace DimTypes::CEMaths
 
       // "ry" is a relative correction applied to "y":
       F ry = c - F(1.0);
-      if (ry < 0)
+      if (IsNeg(ry))
         ry = - ry;
       if (ry < F(50.0) * Eps<F>)
         break;
@@ -1556,15 +1558,15 @@ namespace DimTypes::CEMaths
   // "ASin" for an arbitrary real arg:                                       //
   //-------------------------------------------------------------------------//
   // XXX: Complex "ASin" is not implemented yet:
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
+  template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F ASin (F a_x)
   {
 # if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
     return
-      (-F(1.0) < a_x && a_x < F(1.0))
+      (F(-1.0) < a_x && a_x < F(1.0))
       ? ATan(a_x / SqRt(F(1.0) - a_x * a_x))
       :
-      (a_x == -F(1.0))
+      (a_x == F(-1.0))
       ? -Pi_2<F>
       :
       (a_x ==  F(1.0))
@@ -1580,18 +1582,18 @@ namespace DimTypes::CEMaths
   // "ACos" for an arbitrary real arg:                                       //
   //-------------------------------------------------------------------------//
   // XXX: Complex "ACos" is not implemented yet:
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
+  template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F ACos (F a_x)
   {
 # if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
     return
-      (F(0.0) < a_x   && a_x <= F(1.0))
+      (F(0.0) < a_x  && a_x <= F(1.0))
       ? ATan(SqRt(F(1.0) - a_x * a_x) / a_x)
       :
-      (a_x == F(0.0))
+      (IsZero(a_x))
       ? Pi_2<F>
       :
-      (-F(1.0) <= a_x && a_x <  F(0.0))
+      (F(-1.0) <= a_x && a_x <  F(0.0))
       ? ATan(SqRt(F(1.0) - a_x * a_x) / a_x) + Pi<F>
       : NaN<F>;
 # else
@@ -1627,13 +1629,13 @@ namespace DimTypes::CEMaths
   // XXX: The Inverse Hyperbolic Functions are currently implemented for Real
   // args only:
   //
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
+  template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F ASinH(F a_x)
   {
     return Log(a_x + SqRt(Sqr(a_x) + F(1.0)));
   }
 
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
+  template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F ACosH(F a_x)
   {
     assert(a_x >= F(1.0));
@@ -1641,7 +1643,7 @@ namespace DimTypes::CEMaths
     return Log(a_x + SqRt(Sqr(a_x) - F(1.0)));
   }
 
-  template<typename F> requires(std::is_floating_point_v<F> && !IsComplex<F>)
+  template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F ATanH(F a_x)
   {
     assert(Abs(a_x) < F(1.0));
@@ -1733,7 +1735,7 @@ namespace DimTypes::CEMaths
     F imSin =   cosX * shY;
     std::complex<F>  cosZ(reCos, imCos);
     std::complex<F>  sinZ(reSin, imSin);
-    return std::make_pair(cosZ,  sinZ) ;
+    return   {cosZ,  sinZ} ;
   }
 
   //-------------------------------------------------------------------------//
@@ -1754,8 +1756,8 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // XXX: Not really "constexpr" in CLang <= 21:
   //
-  template<typename F> requires(std::is_floating_point_v<F>)
-  constexpr std::complex<F> Pow(std::complex<F> a_z, F a_p)
+  template<typename F>  requires(std::is_floating_point_v<F>)
+  constexpr  std::complex<F> Pow(std::complex<F> a_z, F a_p)
     { return std::pow(a_z, a_p); }
 
   //-------------------------------------------------------------------------//
@@ -1763,8 +1765,8 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // XXX: Also a placeholder as yet, NOT "constexpr" in CLang <= 21:
   //
-  template<typename F> requires(std::is_floating_point_v<F>)
-  constexpr std::complex<F> SqRt(std::complex<F> a_z)
+  template<typename F>   requires(std::is_floating_point_v<F>)
+  constexpr  std::complex<F> SqRt(std::complex<F> a_z)
     { return std::sqrt(a_z); }
 
   //-------------------------------------------------------------------------//
@@ -1772,8 +1774,8 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // XXX: Also a placeholder as yet, NOT "constexpr" in CLang <= 21:
   //
-  template<typename F> requires(std::is_floating_point_v<F>)
-  constexpr std::complex<F> CbRt(std::complex<F> a_z)
+  template<typename F>   requires(std::is_floating_point_v<F>)
+  constexpr  std::complex<F> CbRt(std::complex<F> a_z)
     { return std::pow(a_z, F(1.0)/F(3.0)); }
 }
 // End namespace DimTypes::CEMaths
