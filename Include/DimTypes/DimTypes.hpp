@@ -107,10 +107,12 @@ namespace DimTypes
       static_assert(E == 0, "ERROR: operator R: Must be a DimLess qty");
       return R(m_val);
     }
-  
     // NB:  In addition, for some types (eg Angles expressed in Radians), the
     // user may allow direct conversion into "RepT" by specialising the above
     // operator method...
+
+    // Creating an Invalid value:
+    constexpr static DimQ Invalid() { return DimQ(NAN); }
   
     //=======================================================================//
     // Arithmetic Operations -- Dimensions Unchanged:                        //
