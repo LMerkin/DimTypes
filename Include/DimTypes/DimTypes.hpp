@@ -295,7 +295,7 @@ namespace DimTypes
   template<typename ToR,   // "ToR" must be explicit, other params are inferred
            uint64_t E, uint64_t U, typename RepT, unsigned MaxDims>
   constexpr
-     DimQ<E, U, ToR,  MaxDims> ToRepT
+     DimQ<E, U, ToR,  MaxDims> ToNewRepT
     (DimQ<E, U, RepT, MaxDims> const& a_right)
     // This is just a shortcut to the "Extended Copy Ctor":
     { return DimQ<E, U, ToR, MaxDims>(a_right); }
@@ -518,7 +518,7 @@ namespace DimTypes
 #undef  IMPORT_DIMTYPES_FUNCS
 #endif
 #define IMPORT_DIMTYPES_FUNCS           \
-  using DimTypes::ToRepT;               \
+  using DimTypes::ToNewRepT;            \
   using DimTypes::Abs;                  \
   using DimTypes::Floor;                \
   using DimTypes::Ceil;                 \
