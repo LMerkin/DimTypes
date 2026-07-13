@@ -37,11 +37,15 @@ namespace DimTypes::CEMaths
   constexpr inline bool IsComplex<std::complex<F>> = true;
 
   //-------------------------------------------------------------------------//
-  // "Abs":                                                                  //
+  // "Abs", "UniformNorm":                                                   //
   //-------------------------------------------------------------------------//
   template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F Abs  (F  a_x)
     { return  std::abs(a_x); }
+
+  template<typename F> requires(std::is_floating_point_v<F>)
+  constexpr F UniformNorm(F a_x)
+    { return  Abs(a_x); }
 
   //-------------------------------------------------------------------------//
   // "Floor":                                                                //
@@ -1790,6 +1794,7 @@ namespace DimTypes::CEMaths
 #define IMPORT_CEMATHS_FUNCS                \
   using DimTypes::CEMaths::IsComplex;       \
   using DimTypes::CEMaths::Abs;             \
+  using DimTypes::CEMaths::UniformNorm;     \
   using DimTypes::CEMaths::Floor;           \
   using DimTypes::CEMaths::Ceil;            \
   using DimTypes::CEMaths::Round;           \

@@ -301,7 +301,7 @@ namespace DimTypes
     { return DimQ<E, U, ToR, MaxDims>(a_right); }
   
   //-------------------------------------------------------------------------//
-  // "Abs", "Floor", "Ceil", "Round": "DimQ" -> "DimQ":                      //
+  // "Abs", "UniformNorm", "Floor", "Ceil", "Round": "DimQ" -> "DimQ":       //
   //-------------------------------------------------------------------------//
   #ifdef  DIMQ_ROUND_FUNC
   #undef  DIMQ_ROUND_FUNC
@@ -317,6 +317,7 @@ namespace DimTypes
     { return DimQ<E, U, RepT, MaxDims>(FuncName(a_right.Magnitude()));  }
   
   DIMQ_ROUND_FUNC(Abs)
+  DIMQ_ROUND_FUNC(UniformNorm)
   DIMQ_ROUND_FUNC(Floor)
   DIMQ_ROUND_FUNC(Ceil)
   DIMQ_ROUND_FUNC(Round)
