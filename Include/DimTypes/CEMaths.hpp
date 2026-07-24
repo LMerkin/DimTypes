@@ -1154,6 +1154,15 @@ namespace DimTypes::CEMaths
   }
 
   //-------------------------------------------------------------------------//
+  // "Log2" (Binary Logarithm) for an arbitrary real arg:                    //
+  //-------------------------------------------------------------------------//
+  // XXX: Complex "Log2" is not available yet:
+  //
+  template<typename F> requires(std::is_floating_point_v<F>)
+  constexpr F  Log2(F  a_x)
+    { return Log(a_x) / Ln2<F>; }
+
+  //-------------------------------------------------------------------------//
   // Generic "Pow" for an arbitrary real arg:                                //
   //-------------------------------------------------------------------------//
   // XXX: In CLang <= 22,  this function  is STILL NOT "constexpr",  because
@@ -1818,6 +1827,7 @@ namespace DimTypes::CEMaths
   using DimTypes::CEMaths::Pi_4;            \
   using DimTypes::CEMaths::SqRt2;           \
   using DimTypes::CEMaths::Ln2;             \
+  using DimTypes::CEMaths::Log2E;           \
   using DimTypes::CEMaths::DefaultTol;      \
   using DimTypes::CEMaths::ApproxEqual;     \
   using DimTypes::CEMaths::Exp;             \
