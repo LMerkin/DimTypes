@@ -1817,6 +1817,7 @@ namespace DimTypes::CEMaths
   using DimTypes::CEMaths::Pi_2;            \
   using DimTypes::CEMaths::Pi_4;            \
   using DimTypes::CEMaths::SqRt2;           \
+  using DimTypes::CEMaths::Ln2;             \
   using DimTypes::CEMaths::DefaultTol;      \
   using DimTypes::CEMaths::ApproxEqual;     \
   using DimTypes::CEMaths::Exp;             \
