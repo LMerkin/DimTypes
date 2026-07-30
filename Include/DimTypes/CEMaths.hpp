@@ -174,7 +174,9 @@ namespace DimTypes::CEMaths
   template<typename F> constexpr inline F SqRt1_2 = F(M_SQRT1_2l);   // .../2
   // For Internal Use Only:
   template<typename F> constexpr inline F Ln2     = F(M_LN2l);       // ln(2)
+  template<typename F> constexpr inline F Ln10    = F(M_LN10l);      // ln(10)
   template<typename F> constexpr inline F Log2E   = F(M_LOG2El);     // log2(e)
+  template<typename F> constexpr inline F LgE     = F(M_LOG10El);    // lg  (e)
   template<typename F> constexpr inline F SqRt3;                     // SqRt(3)
   template<typename F> constexpr inline F CbRt2;                     // CbRt(2)
   template<typename F> constexpr inline F CbRt4;                     // CbRt(4)
@@ -1154,13 +1156,17 @@ namespace DimTypes::CEMaths
   }
 
   //-------------------------------------------------------------------------//
-  // "Log2" (Binary Logarithm) for an arbitrary real arg:                    //
+  // "Log2" and "Log10" for arbitrary real args:                             //
   //-------------------------------------------------------------------------//
-  // XXX: Complex "Log2" is not available yet:
+  // XXX: Complex versions of these funcs are not available yet:
   //
-  template<typename F> requires(std::is_floating_point_v<F>)
-  constexpr F  Log2(F  a_x)
-    { return Log(a_x) / Ln2<F>; }
+  template<typename  F> requires(std::is_floating_point_v<F>)
+  constexpr F  Log2 (F  a_x)
+    { return   Log(a_x) / Ln2 <F>; }
+
+  template<typename  F> requires(std::is_floating_point_v<F>)
+  constexpr F  Log10(F  a_x)
+    { return   Log(a_x) / Ln10<F>; }
 
   //-------------------------------------------------------------------------//
   // Generic "Pow" for an arbitrary real arg:                                //
@@ -1827,11 +1833,15 @@ namespace DimTypes::CEMaths
   using DimTypes::CEMaths::Pi_4;            \
   using DimTypes::CEMaths::SqRt2;           \
   using DimTypes::CEMaths::Ln2;             \
+  using DimTypes::CEMaths::Ln10;            \
   using DimTypes::CEMaths::Log2E;           \
+  using DimTypes::CEMaths::LgE;             \
   using DimTypes::CEMaths::DefaultTol;      \
   using DimTypes::CEMaths::ApproxEqual;     \
   using DimTypes::CEMaths::Exp;             \
   using DimTypes::CEMaths::Log;             \
+  using DimTypes::CEMaths::Log2;            \
+  using DimTypes::CEMaths::Log10;           \
   using DimTypes::CEMaths::Pow;             \
   using DimTypes::CEMaths::Cos;             \
   using DimTypes::CEMaths::Sin;             \

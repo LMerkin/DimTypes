@@ -457,6 +457,7 @@ namespace DimTypes
   DIMLESS_UNARY_FUNC(Exp)
   DIMLESS_UNARY_FUNC(Log)
   DIMLESS_UNARY_FUNC(Log2)
+  DIMLESS_UNARY_FUNC(Log10)
   DIMLESS_UNARY_FUNC(Cos)
   DIMLESS_UNARY_FUNC(Sin)
   DIMLESS_UNARY_FUNC(Tan)
@@ -535,6 +536,7 @@ namespace DimTypes
   using DimTypes::Exp;                  \
   using DimTypes::Log;                  \
   using DimTypes::Log2;                 \
+  using DimTypes::Log10;                \
   using DimTypes::Cos;                  \
   using DimTypes::Sin;                  \
   using DimTypes::Tan;                  \
