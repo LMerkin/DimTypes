@@ -5,7 +5,7 @@
 //===========================================================================//
 #pragma once
 #include "CEMaths.hpp"
-#include "Macros.h"
+#include "CompilerMacros.h"
 #include <complex>
 #include <cstdio>
 #include <cmath>
@@ -54,7 +54,7 @@ namespace DimTypes::Bits
 
     constexpr static int      IPMod = int(PMod);
 
-    constexpr static uint64_t PMask = (1UL << PBits) - 1;
+    constexpr static uint64_t PMask = (uint64_t{1} << PBits) - 1;
     static_assert(PMod <= PMask, "Insufficient bits for PMod");
 
     static_assert(PBits * MaxDims <= sizeof(uint64_t) * 8,
@@ -65,7 +65,7 @@ namespace DimTypes::Bits
     constexpr static uint64_t DimExp(unsigned dim)
     {
       assert(dim <  MaxDims);
-      return 1UL << (dim * PBits);
+      return uint64_t{1} << (dim * PBits);
     }
 
     //=======================================================================//
@@ -183,7 +183,7 @@ namespace DimTypes::Bits
       if (F == 0)
         return E;
 
-      uint64_t res = 0UL;
+      uint64_t res = 0;
       for (unsigned dim = 0;  dim < MaxDims;  ++dim)
         res |= PutFld((GetFld(E, dim) + GetFld(F, dim)) % PMod, dim);
       return res;
@@ -195,7 +195,7 @@ namespace DimTypes::Bits
       if (F == 0)
         return E;
 
-      uint64_t res = 0UL;
+      uint64_t res = 0;
       for (unsigned dim = 0;  dim < MaxDims;  ++dim)
         // NB: First, add "PMod" to the LHS to avoid negative vals:
         res |= PutFld(((PMod + GetFld(E, dim)) - GetFld(F, dim)) % PMod, dim);
@@ -208,7 +208,7 @@ namespace DimTypes::Bits
       if (m == 1)
         return E;
 
-      uint64_t res = 0UL;
+      uint64_t res = 0;
       for (unsigned dim = 0;  dim < MaxDims;  ++dim)
         res |= PutFld((GetFld(E, dim) * uint64_t(Normalise(m))) % PMod, dim);
       return res;
@@ -222,7 +222,7 @@ namespace DimTypes::Bits
       if (n == 1)
         return E;
 
-      uint64_t res = 0UL;
+      uint64_t res = 0;
       for (unsigned dim = 0;  dim < MaxDims;  ++dim)
         res |=
           PutFld((GetFld(E, dim) * uint64_t(InverseModP(int(n)))) % PMod, dim);
@@ -284,14 +284,14 @@ namespace DimTypes::Bits
     constexpr static std::pair<int, unsigned> GetNumerAndDenom(uint64_t rep)
     {
       // Numer is +-(height - denom):
-      if (rep == 0UL)
+      if (rep == 0)
         return std::make_pair(0, 1);
 
       // Generic case: Traverse all heights. Typically, the result is nearby:
       // height == |numer| + denom, where denom >= 1 and numer != 0:
-      for (int height = 2; height < int(MaxHeight); ++height)
+      for (int height = 2; height <= int(MaxHeight); ++height)
       {
-        for (int denom = 1; denom < height; ++denom)
+        for (int denom = 1; denom <  height; ++denom)
         {
           unsigned invDenom = InverseModP(denom);
           int      numerP   = height - denom;  // Positive numer
@@ -320,19 +320,19 @@ namespace DimTypes::Bits
     //-----------------------------------------------------------------------//
     constexpr static uint64_t SetUnit(uint64_t U, unsigned dim, unsigned unit)
     {
-      assert(dim < MaxDims);
-      // Clear the old bits at "dim" and set those from "unit" there.
-      // XXX: we must always have unit <= PMask,  but instead of checking this
-      // pre-cond, we simply apply "PMask" to "unit". In all normal cases this
-      // should be fine:
-      return (U   & ~(PMask  << (dim * PBits))) |
-             ((unit & PMask) << (dim * PBits));
+      // XXX: we must always have unit <= PMask, but in case "assert" is a NoOp
+      // in the Release mode, we still appply "PMask" to "unit" below:
+      assert(dim < MaxDims && unit <= PMask);
+
+      // Clear the old bits at "dim" and set those from "unit" there:
+      return (U     & ~(PMask  << (dim * PBits))) |
+             ((unit &   PMask) << (dim * PBits));
     }
 
     constexpr static uint64_t MkUnit(unsigned dim, unsigned unit)
     {
       assert(dim < MaxDims);
-      return SetUnit(0UL, dim, unit);
+      return SetUnit(0, dim, unit);
     }
 
     //-----------------------------------------------------------------------//
@@ -344,7 +344,7 @@ namespace DimTypes::Bits
     constexpr static uint64_t UnifyUnits
       (uint64_t E, uint64_t F, uint64_t U, uint64_t V)
     {
-      uint64_t res = 0UL;
+      uint64_t res = 0;
       for (unsigned dim = 0; dim < MaxDims; ++dim)
       {
         uint64_t e = GetFld(E, dim);
@@ -354,16 +354,16 @@ namespace DimTypes::Bits
 
         // Unified Units:
         uint64_t unified =
-          (e == 0UL)
+          (e == 0)
           ? // "e" is dimension-less:
-            ((f == 0UL)
+            ((f == 0)
              ? // "f" is dimension-less as well, so both units are reset:
                0L
              : // Use the unit of "f":
                v
             )
           : // "e" is non-trivial:
-            ((f == 0UL)
+            ((f == 0)
              ? // "f" is dimension-less, so use the unit of "e":
                u
              : // Both "e" and "f" are non-trivial, so their units must be
@@ -385,7 +385,7 @@ namespace DimTypes::Bits
     constexpr static bool UnitsOK(uint64_t E, uint64_t U, uint64_t V)
     {
       for (unsigned dim = 0; dim <  MaxDims; ++dim)
-        if (GetFld(E,dim) != 0UL && GetFld(U,dim) != GetFld(V,dim))
+        if (GetFld(E,dim) != 0 && GetFld(U,dim) != GetFld(V,dim))
           // Failed units unification: Exp != 0, and units differ:
           return false;
       // If we got here:
@@ -397,14 +397,14 @@ namespace DimTypes::Bits
     //-----------------------------------------------------------------------//
     constexpr static uint64_t CleanUpUnits(uint64_t E, uint64_t U)
     {
-      uint64_t res = 0UL;
+      uint64_t res = 0;
       for (unsigned dim = 0; dim < MaxDims; ++dim)
       {
         uint64_t u =
           (GetFld(E, dim) != 0)
           ? // This dim's Exp is non-trivial, so the Units are indeed required:
             GetFld(U, dim)
-          : 0UL;
+          : 0;
         res |= PutFld(u, dim);
       }
       return res;

@@ -1,7 +1,7 @@
 // vim:ts=2:et
 //===========================================================================//
-//                              "DimTypes/Macros.h":                         //
-//                   Macros for Declaring Dimensions and Units               //
+//                           "DimTypes/DeclareDims.h":                       //
+//                Macros for Declaring the Dimensions and Units              //
 //===========================================================================//
 #pragma  once
 #include <cstdio>
@@ -21,10 +21,10 @@
 // "FOR_EACH_DIM":                                                           //
 //===========================================================================//
 // From: https://www.scs.stanford.edu/~dm/blog/va-opt.html
-// Iteratively applies macro "Action" to the Args list, up to ~30 entries long:
+// Iteratively applies macro "Action" to the Args list, up to ~80 entries long:
 //
-#ifdef  PARENS
-#undef  PARENS
+#ifdef  DTPP_PARENS
+#undef  DTPP_PARENS
 #endif
 
 #ifdef  EXPAND_DIMS
@@ -55,7 +55,7 @@
 #undef  FOR_EACH_DIM
 #endif
 
-#define PARENS ()
+#define DTPP_PARENS ()
 
 #define EXPAND_DIMS(...) \
         EXPAND_DIMS1(EXPAND_DIMS1(EXPAND_DIMS1(__VA_ARGS__)))
@@ -74,7 +74,7 @@
 #define FOR_EACH_DIM_HELPER(Action, Arg1, ...)      \
   /* NB: Arg1 is assumed to be enclosed in ()s! */  \
   Action(Arg1)                                      \
-  __VA_OPT__(FOR_EACH_DIM_AGAIN PARENS (Action, __VA_ARGS__))
+  __VA_OPT__(FOR_EACH_DIM_AGAIN DTPP_PARENS (Action, __VA_ARGS__))
 
 #define FOR_EACH_DIM_AGAIN() FOR_EACH_DIM_HELPER
 
@@ -133,7 +133,7 @@
 #define FOR_EACH_OTHER_UNIT_HELPER(Action, DimName, Arg1, ...)  \
   /* NB: Arg1 is assumed to be enclosed in ()s! */  \
   Action(DimName, Arg1)                         \
-  __VA_OPT__(FOR_EACH_OTHER_UNIT_AGAIN PARENS   \
+  __VA_OPT__(FOR_EACH_OTHER_UNIT_AGAIN DTPP_PARENS  \
             (Action,  DimName,  __VA_ARGS__))
 
 //===========================================================================//
@@ -271,7 +271,7 @@
 #endif
 #define STRINGIFY_NAME( SomeName) STRINGIFY_NAME1(SomeName)
 
-#ifdef  STRINGFFY_NAME1
+#ifdef  STRINGIFY_NAME1
 #undef  STRINGIFY_NAME1
 #endif
 #define STRINGIFY_NAME1(SomeName) #SomeName
@@ -350,7 +350,7 @@
 // DimDcl =(DimName,  FundUnitName [, OtherUnitDcl...]),
 // UnitDcl=(UnitName, UnitValInFundUnits) :
 //
-#ifndef GET_OTHER_UNITS_DCLS
+#ifdef  GET_OTHER_UNITS_DCLS
 #undef  GET_OTHER_UNITS_DCLS
 #endif
 #define GET_OTHER_UNITS_DCLS(_DimName, _FundUnitName, ...) __VA_ARGS__
@@ -737,62 +737,3 @@
       } \
     };  \
   }
-
-//===========================================================================//
-// Run-Time Checks:                                                          //
-//===========================================================================//
-//---------------------------------------------------------------------------//
-// "CHECK_ONLY":                                                             //
-//---------------------------------------------------------------------------//
-// "CHECK_ONLY": Symbol is used unless UNCHECKED_MODE (and thus NDEBUG) are set:
-// To make sure: UNCHECKED_MODE => NDEBUG, but not other way round:
-//
-#ifdef CHECK_ONLY
-#undef CHECK_ONLY
-#endif
-#if UNCHECKED_MODE
-#  define CHECK_ONLY(x)           // UnChecked Mode only
-#  ifndef NDEBUG
-#  define NDEBUG 1
-#  endif
-#else
-#  define CHECK_ONLY(x) x         // Release, RelWithDebInfo, Debug
-#endif
-
-//---------------------------------------------------------------------------//
-// "DEBUG_ONLY":                                                             //
-//---------------------------------------------------------------------------//
-// "DEBUG_ONLY": Symbol is used unless NDEBUG is set, which is a STRONGER cond
-// compared to "CHECK_ONLY":
-#ifdef DEBUG_ONLY
-#undef DEBUG_ONLY
-#endif
-#ifdef NDEBUG
-#  define DEBUG_ONLY(x)           // UnChecked or Release Mode
-#else
-#  define DEBUG_ONLY(x) x         // RelWithDebInfo or Debug
-#endif
-
-//---------------------------------------------------------------------------//
-// "UNUSED_PARAM" (unconditionally):                                         //
-//---------------------------------------------------------------------------//
-#ifdef  UNUSED_PARAM
-#undef  UNUSED_PARAM
-#endif
-#define UNUSED_PARAM(x)
-
-//---------------------------------------------------------------------------//
-// Branch Prediction:                                                        //
-//---------------------------------------------------------------------------//
-// NB: "LIKELY" and "UNLINKEY" macros are to distinguish deeply-generic and
-// deeply-degenerate cases, so the probabilities of each case are set high.
-// Indended to be used at run-time only,  so do not use them in "consnexpr"
-// functions:
-//
-#ifndef  LIKELY
-# define LIKELY(expr)   __builtin_expect_with_probability((expr), 1, 0.999)
-#endif
-#ifndef  UNLIKELY
-# define UNLIKELY(expr) __builtin_expect_with_probability((expr), 0, 0.999)
-#endif
-

@@ -7,7 +7,8 @@
 #include "ValidRepTs.h"
 #include "CEMaths.hpp"
 #include "Encodings.hpp"
-#include "Macros.h"
+#include "CompilerMacros.h"
+#include "DeclareDims.h"
 
 namespace DimTypes
 {
@@ -35,17 +36,17 @@ namespace DimTypes
   {
   private:
     RepT  m_val; // The actual value (magnitude)
-  
+
     // Encodings to be used:
     using En =   Bits::Encodings<RepT, MaxDims>;
-  
+
   public:
     //=======================================================================//
     // Ctors and Accessors:                                                  //
     //=======================================================================//
     // Default Ctor:  Initialisation to 0:
     constexpr DimQ(): m_val(0.0) {}
-  
+
     // Non-Default Ctor:
     // Lifting a value of type "R" into "DimQ".  We DELIBERATELY DO NOT INFER
     // the "RepT" from the type of the Ctor arg, as this may cause ambiguities
@@ -55,22 +56,21 @@ namespace DimTypes
     template<typename  R> requires(IsValidDimQRepT<R>)
     constexpr explicit DimQ(R const& val)
     : m_val(RepT(val)) {}
-  
+
     // Copy Ctor and assignment are auto-generated:
     constexpr DimQ            (DimQ const&) = default;
     constexpr DimQ& operator= (DimQ const&) = default;
-  
+
     // If the assignment LHS is DimLess, the RHS may be of any floating-point
     // type "R"   (again, this constraint is required to avoid confusion with
     // the "DimQ" itself):
-    template<typename R> requires(IsValidDimQRepT<R>)
-    constexpr DimQ operator= (R const& a_right)
+    template<typename R> requires(IsValidDimQRepT<R> && E == 0)
+    constexpr DimQ& operator= (R const& a_right)
     {
-      static_assert(E == 0, "ERROR: =: LHS must be DimLess");
       m_val = RepT(a_right);
       return *this;
     }
-  
+
     // Non-Default Ctor:
     // Conversion FROM another Rep (but E, U and MaxDims must match); this is
     // actually an "Extended Copy Ctor":
@@ -78,19 +78,19 @@ namespace DimTypes
     constexpr explicit DimQ(DimQ<E, U, FromR, MaxDims> const& a_right)
       : m_val(RepT(a_right.Magnitude()))
       {}
-  
+
     // The dimensioned unit for the given dimensioned quantity. NB: This method
     // is not a ctor: it takes an existing "DimQ" and returns a similar one but
     // with the unitary magnitude:
     //
-    constexpr DimQ     UnitOf()       const { return DimQ(RepT(1.0)); }
-  
+    constexpr DimQ     UnitOf()       const { return DimQ(1.0); }
+
     // Getting the exponent code (this is primarily for testing):
     constexpr uint64_t GetDimsCode () const { return E; }
-  
+
     // Getting the Units code (also for testing):
     constexpr uint64_t GetUnitsCode() const { return U; }
-  
+
     // The Magnitude of the dimensioned quantity (ie its value expressed in the
     // corresp dimensioned units). The magnitude is by itself dimension-less.
     // XXX: Direct access to the dimension-less magnitude  may seem  to be an
@@ -98,69 +98,89 @@ namespace DimTypes
     // its unit), so we provide the direct access for efficiency:
     //
     constexpr RepT const& Magnitude() const { return m_val; }
-  
+
     // The following function converts "DimQ" to the Underlying Field Type
     // ("RepT"), but ONLY if the arg is actually dimension-less:
-    template<typename R> requires(IsValidDimQRepT<R>)
+    template<typename R> requires(IsValidDimQRepT<R> && E == 0)
     constexpr explicit   operator R() const
-    {
-      static_assert(E == 0, "ERROR: operator R: Must be a DimLess qty");
-      return R(m_val);
-    }
+      { return R(m_val); }
     // NB:  In addition, for some types (eg Angles expressed in Radians), the
     // user may allow direct conversion into "RepT" by specialising the above
     // operator method...
 
     // Creating an Invalid value:
     constexpr static DimQ Invalid() { return DimQ(NAN); }
-  
+
     //=======================================================================//
     // Arithmetic Operations -- Dimensions Unchanged:                        //
     //=======================================================================//
     //-----------------------------------------------------------------------//
     // Addition and Subtraction of "DimQ"s:                                  //
     //-----------------------------------------------------------------------//
-    // This is only possible if the dimensions and RepT are same, and the units
-    // can be unified (i.e. same units for non-0 exponents),  in which case the
-    // 1st arg's units can still be used:
-    //
-    // Addition:
-    template<uint64_t F, uint64_t V>
-    constexpr DimQ operator+   (DimQ<F,V,RepT,MaxDims> const& a_right) const
+    // This is only possible if the dimensions and RepT are same ("E"), and the
+    // units ("U" and "V") can be unified  (ie same units for non-0 exponents),
+    // in which case the 1st arg's units can still be used:
+    //-----------------------------------------------------------------------//
+    // Addition:                                                             //
+    //-----------------------------------------------------------------------//
+    template<uint64_t V>
+    requires(En::UnitsOK(E,U,V))
+    constexpr  DimQ operator+ (DimQ<E,V,RepT,MaxDims> const& a_right) const
+      { return DimQ(m_val   + a_right.Magnitude()); }
+
+    template<uint64_t V>
+    requires(En::UnitsOK(E,U,V))
+    constexpr DimQ& operator+= (DimQ<E,V,RepT,MaxDims> const& a_right)
     {
-      static_assert(E == F,             "ERROR: +: Different Dims");
-      static_assert(En::UnitsOK(E,U,V), "ERROR: +: Units do not unify");
-      return DimQ(m_val + a_right.Magnitude());
-    }
-  
-    template<uint64_t F, uint64_t V>
-    constexpr DimQ& operator+= (DimQ<F,V,RepT,MaxDims> const& a_right)
-    {
-      static_assert(E == F,             "ERROR: +=: Different Dims");
-      static_assert(En::UnitsOK(E,U,V), "ERROR: +=: Units do not unify");
       m_val += a_right.Magnitude();
       return *this;
     }
-  
-    // Subtraction of "DimQs":
-    // Same constraints as for addition:
-    template<uint64_t F, uint64_t V>
-    constexpr DimQ  operator- (DimQ<F,V,RepT,MaxDims> const& a_right) const
+
+    // Addition of a "scalar" is permitted only for a dimension-less qty:
+    template<typename R>
+    requires(IsValidDimQRepT<R> && E == 0)
+    constexpr DimQ operator+(R const& a_right) const
+    { return  DimQ(m_val   + RepT(a_right)); }
+
+    template<typename R>
+    requires(IsValidDimQRepT<R> && E == 0)
+    constexpr DimQ& operator+=(R const& a_right)
     {
-      static_assert(E == F,             "ERROR: -: Different Dims");
-      static_assert(En::UnitsOK(E,U,V), "ERROR: -: Units do not unify");
-      return DimQ(m_val - a_right.Magnitude());
+      m_val += RepT(a_right);
+      return *this;
     }
-  
-    template<uint64_t F, uint64_t V>
-    constexpr DimQ& operator-=(DimQ<F,V,RepT,MaxDims> const& a_right)
+
+    //-----------------------------------------------------------------------//
+    // Subtraction of "DimQs":                                               //
+    //-----------------------------------------------------------------------//
+    // Same constraints as for Addition:
+    //
+    template<uint64_t V>
+    requires(En::UnitsOK(E,U,V))
+    constexpr  DimQ  operator- (DimQ<E,V,RepT,MaxDims> const& a_right) const
+      { return DimQ(m_val - a_right.Magnitude()); }
+
+    template<uint64_t V>
+    requires(En::UnitsOK(E,U,V))
+    constexpr  DimQ& operator-=(DimQ<E,V,RepT,MaxDims> const& a_right)
     {
-      static_assert(E == F,             "ERROR: -=: Different Dims");
-      static_assert(En::UnitsOK(E,U,V), "ERROR: -=: Units do not unify");
       m_val -= a_right.Magnitude();
       return *this;
     }
-  
+
+    template<typename R>
+    requires(IsValidDimQRepT<R> && E == 0)
+    constexpr DimQ operator-(R const& a_right) const
+    { return  DimQ(m_val - RepT(a_right)); }
+
+    template<typename R>
+    requires(IsValidDimQRepT<R> && E == 0)
+    constexpr DimQ& operator-=(R const& a_right)
+    {
+      m_val -= RepT(a_right);
+      return *this;
+    }
+
     //-----------------------------------------------------------------------//
     // Multiplication and Division by some "R":                              //
     //-----------------------------------------------------------------------//
@@ -173,30 +193,30 @@ namespace DimTypes
     template<typename R> requires(IsValidDimQRepT<R>)
     constexpr  DimQ operator*    (R const& a_right) const
       { return DimQ(m_val   * RepT(a_right)); }
-  
+
     template<typename R> requires(IsValidDimQRepT<R>)
     constexpr  DimQ& operator*=  (R const& a_right)
     {
       m_val *= RepT(a_right);
       return  *this;
     }
-  
+
     // In particular, Unary Negation:
     constexpr  DimQ operator- () const
       { return DimQ(- m_val); }
-  
+
     // Division by "R":
     template<typename R> requires(IsValidDimQRepT<R>)
     constexpr  DimQ operator/    (R const& a_right) const
       { return DimQ(m_val   / RepT(a_right)); }
-  
+
     template<typename R> requires(IsValidDimQRepT<R>)
     constexpr  DimQ& operator/=  (R const& a_right)
     {
       m_val /= RepT(a_right);
       return *this;
     }
-  
+
     //=======================================================================//
     // Arithmetic operations which result in Dimensions change:              //
     //=======================================================================//
@@ -220,7 +240,7 @@ namespace DimTypes
                    MaxDims>
              (m_val * a_right.Magnitude());
     }
-  
+
     //-----------------------------------------------------------------------//
     // Division of "DimQ"s:                                                  //
     //-----------------------------------------------------------------------//
@@ -238,52 +258,56 @@ namespace DimTypes
                    MaxDims>
              (m_val / a_right.Magnitude());
     }
-  
+
     //-----------------------------------------------------------------------//
     // Comparison operators:                                                 //
     //-----------------------------------------------------------------------//
     // Require same representation, same dimensions and unifyable units.
-    // NB:
-    // (*) Inequalities would result in a compile-time error if not implemented
-    //     for the corresp underlying type (eg a Complex) but only at the use
-    //     point!
-    // (*) Interestingly, a space is allowed between e.g. "operator" and "==" :
+    // NB: different requirements for DIMQ_EQ_CMP and DIMQ_ORD_CMP:
     //
-  # ifdef  DIMQ_CMP
-  # undef  DIMQ_CMP
-  # endif
-  # define DIMQ_CMP(Op)  \
-    template<uint64_t V> \
+#   ifdef  DIMQ_EQ_CMP
+#   undef  DIMQ_EQ_CMP
+#   endif
+#   define DIMQ_EQ_CMP(Op) \
+    template<uint64_t V>   \
+    requires(En::UnitsOK(E,U,V)) \
     constexpr bool operator Op(DimQ<E, V, RepT, MaxDims> const& a_right) const \
-    { \
-      static_assert(En::UnitsOK(E,U,V), "ERROR: Units do not unify"); \
-      return m_val Op a_right.Magnitude(); \
-    }
-    DIMQ_CMP(==)
-    DIMQ_CMP(!=)
-    DIMQ_CMP(>)
-    DIMQ_CMP(>=)
-    DIMQ_CMP(<)
-    DIMQ_CMP(<=)
-  # undef  DIMQ_CMP
-  
+    { return m_val Op a_right.Magnitude(); }
+
+    DIMQ_EQ_CMP(==)
+    DIMQ_EQ_CMP(!=)
+#   undef  DIMQ_EQ_CMP
+
+#   ifdef  DIMQ_ORD_CMP
+#   undef  DIMQ_ORD_CMP
+#   endif
+#   define DIMQ_ORD_CMP(Op) \
+    template<uint64_t V>   \
+    requires(En::UnitsOK(E,U,V) && !IsComplex<RepT>) \
+    constexpr bool operator Op(DimQ<E, V, RepT, MaxDims> const& a_right) const \
+    { return m_val Op a_right.Magnitude(); }
+
+    DIMQ_ORD_CMP(>)
+    DIMQ_ORD_CMP(>=)
+    DIMQ_ORD_CMP(<)
+    DIMQ_ORD_CMP(<=)
+#   undef  DIMQ_ORD_CMP
+
     //-----------------------------------------------------------------------//
     // Approximate Equality:                                                 //
     //-----------------------------------------------------------------------//
     template<uint64_t V>
+    requires(En::UnitsOK(E,U,V) && !IsComplex<RepT>)
     constexpr bool ApproxEquals
     (
       DimQ<E, V, RepT, MaxDims> const& a_right,
       RepT                      const& a_tol = DefaultTol<RepT>
     )
     const
-    {
-      static_assert(En::UnitsOK(E,U,V), "ERROR: Units do not unify");
-      return ApproxEqual(m_val, a_right.Magnitude(), a_tol);
-    }
+    { return ApproxEqual(m_val, a_right.Magnitude(), a_tol); }
   };
   // End "DimQ" class
-  
+
   //=========================================================================//
   // NameSpace-Level Functions:                                              //
   //=========================================================================//
@@ -299,14 +323,14 @@ namespace DimTypes
     (DimQ<E, U, RepT, MaxDims> const& a_right)
     // This is just a shortcut to the "Extended Copy Ctor":
     { return DimQ<E, U, ToR, MaxDims>(a_right); }
-  
+
   //-------------------------------------------------------------------------//
   // "Abs", "UniformNorm", "Floor", "Ceil", "Round": "DimQ" -> "DimQ":       //
   //-------------------------------------------------------------------------//
-  #ifdef  DIMQ_ROUND_FUNC
-  #undef  DIMQ_ROUND_FUNC
-  #endif
-  #define DIMQ_ROUND_FUNC(FuncName)   \
+# ifdef  DIMQ_ROUND_FUNC
+# undef  DIMQ_ROUND_FUNC
+# endif
+# define DIMQ_ROUND_FUNC(FuncName)   \
   /* Bring in CMaths::FuncName (though FuncName may be overloaded): */  \
   using CEMaths::FuncName;            \
   \
@@ -315,18 +339,19 @@ namespace DimTypes
   FuncName( DimQ<E, U, RepT, MaxDims>  const& a_right) \
   requires(!IsComplex<RepT>) \
     { return DimQ<E, U, RepT, MaxDims>(FuncName(a_right.Magnitude()));  }
-  
+
   DIMQ_ROUND_FUNC(Abs)
   DIMQ_ROUND_FUNC(UniformNorm)
   DIMQ_ROUND_FUNC(Floor)
   DIMQ_ROUND_FUNC(Ceil)
   DIMQ_ROUND_FUNC(Round)
-  #undef  DIMQ_ROUND_FUNC
-  
+# undef  DIMQ_ROUND_FUNC
+
   //-------------------------------------------------------------------------//
   // "ApproxEqual" (w/o "s", as in "CEMaths"):                               //
   //-------------------------------------------------------------------------//
   template<uint64_t E, uint64_t U, uint64_t V, typename RepT, unsigned MaxDims>
+  requires(Bits::Encodings<RepT, MaxDims>::UnitsOK(E, U, V) && !IsComplex<RepT>)
   constexpr bool ApproxEqual
   (
     DimQ<E, U, RepT, MaxDims> const& a_left,
@@ -334,7 +359,35 @@ namespace DimTypes
     RepT                      const& a_tol = DefaultTol<RepT>
   )
   { return a_left.ApproxEquals(a_right, a_tol); }
-  
+
+  //-------------------------------------------------------------------------//
+  // Addition, Subraction:                                                   //
+  //-------------------------------------------------------------------------//
+  // XXX: For "a_right", E==0 is required; U != 0 is allowed:
+  //
+  template<uint64_t U, typename R, typename RepT, unsigned MaxDims>
+  requires(IsValidDimQRepT<R>)
+  constexpr DimQ<0, U, RepT, MaxDims>
+  operator+
+  (
+    R const&                           a_left,
+    DimQ<0, U, RepT, MaxDims> const&   a_right
+  )
+  { return a_right + a_left; }
+
+  template<uint64_t U, typename R, typename RepT, unsigned MaxDims>
+  requires(IsValidDimQRepT<R>)
+  constexpr DimQ<0, U, RepT, MaxDims>
+  operator-
+  (
+    R const&                           a_left,
+    DimQ<0, U, RepT, MaxDims> const&   a_right
+  )
+  {
+    return DimQ<0, U, RepT, MaxDims>
+           (RepT(a_left) - a_right.Magnitude());
+  }
+
   //-------------------------------------------------------------------------//
   // Multiplication, Division:                                               //
   //-------------------------------------------------------------------------//
@@ -344,17 +397,17 @@ namespace DimTypes
   DimQ<E, U, RepT, MaxDims> operator*
     (R const& a_left, DimQ<E, U, RepT, MaxDims> const& a_right)
     { return DimQ<E, U, RepT, MaxDims>(RepT(a_left)  * a_right.Magnitude()); }
-  
+
   template<typename R, uint64_t E, uint64_t U, typename RepT, unsigned MaxDims>
   requires(IsValidDimQRepT<R>)
   constexpr auto    // Using "auto" here for brievity
   operator/ (R const& a_left, DimQ<E, U,  RepT, MaxDims> const& a_right)
   {
-    using  En = Bits::Encodings <RepT, MaxDims>;
+    using  En = Bits::Encodings<RepT,  MaxDims>;
     return DimQ<En::SubExp(0UL,E),  U, RepT, MaxDims>
                (RepT(a_left) / a_right.Magnitude());
   }
-  
+
   //-------------------------------------------------------------------------//
   // Integral and Rational Powers:                                           //
   //-------------------------------------------------------------------------//
@@ -375,7 +428,7 @@ namespace DimTypes
            RepT,             MaxDims>
           (En::template IntPow<M>(a_right.Magnitude()));
   }
-  
+
   //-------------------------------------------------------------------------//
   // "Sqr" and "Cube" are particularly-important cases of "IPow":            //
   //-------------------------------------------------------------------------//
@@ -383,7 +436,7 @@ namespace DimTypes
   constexpr auto
   Sqr(DimQ<E, U, RepT, MaxDims> const& a_right)
     { return IPow<2>(a_right); }
-  
+
   template<uint64_t  E, uint64_t U, typename RepT, unsigned MaxDims>
   constexpr auto
   Cube(DimQ<E, U, RepT, MaxDims> const& a_right)
@@ -404,10 +457,8 @@ namespace DimTypes
   constexpr auto
   RPow(DimQ<E, U, RepT, MaxDims> const& a_right)
   {
-    // Multiples of "PMod" (including 0) are uninvertible in the curr rep;
-    // and for a fractional power, "constexpr" is not possible yet:
-    //
-    using  En =  Bits::Encodings<RepT, MaxDims>;
+    // Multiples of "PMod" (including 0) are uninvertible in the Z_{PMod} rep:
+    using  En = Bits::Encodings<RepT,  MaxDims>;
     static_assert(N > 0 && N % En::IPMod != 0, "RPow: Invalid Denom");
     return
       DimQ<En::DivExp(En::MultExp(E,M),N),
@@ -416,7 +467,7 @@ namespace DimTypes
            MaxDims>
           (En::template FracPow<M, N>(a_right.Magnitude()));
   }
-  
+
   //-------------------------------------------------------------------------//
   // "SqRt" and "CbRt": "RPow" Shortcuts:                                    //
   //-------------------------------------------------------------------------//
@@ -426,7 +477,7 @@ namespace DimTypes
   constexpr auto
   SqRt(DimQ<E, U, RepT, MaxDims> const& a_right)
     { return RPow<1,2>(a_right); }
-  
+
   template<uint64_t  E,  uint64_t U, typename RepT, unsigned MaxDims>
   constexpr auto
   CbRt(DimQ<E, U, RepT, MaxDims> const& a_right)
@@ -435,21 +486,21 @@ namespace DimTypes
   // Bring in CEMaths::{SqRt,CbRt} (though they may be overloaded):
   using CEMaths::SqRt;
   using CEMaths::CbRt;
-  
+
   //-------------------------------------------------------------------------//
   // Unary Mathematical Funcs: DimLess->RepT:                                //
   //-------------------------------------------------------------------------//
-  #ifdef  DIMLESS_UNARY_FUNC
-  #undef  DIMLESS_UNARY_FUNC
-  #endif
-  #define DIMLESS_UNARY_FUNC(FuncName)    \
+# ifdef  DIMLESS_UNARY_FUNC
+# undef  DIMLESS_UNARY_FUNC
+# endif
+# define DIMLESS_UNARY_FUNC(FuncName)    \
   /* Bring in CEMaths::FuncName (though it may be overloaded): */      \
   using CEMaths::FuncName; \
   \
-  template<uint64_t E, uint64_t U, typename RepT, unsigned MaxDims>    \
-  constexpr RepT FuncName(DimQ<E, U, RepT, MaxDims> const& a_right)    \
+  /* We must have E == 0, but U != 0 is allowed as above:      */      \
+  template<uint64_t U, typename RepT, unsigned MaxDims>    \
+  constexpr RepT FuncName(DimQ<0, U, RepT, MaxDims> const& a_right)    \
   { \
-    static_assert(E == 0, "ERROR: UnaryFunc: Must be a DimLess qty");  \
     /* NB: The following call to "FuncName" MAY OR MAY NOT BE from */  \
     /* "CEMaths"! */ \
     return FuncName(a_right.Magnitude()); \
@@ -470,48 +521,44 @@ namespace DimTypes
   DIMLESS_UNARY_FUNC(ACosH)
   DIMLESS_UNARY_FUNC(ASinH)
   DIMLESS_UNARY_FUNC(ATanH)
-  #undef DIMLESS_UNARY_FUNC
-  
+# undef DIMLESS_UNARY_FUNC
+
   //-------------------------------------------------------------------------//
   // Predicates (XXX: currently for Real "RepT" only):                       //
   //-------------------------------------------------------------------------//
-  #ifdef  DIMQ_PRED
-  #undef  DIMQ_PRED
-  #endif
-  #define DIMQ_PRED(Pred) \
+# ifdef  DIMQ_PRED
+# undef  DIMQ_PRED
+# endif
+# define DIMQ_PRED(Pred) \
   /* Bring in CEMaths::Pred: */ \
   using CEMaths::Pred; \
   \
   template<uint64_t E, uint64_t U, typename RepT, unsigned MaxDims> \
   constexpr bool Pred(DimQ<E, U, RepT, MaxDims>   const& a_right)   \
   requires(!IsComplex<RepT>) \
-    { return Pred(a_right.Magnitude());  }
-  
+  { return Pred(a_right.Magnitude()); }
+
   DIMQ_PRED(IsZero)
   DIMQ_PRED(IsFinite)
   DIMQ_PRED(IsInf)
   DIMQ_PRED(IsNaN)
   DIMQ_PRED(IsNeg)
   DIMQ_PRED(IsPos)
-  #undef  DIMQ_PRED
-  
+# undef  DIMQ_PRED
+
   //-------------------------------------------------------------------------//
   // "ATan2" on "DimQs":                                                     //
   //-------------------------------------------------------------------------//
   using CEMaths::ATan2;
 
-  template<uint64_t E, uint64_t F, uint64_t U, uint64_t V, typename RepT,
+  template<uint64_t E, uint64_t U, uint64_t V, typename RepT,
            unsigned MaxDims>
+  requires(Bits::Encodings<RepT,MaxDims>::UnitsOK(E,U,V))
   constexpr  RepT   ATan2
     (DimQ<E, U, RepT, MaxDims> const& a_y,
-     DimQ<F, V, RepT, MaxDims> const& a_x)
+     DimQ<E, V, RepT, MaxDims> const& a_x)
   requires(!IsComplex<RepT>)
-  {
-    using  En =  Bits::Encodings<RepT, MaxDims>;
-    static_assert(E == F,             "ERROR: ATan2: Different Dims");
-    static_assert(En::UnitsOK(E,U,V), "ERROR: ATan2: Units do not unify");
-    return ATan2(a_y.Magnitude(), a_x.Magnitude());
-  }
+  { return ATan2(a_y.Magnitude(), a_x.Magnitude()); }
 }
 // End namespace DimTypes
 //===========================================================================//

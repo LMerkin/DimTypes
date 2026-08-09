@@ -11,9 +11,9 @@ namespace DimTypes
   //=========================================================================//
   // Representation Types:                                                   //
   //=========================================================================//
-  // The Category of Types which can serve as "RepT"s in "DimQ"s (below):
-  // TODO: Formulate it via C++ Concepts; for the moment, use use the following
-  // predicate:
+  // The Category of Types which can serve as "RepT"s in "DimQ"s (below), impl-
+  // elemnted via the following predicate:
+  //
   template<typename R>
   constexpr inline bool IsValidDimQRepT =
     std::is_floating_point_v<R>;
@@ -22,7 +22,8 @@ namespace DimTypes
   constexpr inline bool IsValidDimQRepT<std::complex<R>> =
     std::is_floating_point_v<R>;
 
-  // NB: This predicate can be further extended by partial specialization!
+  // NB: This predicate can be further EXTENDED (unlike Concepts) by partial
+  // specialization!
 }
 // End namespace DimTypes
 
