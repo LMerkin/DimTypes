@@ -207,7 +207,10 @@
   /*-----------------------------------------------------------------------*/ \
   template<typename RepT> \
   using DimLessT = DimTypes::DimQ<0, 0, RepT, DimQ_MaxDims>; \
-  using DimLess  = DimLessT <DimQ_DefRepT>; \
+  using DimLess  = DimLessT <DimQ_DefRepT>;  \
+  /* "_U" suffix is for DimLess Literals: */ \
+  constexpr DimLess operator ""_U (long double a_v) \
+  { return  DimLess(DimQ_DefRepT(a_v));   }  \
   \
   /*-----------------------------------------------------------------------*/ \
   /* Finally, generate a "DimQ" output function.                           */ \
@@ -521,7 +524,7 @@
      DimTypes::DimQ \
     <DimQ_Encs<RepT>::DimExp(unsigned(DimsE::DimName)), \
      DimQ_Encs<RepT>::MkUnit(unsigned(DimsE::DimName),  \
-                       unsigned(MK_UNITS_ENTRY_NAME(DimName,UnitName))), \
+                             unsigned(MK_UNITS_ENTRY_NAME(DimName,UnitName))), \
      RepT,          \
      DimQ_MaxDims>; \
   \
@@ -541,9 +544,8 @@
   \
   constexpr MK_DIMQ_TYPE_ALIAS(DimName, UnitName) operator \
   MK_LITERAL_OP(UnitName) (long double a_v) \
-  { \
-    return  MK_DIMQ_TYPE_ALIAS(DimName, UnitName) (DimQ_DefRepT(a_v));   \
-  } \
+  { return  MK_DIMQ_TYPE_ALIAS(DimName, UnitName) (DimQ_DefRepT(a_v));     }  \
+  \
   /*-----------------------------------------------------------------------*/ \
   /* Conversion function for DimQs: "To_{DimName}_{UnitName}:              */ \
   /*-----------------------------------------------------------------------*/ \
