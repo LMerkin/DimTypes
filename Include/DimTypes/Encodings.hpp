@@ -98,8 +98,8 @@ namespace DimTypes::Bits
       int gcd = int(GCD(m, n));
       int m1  = (n > 0 ? m : (-m)) / gcd;
       int n1  = (n > 0 ? n : (-n)) / gcd;
-      assert(n1 > 0);
-      return std::make_pair(m1, unsigned(n1));
+      assert (n1 > 0);
+      return {m1, unsigned(n1)};
     }
 
   public:
@@ -285,7 +285,7 @@ namespace DimTypes::Bits
     {
       // Numer is +-(height - denom):
       if (rep == 0)
-        return std::make_pair(0, 1);
+        return  {0, 1};
 
       // Generic case: Traverse all heights. Typically, the result is nearby:
       // height == |numer| + denom, where denom >= 1 and numer != 0:
@@ -301,9 +301,9 @@ namespace DimTypes::Bits
             throw "DimTypes::Bits::Encodings::GetNumerAndDenom: LOGIC ERROR";
 
           if ((unsigned(numerP) * invDenom) % PMod == rep)
-            return std::make_pair(numerP,   unsigned(denom));
+            return { numerP,  unsigned(denom)};
           if ((unsigned(numerC) * invDenom) % PMod == rep)
-            return std::make_pair(-numerP,  unsigned(denom));
+            return {-numerP,  unsigned(denom)};
         }
       }
       // XXX: Can we get here without a success. Throwing an exception will
