@@ -108,9 +108,6 @@ namespace DimTypes
     // user may allow direct conversion into "RepT" by specialising the above
     // operator method...
 
-    // Creating an Invalid value:
-    constexpr static DimQ Invalid() { return DimQ(NAN); }
-
     //=======================================================================//
     // Arithmetic Operations -- Dimensions Unchanged:                        //
     //=======================================================================//
@@ -603,4 +600,3 @@ namespace DimTypes
   using DimTypes::IsNeg;                \
   using DimTypes::IsPos;                \
   using DimTypes::ATan2;
-

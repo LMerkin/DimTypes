@@ -153,8 +153,8 @@ namespace DimTypes::CEMaths
   // Consts:                                                                 //
   //=========================================================================//
   // Infinity, NaN:
-  template<typename F> constexpr inline F Inf   = F(INFINITY);     // +oo
-  template<typename F> constexpr inline F NaN   = F(NAN);          // NaN
+  template<typename F> constexpr inline F Inf     = F(INFINITY);     // +oo
+  template<typename F> constexpr inline F NaN     = F(NAN);          // NaN
 
   // Eps:
   template<typename F> constexpr inline F Eps;
@@ -172,7 +172,6 @@ namespace DimTypes::CEMaths
   // "Technical" Consts:
   template<typename F> constexpr inline F SqRt2   = F(M_SQRT2l);     // SqRt(2)
   template<typename F> constexpr inline F SqRt1_2 = F(M_SQRT1_2l);   // .../2
-  // For Internal Use Only:
   template<typename F> constexpr inline F Ln2     = F(M_LN2l);       // ln(2)
   template<typename F> constexpr inline F Ln10    = F(M_LN10l);      // ln(10)
   template<typename F> constexpr inline F Log2E   = F(M_LOG2El);     // log2(e)
@@ -189,7 +188,7 @@ namespace DimTypes::CEMaths
   template<> constexpr inline double      SqRt3<double>       =
     double(SqRt3<long  double>);
 
-  template<> constexpr  inline float       SqRt3<float>       =
+  template<> constexpr  inline float      SqRt3<float>        =
     float (SqRt3<long  double>);
 
   template<> constexpr inline long double CbRt2<long double>  =

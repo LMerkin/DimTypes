@@ -165,8 +165,13 @@
   /* IMPORTANT: Use "using" declarations, NOT "using namespace" directives */ \
   /*   as the latter may cause obscure problems with overloading:          */ \
   /*-----------------------------------------------------------------------*/ \
-  IMPORT_CEMATHS_FUNCS                  \
-  IMPORT_DIMTYPES_FUNCS                 \
+  IMPORT_CEMATHS_FUNCS           \
+  IMPORT_DIMTYPES_FUNCS          \
+  /*-----------------------------------------------------------------------*/ \
+  /* Declare the "Invalid" template val in the target namespace:           */ \
+  /* It can be specialised further by the user:                            */ \
+  /*-----------------------------------------------------------------------*/ \
+  template<typename T> constexpr inline T Invalid = T(NAN); \
   /*-----------------------------------------------------------------------*/ \
   /* "DimQ_MaxDims", "DimQ_DefRepT" and "DimQ_Encs":                       */ \
   /*-----------------------------------------------------------------------*/ \
@@ -174,7 +179,7 @@
     ( unsigned{MaxDims} == 0 )   \
     ? DimTypes::Bits::DefMaxDims \
     : unsigned{MaxDims};         \
-  using DimQ_DefRepT = DefRepT;    \
+  using DimQ_DefRepT = DefRepT;  \
   template<typename RepT>        \
   using DimQ_Encs    = DimTypes::Bits::Encodings<RepT, DimQ_MaxDims>; \
   \
