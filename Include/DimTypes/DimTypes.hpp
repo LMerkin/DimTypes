@@ -48,11 +48,11 @@ namespace DimTypes
     constexpr DimQ(): m_val(0.0) {}
 
     // Non-Default Ctor:
-    // Lifting a value of type "R" into "DimQ".  We DELIBERATELY DO NOT INFER
+    // Lifting a value of type "R" into "DimQ".  We DELIBERATELY  DO NOT INFER
     // the "RepT" from the type of the Ctor arg, as this may cause ambiguities
-    // in some cases.  "R" is required to be a "valid RepT" (but not nrcessar-
-    // ili the "RepT" itself) to avoid a conflict with the Copy Ctor below
-    // (where "R" is "DimQ" itself):
+    // in some cases.  "R" is required to be a "valid RepT" (but not necessari-
+    // ly the "RepT" itself) to avoid a conflict with the Copy Ctor below (whe-
+    // ere "R" is "DimQ" itself):
     template<typename  R> requires(IsValidDimQRepT<R>)
     constexpr explicit DimQ(R const& val)
     : m_val(RepT(val)) {}
