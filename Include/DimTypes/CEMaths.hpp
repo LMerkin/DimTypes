@@ -50,7 +50,7 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // "Floor":                                                                //
   //-------------------------------------------------------------------------//
-  // XXX: Not really "constexpr" in CLang <= 22, and no emulation is currently
+  // XXX: Not really "constexpr" in CLang <= 23, and no emulation is currently
   // provided (TODO: not very difficult to implement):
   //
   template<typename  F> requires(std::is_floating_point_v<F>)
@@ -60,7 +60,7 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // "Ceil":                                                                 //
   //-------------------------------------------------------------------------//
-  // XXX: Not really "constexpr" in CLang <= 22, and no emulation is currently
+  // XXX: Not really "constexpr" in CLang <= 23, and no emulation is currently
   // provided (TODO: not very difficult to implement):
   //
   template<typename F> requires(std::is_floating_point_v<F>)
@@ -70,7 +70,7 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // "Round":                                                                //
   //-------------------------------------------------------------------------//
-  // XXX: Not really "constexpr" in CLang <= 22, and no emulation is currently
+  // XXX: Not really "constexpr" in CLang <= 23, and no emulation is currently
   // provided (TODO: not very difficult to implement):
   //
   template<typename F> requires(std::is_floating_point_v<F>)
@@ -91,7 +91,7 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // "FMod":                                                                 //
   //-------------------------------------------------------------------------//
-  // Again, in CLang <= 22, "std::fmod" is not "constexpr", so our own implem-
+  // Again, in CLang <= 23, "std::fmod" is not "constexpr", so our own implem-
   // entation is needed. For Internal Use Only:
   //
   template<typename F> requires(std::is_floating_point_v<F>)
@@ -1042,7 +1042,7 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // "Exp" for an arbitrary real arg:                                        //
   //-------------------------------------------------------------------------//
-  // XXX: In CLang <= 22,  this function  is STILL NOT "constexpr", because
+  // XXX: In CLang <= 23,  this function  is STILL NOT "constexpr", because
   // "std::modf" and "std::ldexp" are not -- so using it in the "constexpr"
   // context will fail:
   // XXX: Complex "Exp" has a separate specific implementation:
@@ -1109,7 +1109,7 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // "Log" (Natural Logarithm) for an arbitrary real arg:                    //
   //-------------------------------------------------------------------------//
-  // XXX: In CLang <= 22,  this function  is STILL NOT "constexpr", because
+  // XXX: In CLang <= 23,  this function  is STILL NOT "constexpr", because
   // "std::modf" and "std::ldexp" are not -- so using it in the "constexpr"
   // context will fail:
   // XXX: Complex "Log" has a separate specific implementation:
@@ -1170,7 +1170,7 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // Generic "Pow" for an arbitrary real arg:                                //
   //-------------------------------------------------------------------------//
-  // XXX: In CLang <= 22,  this function  is STILL NOT "constexpr",  because
+  // XXX: In CLang <= 23,  this function  is STILL NOT "constexpr",  because
   // "Exp" is not either -- so using it in the "constexpr" context will fail:
   // XXX: Complex "Pow" is not implemented yet. Also, for this generic imple-
   // mentation,   "a_x" is required to be positive:
@@ -1452,7 +1452,7 @@ namespace DimTypes::CEMaths
     }
     return std::ldexp(sqrtFX, n);
 #   else
-    // XXX: In CLang <= 22, "std::frexp" is not "constexpr", so another method
+    // XXX: In CLang <= 23, "std::frexp" is not "constexpr", so another method
     // is required: Use Hayley iterations which always converge:
     // Initial approximation of the root from above: Using the ineqiality bet-
     // ween the Arithmetic and Geometric Means (the other operand is 1):
@@ -1542,7 +1542,7 @@ namespace DimTypes::CEMaths
     }
     F y = std::ldexp(cbrtFX, n);
 #   else
-    // XXX: In CLang <= 22, "std::frexp" is not "constexpr", so another method
+    // XXX: In CLang <= 23, "std::frexp" is not "constexpr", so another method
     // is required: Use Hayley iterations which always converge:
     // Initial approximation of the root from above: Using the ineqiality bet-
     // ween the Arithmetic and Geometric Means (the other operands are 1, 1):
@@ -1679,7 +1679,7 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // Complex "Exp":                                                          //
   //-------------------------------------------------------------------------//
-  // XXX: Not really "constexpr" in CLang <= 22:
+  // XXX: Not really "constexpr" in CLang <= 23:
   //
   template<typename F> requires(std::is_floating_point_v<F>)
   constexpr std::complex<F> Exp(std::complex<F> a_z)
@@ -1694,7 +1694,7 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // Complex "Cos":                                                          //
   //-------------------------------------------------------------------------//
-  // XXX: Not really "constexpr" in CLang <= 22:
+  // XXX: Not really "constexpr" in CLang <= 23:
   //
   template<typename F> requires(std::is_floating_point_v<F>)
   constexpr std::complex<F> Cos(std::complex<F> a_z)
@@ -1714,7 +1714,7 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // Complex "Sin":                                                          //
   //-------------------------------------------------------------------------//
-  // XXX: Not really "constexpr" in CLang <= 22:
+  // XXX: Not really "constexpr" in CLang <= 23:
   //
   template<typename F> requires(std::is_floating_point_v<F>)
   constexpr std::complex<F> Sin(std::complex<F> a_z)
@@ -1734,7 +1734,7 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // Complex "Cos" and "Sin" together (for efficiency):                      //
   //-------------------------------------------------------------------------//
-  // Returns (cos(z), sin(z)). XXX: Not really "constexpr" in CLang <= 22:
+  // Returns (cos(z), sin(z)). XXX: Not really "constexpr" in CLang <= 23:
   //
   template<typename F> requires(std::is_floating_point_v<F>)
   constexpr std::pair<std::complex<F>, std::complex<F>>
@@ -1773,7 +1773,7 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // Complex "Pow":                                                          //
   //-------------------------------------------------------------------------//
-  // XXX: Not really "constexpr" in CLang <= 22:
+  // XXX: Not really "constexpr" in CLang <= 23:
   //
   template<typename F>  requires(std::is_floating_point_v<F>)
   constexpr  std::complex<F> Pow(std::complex<F> a_z, F a_p)
@@ -1782,7 +1782,7 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // Complex "SqRt":                                                         //
   //-------------------------------------------------------------------------//
-  // XXX: Also a placeholder as yet, NOT "constexpr" in CLang <= 22:
+  // XXX: Also a placeholder as yet, NOT "constexpr" in CLang <= 23:
   //
   template<typename F>   requires(std::is_floating_point_v<F>)
   constexpr  std::complex<F> SqRt(std::complex<F> a_z)
@@ -1791,7 +1791,7 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // Complex "CbRt":                                                         //
   //-------------------------------------------------------------------------//
-  // XXX: Also a placeholder as yet, NOT "constexpr" in CLang <= 22:
+  // XXX: Also a placeholder as yet, NOT "constexpr" in CLang <= 23:
   //
   template<typename F>   requires(std::is_floating_point_v<F>)
   constexpr  std::complex<F> CbRt(std::complex<F> a_z)
