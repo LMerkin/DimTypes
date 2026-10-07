@@ -318,8 +318,14 @@ namespace DimTypes
   constexpr
      DimQ<E, U, ToR,  MaxDims> ToNewRepT
     (DimQ<E, U, RepT, MaxDims> const& a_right)
-    // This is just a shortcut to the "Extended Copy Ctor":
-    { return DimQ<E, U, ToR, MaxDims>(a_right); }
+  {
+    if constexpr(std::is_same_v<ToR, RepT>)
+      // Nothing to convert:
+      return a_right;
+    else
+      // This is just a shortcut to the "Extended Copy Ctor":
+      return DimQ<E, U, ToR, MaxDims>(a_right);
+  }
 
   //-------------------------------------------------------------------------//
   // "Abs", "UniformNorm", "Floor", "Ceil", "Round": "DimQ" -> "DimQ":       //
