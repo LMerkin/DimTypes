@@ -28,6 +28,15 @@ namespace DimTypes::CEMaths
   // Elementary Functions, Utils:                                            //
   //=========================================================================//
   //-------------------------------------------------------------------------//
+  // "ToNewRepT":                                                            //
+  //-------------------------------------------------------------------------//
+  // NB: This function cannot be specialised, but can be overridden with partial
+  // ordering wrt "specificity" of args. The "R" arg is explicit, the "T" arg is
+  // deduced:
+  template<typename R, typename T>
+  constexpr R ToNewRepT(T const& a_v) { return R(a_v); }
+
+  //-------------------------------------------------------------------------//
   // "IsComplex":                                                            //
   //-------------------------------------------------------------------------//
   template<typename F>
@@ -1806,6 +1815,7 @@ namespace DimTypes::CEMaths
 #undef  IMPORT_CEMATHS_FUNCS
 #endif
 #define IMPORT_CEMATHS_FUNCS                \
+  using DimTypes::CEMaths::ToNewRepT;       \
   using DimTypes::CEMaths::IsComplex;       \
   using DimTypes::CEMaths::Abs;             \
   using DimTypes::CEMaths::UniformNorm;     \
