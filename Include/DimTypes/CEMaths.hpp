@@ -87,6 +87,23 @@ namespace DimTypes::CEMaths
     { return std::round(a_x); }
 
   //-------------------------------------------------------------------------//
+  // "Sign":                                                                 //
+  //-------------------------------------------------------------------------//
+  // NB: Returns NAN for a NAN arg!
+  template<typename F> requires(std::is_floating_point_v<F>)
+  constexpr F Sign (F a_x)
+  {
+    return
+      (a_x <  F(0.0))
+      ? F(-1.0) :
+      (a_x >  F(0.0))
+      ? F( 1.0) :
+      (a_x == F(0.0))
+      ? F( 0.0)
+      : F(NAN);
+  }
+
+  //-------------------------------------------------------------------------//
   // Generic "Min" and "Max":                                                //
   //-------------------------------------------------------------------------//
   template<typename F> requires(!IsComplex<F>)
@@ -1822,6 +1839,7 @@ namespace DimTypes::CEMaths
   using DimTypes::CEMaths::Floor;           \
   using DimTypes::CEMaths::Ceil;            \
   using DimTypes::CEMaths::Round;           \
+  using DimTypes::CEMaths::Sign;            \
   using DimTypes::CEMaths::Sqr;             \
   using DimTypes::CEMaths::Cube;            \
   using DimTypes::CEMaths::IsZero;          \

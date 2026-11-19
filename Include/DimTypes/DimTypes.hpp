@@ -328,7 +328,7 @@ namespace DimTypes
   }
 
   //-------------------------------------------------------------------------//
-  // "Abs", "UniformNorm", "Floor", "Ceil", "Round": "DimQ" -> "DimQ":       //
+  // "Abs", "UniformNorm", "Floor", "Ceil", "Round", "Sign": "DimQ"->"DimQ": //
   //-------------------------------------------------------------------------//
 # ifdef  DIMQ_ROUND_FUNC
 # undef  DIMQ_ROUND_FUNC
@@ -348,6 +348,7 @@ namespace DimTypes
   DIMQ_ROUND_FUNC(Floor)
   DIMQ_ROUND_FUNC(Ceil)
   DIMQ_ROUND_FUNC(Round)
+  DIMQ_ROUND_FUNC(Sign)
 # undef  DIMQ_ROUND_FUNC
 
   //-------------------------------------------------------------------------//
@@ -576,6 +577,7 @@ namespace DimTypes
   using DimTypes::Floor;                \
   using DimTypes::Ceil;                 \
   using DimTypes::Round;                \
+  using DimTypes::Sign;                 \
   using DimTypes::ApproxEqual;          \
   using DimTypes::IPow;                 \
   using DimTypes::Sqr;                  \
