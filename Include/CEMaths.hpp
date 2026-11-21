@@ -87,6 +87,13 @@ namespace DimTypes::CEMaths
     { return std::round(a_x); }
 
   //-------------------------------------------------------------------------//
+  // "Rem":                                                                  //
+  //-------------------------------------------------------------------------//
+  template<typename F> requires(std::is_floating_point_v<F>)
+  constexpr F Rem(F a_x, F a_y)
+    { return std::remainder(a_x, a_y); }
+
+  //-------------------------------------------------------------------------//
   // "Sign":                                                                 //
   //-------------------------------------------------------------------------//
   // NB: Returns NAN for a NAN arg!
@@ -1839,6 +1846,7 @@ namespace DimTypes::CEMaths
   using DimTypes::CEMaths::Floor;           \
   using DimTypes::CEMaths::Ceil;            \
   using DimTypes::CEMaths::Round;           \
+  using DimTypes::CEMaths::Rem;             \
   using DimTypes::CEMaths::Sign;            \
   using DimTypes::CEMaths::Sqr;             \
   using DimTypes::CEMaths::Cube;            \

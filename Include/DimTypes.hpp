@@ -328,18 +328,21 @@ namespace DimTypes
   }
 
   //-------------------------------------------------------------------------//
-  // "Abs", "UniformNorm", "Floor", "Ceil", "Round", "Sign": "DimQ"->"DimQ": //
+  // "Abs", "UniformNorm", "Floor", "Ceil", "Round", "Sign", "Rem":          //
   //-------------------------------------------------------------------------//
+  // NB: All functions except "Rem" are DimQ -> DimQ;
+  //     "UniformNorm" is the same as "Abs";
+  //     "Rem"         is (DimQ, DimQ) -> DimQ:
+  //
 # ifdef  DIMQ_ROUND_FUNC
 # undef  DIMQ_ROUND_FUNC
 # endif
-# define DIMQ_ROUND_FUNC(FuncName)   \
+# define DIMQ_ROUND_FUNC(FuncName)     \
   /* Bring in CMaths::FuncName (though FuncName may be overloaded): */  \
-  using CEMaths::FuncName;            \
-  \
+  using CEMaths::FuncName;             \
   template<uint64_t E,  uint64_t  U, typename RepT, unsigned MaxDims>   \
-  constexpr DimQ<E, U, RepT, MaxDims> \
-  FuncName( DimQ<E, U, RepT, MaxDims>  const& a_right) \
+  constexpr DimQ<E, U,  RepT, MaxDims> \
+  FuncName( DimQ<E, U,  RepT, MaxDims> const& a_right) \
   requires(!IsComplex<RepT>) \
     { return DimQ<E, U, RepT, MaxDims>(FuncName(a_right.Magnitude()));  }
 
@@ -350,6 +353,13 @@ namespace DimTypes
   DIMQ_ROUND_FUNC(Round)
   DIMQ_ROUND_FUNC(Sign)
 # undef  DIMQ_ROUND_FUNC
+
+  using CEMaths::Rem;
+  template<uint64_t E, uint64_t  U, typename RepT, unsigned MaxDims>
+  constexpr DimQ<E, U, RepT, MaxDims>
+  Rem(DimQ<E, U, RepT, MaxDims> const& a_x,
+      DimQ<E, U, RepT, MaxDims> const& a_y)
+    { return DimQ<E, U, RepT, MaxDims>(Rem(a_x.Magnitude(), a_y.Magnitude())); }
 
   //-------------------------------------------------------------------------//
   // "ApproxEqual" (w/o "s", as in "CEMaths"):                               //
@@ -574,9 +584,11 @@ namespace DimTypes
 #define IMPORT_DIMTYPES_FUNCS           \
   using DimTypes::ToNewRepT;            \
   using DimTypes::Abs;                  \
+  using DimTypes::UniformNorm;          \
   using DimTypes::Floor;                \
   using DimTypes::Ceil;                 \
   using DimTypes::Round;                \
+  using DimTypes::Rem;                  \
   using DimTypes::Sign;                 \
   using DimTypes::ApproxEqual;          \
   using DimTypes::IPow;                 \
