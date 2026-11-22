@@ -13,6 +13,7 @@
 #include <utility>
 #include <type_traits>
 #include <iostream>
+#include <stdexcept>
 
 namespace DimTypes::CEMaths
 {
@@ -40,10 +41,44 @@ namespace DimTypes::CEMaths
   // "IsComplex":                                                            //
   //-------------------------------------------------------------------------//
   template<typename F>
-  constexpr inline bool IsComplex                  = false;
+  constexpr inline bool IsComplexImpl                  = false;
 
   template<typename F>
-  constexpr inline bool IsComplex<std::complex<F>> = true;
+  constexpr inline bool IsComplexImpl<std::complex<F>> = true;
+
+  template<typename F>
+  constexpr inline bool IsComplex = IsComplexImpl<std::remove_cvref_t<F>>;
+
+  //-------------------------------------------------------------------------//
+  // Predicates (for "DimQ" API compatibility):                              //
+  //-------------------------------------------------------------------------//
+  template<typename F> requires(std::is_floating_point_v<F>)
+  constexpr bool IsZero(F a_x)
+    { return a_x == F(0.0); }
+
+  template<typename F> requires(std::is_floating_point_v<F>)
+  constexpr bool IsPos(F a_x)
+    { return a_x >  F(0.0); }
+
+  template<typename F> requires(std::is_floating_point_v<F>)
+  constexpr bool IsNeg(F a_x)
+    { return a_x <  F(0.0); }
+
+  template<typename F> requires(std::is_floating_point_v<F>)
+  constexpr bool IsNaN(F a_x)
+    { return std::isnan(a_x); }
+
+  template<typename F> requires(std::is_floating_point_v<F>)
+  constexpr bool IsFinite(F a_x)
+    { return std::isfinite(a_x); }
+
+  template<typename F> requires(std::is_floating_point_v<F>)
+  constexpr bool IsInf(F a_x)
+    { return std::isinf(a_x); }
+
+  template<typename F> requires(std::is_floating_point_v<F>)
+  constexpr F    Magnitude(F a_x)
+    { return a_x; }
 
   //-------------------------------------------------------------------------//
   // "Abs", "UniformNorm":                                                   //
@@ -87,13 +122,6 @@ namespace DimTypes::CEMaths
     { return std::round(a_x); }
 
   //-------------------------------------------------------------------------//
-  // "Rem":                                                                  //
-  //-------------------------------------------------------------------------//
-  template<typename F> requires(std::is_floating_point_v<F>)
-  constexpr F Rem(F a_x, F a_y)
-    { return std::remainder(a_x, a_y); }
-
-  //-------------------------------------------------------------------------//
   // "Sign":                                                                 //
   //-------------------------------------------------------------------------//
   // NB: Returns NAN for a NAN arg!
@@ -113,35 +141,95 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   // Generic "Min" and "Max":                                                //
   //-------------------------------------------------------------------------//
-  template<typename F> requires(!IsComplex<F>)
+  template<typename F>
   constexpr F Min(F a_x, F a_y)
+  requires requires     { (a_x < a_y) ? true : false; }
     { return (a_x < a_y) ? a_x : a_y; }
 
-  template<typename F> requires(!IsComplex<F>)
+  template<typename F>
   constexpr F Max(F a_x, F a_y)
+  requires requires     { (a_x > a_y) ? true : false; }
     { return (a_x > a_y) ? a_x : a_y; }
 
   //-------------------------------------------------------------------------//
   // "FMod":                                                                 //
   //-------------------------------------------------------------------------//
-  // Again, in CLang <= 23, "std::fmod" is not "constexpr", so our own implem-
-  // entation is needed. For Internal Use Only:
+  // Again, in CLang <= 23, "std::fmod" is not "constexpr", so our own (PARTIAL)
+  // implemntation is provided:
   //
   template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F FMod (F a_x, F a_y)
   {
 # if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
-    // For the avoidance of doubt, we don't support negative args:
-    assert(a_x >= 0.0 && a_y > 0.0);
-    F q  = a_x / a_y;
-    assert(q >= 0.0);
-    // Convert "q" to "unsigned long" -- it is always rounded down:
-    using  ULong = unsigned long;
-    ULong  u = ULong(q);
-    F      r = Max(a_x - F(u) * a_y, F(0.0));
-    return r;
+    if (!(IsFinite(a_x) && IsFinite(a_y) && IsPos(a_y)))
+      throw std::invalid_argument("FMod");
+
+    // The "exact" quotient:
+    F const q   = a_x / a_y;
+
+    // Integral Quotient, via "long long", rounded towards 0:
+    F const q0  = F(static_cast<long long>(q));
+
+    // The remainder:
+    F const res = a_x - q0 * a_y;
+
+    // XXX: Can the following assertion fail due to rounding errors???
+    assert(Abs(res) < Abs(a_y));
+    return res;
 # else
     return std::fmod(a_x, a_y);
+# endif
+  }
+
+  //-------------------------------------------------------------------------//
+  // "Rem":                                                                  //
+  //-------------------------------------------------------------------------//
+  // Similar to "FMod" above, but the Quotient is rounded to the nearest inte-
+  // ger:
+  template<typename F> requires(std::is_floating_point_v<F>)
+  constexpr F Rem  (F a_x, F a_y)
+  {
+# if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
+    if (!(IsFinite(a_x) && IsFinite(a_y) && IsPos(a_y)))
+      throw std::invalid_argument("Rem");
+
+    // The "exact" quotient:
+    F const q   = a_x / a_y;
+
+    // Integral Quotient, via "long long"; It is rounded towards 0:
+    long long const l0 = static_cast<long long>(q);
+    F const q0  = F(l0);
+
+    // But we need it rounded towards the nearest (or even) integral, if it is
+    // not exact:
+    F const dq  = q - q0;
+    F const qn  =
+      (Abs(dq) <  F(0.5))
+      ? // "q0" is already good (this includes the case when q == q0):
+        q0
+      :
+      (Abs(dq) >  F(0.5))
+      ? (IsNeg(dq)
+         ? q0 - F(1.0)  // q < q0, so q0 was rounded UP: reduce it
+         : q0 + F(1.0)) // Other way round
+      :
+      // |dq| ==  0.5 exactly: select the EVEN value:
+      //  dq  == -0.5: q < q0, so select q0 or (q0 - 1);
+      //  dq  ==  0.5: q > q0, so select q0 or (q0 + 1):
+      (l0 % 2 == 0)
+      ? q0 :
+      IsNeg(dq)
+      ? q0 - F(1.0)
+      : q0 + F(1.0);
+
+    // The remainder:
+    F const res = a_x - qn * a_y;
+
+    // XXX: Can the following assertion fail due to rounding errors???
+    assert(Abs(res) <= 0.5 * Abs(a_y));
+    return res;
+# else
+    return std::remainder(a_x, a_y);
 # endif
   }
 
@@ -150,37 +238,6 @@ namespace DimTypes::CEMaths
   //-------------------------------------------------------------------------//
   template<typename F> constexpr F Sqr (F a_x) { return a_x * a_x;       }
   template<typename F> constexpr F Cube(F a_x) { return a_x * a_x * a_x; }
-
-  //-------------------------------------------------------------------------//
-  // Predicates (for "DimQ" API compatibility):                              //
-  //-------------------------------------------------------------------------//
-  template<typename F> requires(std::is_floating_point_v<F>)
-  constexpr bool IsZero(F a_x)
-    { return a_x == F(0.0); }
-
-  template<typename F> requires(std::is_floating_point_v<F>)
-  constexpr bool IsPos(F a_x)
-    { return a_x >  F(0.0); }
-
-  template<typename F> requires(std::is_floating_point_v<F>)
-  constexpr bool IsNeg(F a_x)
-    { return a_x <  F(0.0); }
-
-  template<typename F> requires(std::is_floating_point_v<F>)
-  constexpr bool IsNaN(F a_x)
-    { return std::isnan(a_x); }
-
-  template<typename F> requires(std::is_floating_point_v<F>)
-  constexpr bool IsFinite(F a_x)
-    { return std::isfinite(a_x); }
-
-  template<typename F> requires(std::is_floating_point_v<F>)
-  constexpr bool IsInf(F a_x)
-    { return std::isinf(a_x); }
-
-  template<typename F> requires(std::is_floating_point_v<F>)
-  constexpr F    Magnitude(F a_x)
-    { return a_x; }
 
   //=========================================================================//
   // Consts:                                                                 //
@@ -270,7 +327,7 @@ namespace DimTypes::CEMaths
   constexpr bool ApproxEqual(F a_x, F a_y, F a_tol = DefaultTol<F>)
   {
     assert(IsPos(a_tol));
-    F err =
+    F const err =
       Abs
       (
         Abs(a_y) < F(1.0)
@@ -305,23 +362,23 @@ namespace DimTypes::CEMaths
   {
     assert(Abs(a_x) < 0.5f);
 
-    constexpr float a1 = 0.5f;
-    constexpr float a2 = float(3.0 /   28.0);
-    constexpr float a3 = float(1.0 /   84.0);
-    constexpr float a4 = float(1.0 / 1680.0);
+    constexpr float a1  = 0.5f;
+    constexpr float a2  = float(3.0 /   28.0);
+    constexpr float a3  = float(1.0 /   84.0);
+    constexpr float a4  = float(1.0 / 1680.0);
 
-    float  x2  = a_x * a_x;
-    float  x3  = x2  * a_x;
-    float  x4  = x2  * x2;
+    float     const x2  = a_x * a_x;
+    float     const x3  = x2  * a_x;
+    float     const x4  = x2  * x2;
 
-    float  t1  = a1  * a_x;
-    float  t2  = a2  * x2;
-    float  t3  = a3  * x3;
-    float  t4  = a4  * x4;
+    float     const t1  = a1  * a_x;
+    float     const t2  = a2  * x2;
+    float     const t3  = a3  * x3;
+    float     const t4  = a4  * x4;
 
-    float  se  = t4  + t2  + 1.0f;
-    float  so  = t3  + t1;
-    float  res = (se + so) / (se - so);
+    float     const se  = t4  + t2  + 1.0f;
+    float     const so  = t3  + t1;
+    float     const res = (se + so) / (se - so);
     assert(IsPos(res));
     return res;
   }
@@ -337,29 +394,29 @@ namespace DimTypes::CEMaths
   {
     assert(Abs(a_x) < 0.5);
 
-    constexpr double a1 = 0.5;
-    constexpr double a2 = 5.0 /     44.0;
-    constexpr double a3 = 1.0 /     66.0;
-    constexpr double a4 = 1.0 /    792.0;
-    constexpr double a5 = 1.0 /  15840.0;
-    constexpr double a6 = 1.0 / 665280.0;
+    constexpr double a1  = 0.5;
+    constexpr double a2  = 5.0 /     44.0;
+    constexpr double a3  = 1.0 /     66.0;
+    constexpr double a4  = 1.0 /    792.0;
+    constexpr double a5  = 1.0 /  15840.0;
+    constexpr double a6  = 1.0 / 665280.0;
 
-    double x2  = a_x * a_x;
-    double x3  = a_x * x2;
-    double x4  = x2  * x2;
-    double x5  = x2  * x3;
-    double x6  = x3  * x3;
+    double    const  x2  = a_x * a_x;
+    double    const  x3  = a_x * x2;
+    double    const  x4  = x2  * x2;
+    double    const  x5  = x2  * x3;
+    double    const  x6  = x3  * x3;
 
-    double t1  = a1  * a_x;
-    double t2  = a2  * x2;
-    double t3  = a3  * x3;
-    double t4  = a4  * x4;
-    double t5  = a5  * x5;
-    double t6  = a6  * x6;
+    double    const  t1  = a1  * a_x;
+    double    const  t2  = a2  * x2;
+    double    const  t3  = a3  * x3;
+    double    const  t4  = a4  * x4;
+    double    const  t5  = a5  * x5;
+    double    const  t6  = a6  * x6;
 
-    double se  = 1.0 + t2  + t4 + t6;
-    double so  = t1  + t3  + t5;
-    double res = (se + so) / (se - so);
+    double    const  se  = 1.0 + t2  + t4 + t6;
+    double    const  so  = t1  + t3  + t5;
+    double    const  res = (se + so) / (se - so);
     assert(IsPos(res));
     return res;
   }
@@ -383,25 +440,25 @@ namespace DimTypes::CEMaths
     constexpr long double a6 = 1.0L /   308880.0L;
     constexpr long double a7 = 1.0L / 17297280.0L;
 
-    long double x2   = a_x * a_x;
-    long double x3   = x2  * a_x;
-    long double x4   = x2  * x2;
-    long double x5   = x4  * a_x;
-    long double x6   = x3  * x3;
-    long double x7   = x6  * a_x;
+    long double    const  x2 = a_x * a_x;
+    long double    const  x3 = x2  * a_x;
+    long double    const  x4 = x2  * x2;
+    long double    const  x5 = x4  * a_x;
+    long double    const  x6 = x3  * x3;
+    long double    const  x7 = x6  * a_x;
 
-    long double t1   = a1  * a_x;
-    long double t2   = a2  * x2;
-    long double t3   = a3  * x3;
-    long double t4   = a4  * x4;
-    long double t5   = a5  * x5;
-    long double t6   = a6  * x6;
-    long double t7   = a7  * x7;
+    long double    const  t1 = a1  * a_x;
+    long double    const  t2 = a2  * x2;
+    long double    const  t3 = a3  * x3;
+    long double    const  t4 = a4  * x4;
+    long double    const  t5 = a5  * x5;
+    long double    const  t6 = a6  * x6;
+    long double    const  t7 = a7  * x7;
 
-    long double se   = t6  + t4  + t2 + 1.0L;
-    long double so   = t7  + t5  + t3 + t1;
-    long double res  = (se + so) / (se - so);
-    assert     (IsPos(res));
+    long double    const se  = t6  + t4  + t2 + 1.0L;
+    long double    const so  = t7  + t5  + t3 + t1;
+    long double    const res = (se + so) / (se - so);
+    assert(IsPos(res));
     return res;
   }
 
@@ -441,7 +498,7 @@ namespace DimTypes::CEMaths
     constexpr float  a1 = float(double(b1) * Ln3_4<double> - 17280.0);
     constexpr float  a0 = float(double(b0) * Ln3_4<double> -  2025.0);
 
-    float res =
+    float const res =
       ((((a4 * a_x + a3) * a_x + a2) * a_x + a1) * a_x + a0) /
       ((((b4 * a_x + b3) * a_x + b2) * a_x + b1) * a_x + b0);
     assert(IsNeg(res));
@@ -479,7 +536,7 @@ namespace DimTypes::CEMaths
     constexpr double a1 =  b1 * Ln3_4<double> -   249702912.0;
     constexpr double a0 =  b0 * Ln3_4<double> -     4992921.0;
 
-    double res =
+    double const res =
       ((((((((a8 * a_x + a7) * a_x + a6) * a_x + a5) * a_x + a4) * a_x + a3)
                  * a_x + a2) * a_x + a1) * a_x + a0) /
       ((((((((b8 * a_x + b7) * a_x + b6) * a_x + b5) * a_x + b4) * a_x + b3)
@@ -523,7 +580,7 @@ namespace DimTypes::CEMaths
     constexpr long double a1  = b1  * Ln3_4<long double> -    36287578800.0L;
     constexpr long double a0  = b0  * Ln3_4<long double> -      435840669.0L;
 
-    long double res =
+    long double const res =
       ((((((((((a10 * a_x + a9) * a_x + a8) * a_x + a7) * a_x + a6) * a_x + a5)
                     * a_x + a4) * a_x + a3) * a_x + a2) * a_x + a1) * a_x + a0)
       /
@@ -560,7 +617,7 @@ namespace DimTypes::CEMaths
     constexpr float a2 = float(-115.0 /   252.0);
     constexpr float b4 = float(  13.0 / 15120.0);
     constexpr float b2 = float(  11.0 /   252.0);
-    float           x2 = a_x * a_x;
+    float     const x2 = a_x * a_x;
     return
       ((a4 * x2 + a2) * x2 + 1.0f) /
       ((b4 * x2 + b2) * x2 + 1.0f);
@@ -587,7 +644,7 @@ namespace DimTypes::CEMaths
     constexpr double b6 =     109247.0 /    65540835360.0;
     constexpr double b4 =      34709.0 /      141863280.0;
     constexpr double b2 =      12079.0 /         545628.0;
-    double           x2 = a_x * a_x;
+    double    const  x2 = a_x * a_x;
     return
       ((((a8 * x2 + a6) * x2 + a4) * x2 + a2) * x2 + 1.0) /
       ((((b8 * x2 + b6) * x2 + b4) * x2 + b2) * x2 + 1.0);
@@ -614,7 +671,7 @@ namespace DimTypes::CEMaths
     constexpr long double b6  =      101797.0L /    163927174320.0L;
     constexpr long double b4  =        5293.0L /        40031056.0L;
     constexpr long double b2  =      124402.0L /         7505823.0L;
-    long double           x2  = a_x * a_x;
+    long double    const  x2  = a_x * a_x;
     return
       (((((a10 * x2 + a8) * x2 + a6) * x2 + a4) * x2 + a2) * x2 + 1.0L) /
        (((( b8 * x2 + b6) * x2 + b4) * x2 + b2) * x2 + 1.0L);
@@ -643,7 +700,7 @@ namespace DimTypes::CEMaths
     constexpr float a2 = float(- 53.0 /    396.0);
     constexpr float b4 = float(   5.0 /  11088.0);
     constexpr float b2 = float(  13.0 /    396.0);
-    float           x2 = a_x * a_x;
+    float     const x2 = a_x * a_x;
     return
       a_x * ((a4 * x2 + a2) * x2 + 1.0f) /
             ((b4 * x2 + b2) * x2 + 1.0f);
@@ -668,7 +725,7 @@ namespace DimTypes::CEMaths
     constexpr double b6 =      36317.0 /     12335869260.0;
     constexpr double b4 =      26015.0 /        74762844.0;
     constexpr double b2 =     187642.0 /         7188735.0;
-    double           x2 = a_x * a_x;
+    double    const  x2 = a_x * a_x;
     return
       a_x *  (((a6 * x2 + a4) * x2 + a2) * x2 + 1.0)          /
             ((((b8 * x2 + b6) * x2 + b4) * x2 + b2) * x2 + 1.0);
@@ -694,7 +751,7 @@ namespace DimTypes::CEMaths
     constexpr long double b6 =      560401.0L /      562956694560.0L;
     constexpr long double b4 =     1281433.0L /        7217393520.0L;
     constexpr long double b2 =     2290747.0L /         120289892.0L;
-    long double           x2 = a_x * a_x;
+    long double    const  x2 = a_x * a_x;
     return
       a_x * ((((a8 * x2 + a6) * x2 + a4) * x2 + a2) * x2 + 1.0L) /
             ((((b8 * x2 + b6) * x2 + b4) * x2 + b2) * x2 + 1.0L);
@@ -737,7 +794,7 @@ namespace DimTypes::CEMaths
     constexpr float  b4 = float(    594.0 /      323.0);
     constexpr float  b2 = float(     44.0 /       19.0);
 
-    float            x2 = a_x * a_x;
+    float     const  x2 = a_x * a_x;
     return
       (((((a11 * x2 + a9) * x2 + a7) * x2 + a5) * x2 + a3) * x2 + 1.0f) * a_x /
       ((((b8   * x2 + b6) * x2 + b4) * x2 + b2) * x2 + 1.0f);
@@ -776,7 +833,7 @@ namespace DimTypes::CEMaths
     constexpr double  b4 =        5985.0 /               533.0;
     constexpr double  b2 =         210.0 /                41.0;
 
-    double            x2 = a_x * a_x;
+    double    const   x2 = a_x * a_x;
     return
       ((((((((((a21 * x2 + a19) * x2 + a17) * x2 + a15) * x2 + a13) * x2
                          + a11) * x2 +  a9) * x2 +  a7) * x2 +  a5) * x2
@@ -825,7 +882,7 @@ namespace DimTypes::CEMaths
     constexpr long double  b4 =           14850.0L /                     833.0L;
     constexpr long double  b2 =             108.0L /                      17.0L;
 
-    long double            x2 = a_x * a_x;
+    long double    const   x2 = a_x * a_x;
     return
       (((((((((((((a27 * x2 + a25) * x2 + a23) * x2 + a21) * x2 + a19) * x2
                             + a17) * x2 + a15) * x2 + a13) * x2 + a11) * x2
@@ -1093,11 +1150,11 @@ namespace DimTypes::CEMaths
     // Generic Case:
     // First, change the base from E to 2, to make it easier to represent the
     // result in the IEEE 754 format: exp(x) = 2^y, where y = x * Log2E:
-    F y = a_x * Log2E<F>;
+    F const y = a_x * Log2E<F>;
 
     // Get the integral and fractional part of "y":   y = intgY + fracY:
-    F intgY = NaN<F>;
-    F fracY = std::modf (y, &intgY);
+    F intgY   = NaN<F>;
+    F fracY   = std::modf (y, &intgY);
     assert(std::isfinite(intgY) && Abs(fracY) < F(1.0));
 
     // Check if "intgY" is too large in absolute value:
@@ -1125,11 +1182,11 @@ namespace DimTypes::CEMaths
 
     // For the fractional part, get back to Base-E; it can only become smaller
     // in abs value as a result:
-    F f = fracY * Ln2<F>;
+    F const f = fracY * Ln2<F>;
     assert(Abs(f) <  F(0.5));
 
     // Use the Pade approximant for exp(f) around f=0:
-    F res = ExpPade<F>(f);
+    F const res = ExpPade<F>(f);
 
     // Multiply the result by 2^n (can still get 0 or +oo at this moment):
     return std::ldexp(res, n);
@@ -1169,13 +1226,13 @@ namespace DimTypes::CEMaths
     // Generic Case:
     // Get the Base-2 exponent and the normalised fractional part of "a_x":
     assert(std::isfinite(a_x) && IsPos(a_x));
-    int e2X   = INT_MIN;
-    F   fracX = std::frexp(a_x, &e2X);
+    int     e2X   = INT_MIN;
+    F const fracX = std::frexp(a_x, &e2X);
     assert(0.5 <= fracX && fracX < F(1) && e2X != INT_MIN);
 
     // Then log(x) = log(2^e2X  * fracX) = e2X * log(2) + log(fracX),
     // so expand     log(fracX) in the vicinity of fracX = 3/4:
-    F logFX = LogPade<F>(fracX);
+    F const logFX  = LogPade<F>(fracX);
     assert(IsNeg(logFX));
 
     // From "e2X" (which is actually the main part of the Base-2 log of
@@ -1279,8 +1336,8 @@ namespace DimTypes::CEMaths
       return NaN<F>;
 
     // First, normalise the arg to the interval [0; +oo):
-    bool  chSgn =  IsNeg(a_x);
-    if (chSgn)
+    bool chSgn = IsNeg(a_x);
+    if  (chSgn)
       a_x = - a_x;
 
     // Then normalise it to the interval [0..2*Pi) (full period):
@@ -1322,8 +1379,8 @@ namespace DimTypes::CEMaths
       return NaN<F>;
 
     // First, normalise the arg to the interval [0; +oo):
-    bool  chSgn = IsNeg(a_x);
-    if (chSgn)
+    bool chSgn = IsNeg(a_x);
+    if  (chSgn)
       a_x = - a_x;
 
     // Then normalise it to the interval [0..Pi) (full period):
@@ -1385,7 +1442,7 @@ namespace DimTypes::CEMaths
       inv = true;
     }
     // Now use the Pade Approximant:
-    F   res = ATanPade<F>(a_x);
+    F res = ATanPade<F>(a_x);
 
     if (inv)
       res = Pi_2<F> - res;
@@ -1466,16 +1523,16 @@ namespace DimTypes::CEMaths
 #   if (!defined(__clang__))
     // Get the Base-2 exponent and the normalised fractional part of "a_x":
     assert(std::isfinite(a_x) && IsPos(a_x));
-    int e2X   = INT_MIN;
-    F   fracX = std::frexp(a_x, &e2X);
+    int     e2X    = INT_MIN;
+    F const fracX  = std::frexp(a_x, &e2X);
     assert(0.5 <= fracX && fracX < F(1.0) && e2X != INT_MIN);
 
     // Get the Pade approximant of SqRt(fracX):
-    F sqrtFX = SqRtPade<F>(fracX);
-    assert(F(0.0) < sqrtFX && sqrtFX < F(1.0) + Eps<F>);
+    F sqrtFX       = SqRtPade<F>(fracX);
+    assert(F(0.0)  < sqrtFX && sqrtFX < F(1.0) + Eps<F>);
 
     // Then the exponent of the result is e2X/2:
-    int n = e2X / 2;
+    int const n = e2X / 2;
     if (e2X % 2 != 0)
     {
       if (e2X > 0)
@@ -1495,8 +1552,8 @@ namespace DimTypes::CEMaths
     while (true)
     {
       // The following normalisation tries to avoid Infinities and NaNs:
-      F x_y2 = (a_x / y) / y;
-      F c    = (F(1.0) + F(3.0) * x_y2) / (F(3.0) + x_y2);
+      F const x_y2 = (a_x / y) / y;
+      F const c    = (F(1.0) + F(3.0) * x_y2) / (F(3.0) + x_y2);
       y *= c;
 
       // "ry" is a relative correction applied to "y":
@@ -1531,7 +1588,7 @@ namespace DimTypes::CEMaths
     // NaN is not considered specifically...
 
     // Generic Case:
-    bool chSgn = IsNeg(a_x);
+    bool const chSgn = IsNeg(a_x);
     if (chSgn)
       a_x = - a_x;
     assert(IsPos(a_x));
@@ -1539,17 +1596,17 @@ namespace DimTypes::CEMaths
 #   if (!defined(__clang__))
     // Get the Base-2 exponent and the normalised fractional part of "a_x":
     assert(std::isfinite(a_x) && IsPos(a_x));
-    int e2X   = INT_MIN;
-    F   fracX = std::frexp(a_x, &e2X);
+    int     e2X   = INT_MIN;
+    F const fracX = std::frexp(a_x, &e2X);
     assert(F(0.5) <= fracX && fracX < F(1.0) && e2X != INT_MIN);
 
     // Get the Pade approximant of CbRt(fracX):
-    F cbrtFX = CbRtPade<F>(fracX);
+    F cbrtFX      = CbRtPade<F>(fracX);
     assert(F(0.0) < cbrtFX && cbrtFX < F(1.0) + Eps<F>);
 
     // Then the exponent of the result is e2X/3:
-    int n = e2X / 3;
-    int r = e2X % 3;  // 0, +-1, +-2
+    int const n = e2X / 3;
+    int const r = e2X % 3;  // 0, +-1, +-2
     switch (r)
     {
       case 1:
@@ -1585,8 +1642,8 @@ namespace DimTypes::CEMaths
     while (true)
     {
       // The following normalisation tries to avoid Infinities and NaNs:
-      F x_y3 = ((a_x / y) / y) / y;
-      F c    = (F(1.0) + F(2.0) * x_y3) / (F(2.0) + x_y3);
+      F const x_y3 = ((a_x / y) / y) / y;
+      F const c    = (F(1.0) + F(2.0) * x_y3) / (F(2.0) + x_y3);
       y *= c;
 
       // "ry" is a relative correction applied to "y":
@@ -1660,21 +1717,21 @@ namespace DimTypes::CEMaths
   template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F SinH (F a_x)
   {
-    F ex = Exp(a_x);
+    F const ex = Exp(a_x);
     return (ex - F(1.0) / ex) / F(2.0);
   }
 
   template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F CosH (F a_x)
   {
-    F ex = Exp(a_x);
+    F const ex = Exp(a_x);
     return (ex + F(1.0) / ex) / F(2.0);
   }
 
   template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F TanH (F a_x)
   {
-    F ex2 = Exp(2.0 * a_x);
+    F const ex2 = Exp(2.0 * a_x);
     return (ex2 - F(1.0)) / (ex2 + F(1.0));
   }
 
@@ -1683,9 +1740,7 @@ namespace DimTypes::CEMaths
   //
   template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F ASinH(F a_x)
-  {
-    return Log(a_x + SqRt(Sqr(a_x) + F(1.0)));
-  }
+    { return Log(a_x + SqRt(Sqr(a_x) + F(1.0))); }
 
   template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F ACosH(F a_x)
@@ -1718,9 +1773,9 @@ namespace DimTypes::CEMaths
   constexpr std::complex<F> Exp(std::complex<F> a_z)
   {
     // exp(x+I*y) = exp(x)*(cos(y)+I*sin(y)):
-    F x     = std::real(a_z);
-    F y     = std::imag(a_z);
-    F r     = Exp(x);
+    F const x     = std::real(a_z);
+    F const y     = std::imag(a_z);
+    F const r     = Exp(x);
     return std::complex<F>(r * Cos(y), r * Sin(y));
   }
 
@@ -1733,14 +1788,14 @@ namespace DimTypes::CEMaths
   constexpr std::complex<F> Cos(std::complex<F> a_z)
   {
     // cos(x+I*y) = cos(x)*ch(y) - I*sin(x)*sh(y):
-    F x     =   std::real(a_z);
-    F y     =   std::imag(a_z);
-    F u     =   Exp(y);
-    F u1    =   F(1.0)   / u;
-    F chY   =   (u + u1) / F(2.0);
-    F shY   =   (u - u1) / F(2.0);
-    F reCos =   Cos(x) * chY;
-    F imCos = - Sin(x) * shY;
+    F const x     =   std::real(a_z);
+    F const y     =   std::imag(a_z);
+    F const u     =   Exp(y);
+    F const u1    =   F(1.0)   / u;
+    F const chY   =   (u + u1) / F(2.0);
+    F const shY   =   (u - u1) / F(2.0);
+    F const reCos =   Cos(x) * chY;
+    F const imCos = - Sin(x) * shY;
     return std::complex<F>(reCos, imCos);
   }
 
@@ -1753,14 +1808,14 @@ namespace DimTypes::CEMaths
   constexpr std::complex<F> Sin(std::complex<F> a_z)
   {
     // sin(x+I*y) = sin(x)*ch(y) + I*cos(x)*sh(y):
-    F x     = std::real(a_z);
-    F y     = std::imag(a_z);
-    F u     = Exp(y);
-    F u1    = F(1.0)   / u;
-    F chY   = (u + u1) / F(2.0);
-    F shY   = (u - u1) / F(2.0);
-    F reSin = Sin(x) * chY;
-    F imSin = Cos(x) * shY;
+    F const x     = std::real(a_z);
+    F const y     = std::imag(a_z);
+    F const u     = Exp(y);
+    F const u1    = F(1.0)   / u;
+    F const chY   = (u + u1) / F(2.0);
+    F const shY   = (u - u1) / F(2.0);
+    F const reSin = Sin(x) * chY;
+    F const imSin = Cos(x) * shY;
     return std::complex<F>(reSin, imSin);
   }
 
@@ -1773,21 +1828,22 @@ namespace DimTypes::CEMaths
   constexpr std::pair<std::complex<F>, std::complex<F>>
     CosSin (std::complex<F> a_z)
   {
-    F x     =   std::real(a_z);
-    F y     =   std::imag(a_z);
-    F u     =   Exp(y);
-    F u1    =   F(1.0)   / u;
-    F chY   =   (u + u1) / F(2.0);
-    F shY   =   (u - u1) / F(2.0);
-    F cosX  =   Cos(x);
-    F sinX  =   Sin(x);
-    F reCos =   cosX * chY;
-    F imCos = - sinX * shY;
-    F reSin =   sinX * chY;
-    F imSin =   cosX * shY;
-    std::complex<F>  cosZ(reCos, imCos);
-    std::complex<F>  sinZ(reSin, imSin);
-    return   {cosZ,  sinZ} ;
+    F const x     =   std::real(a_z);
+    F const y     =   std::imag(a_z);
+    F const u     =   Exp(y);
+    F const u1    =   F(1.0)   / u;
+    F const chY   =   (u + u1) / F(2.0);
+    F const shY   =   (u - u1) / F(2.0);
+    F const cosX  =   Cos(x);
+    F const sinX  =   Sin(x);
+    F const reCos =   cosX * chY;
+    F const imCos = - sinX * shY;
+    F const reSin =   sinX * chY;
+    F const imSin =   cosX * shY;
+
+    std::complex<F>   cosZ(reCos, imCos);
+    std::complex<F>   sinZ(reSin, imSin);
+    return   {cosZ,   sinZ} ;
   }
 
   //-------------------------------------------------------------------------//
@@ -1799,8 +1855,8 @@ namespace DimTypes::CEMaths
   constexpr std::complex<F> Tan(std::complex<F> a_z)
   {
     // Complex arg: Compute Cos and Sin together:
-    auto   cs = CosSin(a_z);
-    return std::get<1>(cs) / std::get<0>(cs);
+    auto const cs = CosSin(a_z);
+    return     std::get<1>(cs) / std::get<0>(cs);
   }
 
   //-------------------------------------------------------------------------//
@@ -1846,6 +1902,7 @@ namespace DimTypes::CEMaths
   using DimTypes::CEMaths::Floor;           \
   using DimTypes::CEMaths::Ceil;            \
   using DimTypes::CEMaths::Round;           \
+  using DimTypes::CEMaths::FMod;            \
   using DimTypes::CEMaths::Rem;             \
   using DimTypes::CEMaths::Sign;            \
   using DimTypes::CEMaths::Sqr;             \

@@ -30,7 +30,7 @@ namespace DimTypes
   // a complex or multiple-precision type, to provide better data locality;
   // "MaxDims" can be 7, 8 or 9:
   //
-  template<uint64_t E, uint64_t U, typename RepT, unsigned MaxDims>
+  template<uint64_t E,  uint64_t U, typename RepT, unsigned MaxDims>
   requires IsValidDimQRepT<RepT>
   class DimQ
   {
@@ -53,7 +53,7 @@ namespace DimTypes
     // in some cases.  "R" is required to be a "valid RepT" (but not necessari-
     // ly the "RepT" itself) to avoid a conflict with the Copy Ctor below (whe-
     // ere "R" is "DimQ" itself):
-    template<typename  R> requires(IsValidDimQRepT<R>)
+    template<typename  R> requires(DimQRepConv<R, RepT>)
     constexpr explicit DimQ(R const& val)
     : m_val(RepT(val)) {}
 
@@ -64,7 +64,7 @@ namespace DimTypes
     // If the assignment LHS is DimLess, the RHS may be of any floating-point
     // type "R"   (again, this constraint is required to avoid confusion with
     // the "DimQ" itself):
-    template<typename R> requires(IsValidDimQRepT<R> && E == 0)
+    template<typename R> requires(DimQRepConv<R, RepT> && E == 0)
     constexpr DimQ& operator= (R const& a_right)
     {
       m_val = RepT(a_right);
@@ -74,8 +74,8 @@ namespace DimTypes
     // Non-Default Ctor:
     // Conversion FROM another Rep (but E, U and MaxDims must match); this is
     // actually an "Extended Copy Ctor":
-    template<typename  FromR> requires(IsValidDimQRepT<FromR>)
-    constexpr explicit DimQ(DimQ<E, U, FromR, MaxDims> const& a_right)
+    template<typename R> requires(DimQRepConv<R, RepT>)
+    constexpr explicit DimQ   (DimQ<E, U, R, MaxDims> const& a_right)
       : m_val(RepT(a_right.Magnitude()))
       {}
 
@@ -101,7 +101,7 @@ namespace DimTypes
 
     // The following function converts "DimQ" to the Underlying Field Type
     // ("RepT"), but ONLY if the arg is actually dimension-less:
-    template<typename R> requires(IsValidDimQRepT<R> && E == 0)
+    template<typename R> requires(DimQRepConv<RepT, R> && E == 0)
     constexpr explicit   operator R() const
       { return R(m_val); }
     // NB:  In addition, for some types (eg Angles expressed in Radians), the
@@ -134,13 +134,11 @@ namespace DimTypes
     }
 
     // Addition of a "scalar" is permitted only for a dimension-less qty:
-    template<typename R>
-    requires(IsValidDimQRepT<R> && E == 0)
-    constexpr DimQ operator+(R const& a_right) const
-    { return  DimQ(m_val   + RepT(a_right)); }
+    template<typename R>      requires(DimQRepConv<R, RepT> && E == 0)
+    constexpr DimQ operator+ (R const& a_right) const
+    { return  DimQ(m_val   +  RepT(a_right)); }
 
-    template<typename R>
-    requires(IsValidDimQRepT<R> && E == 0)
+    template<typename R>      requires(DimQRepConv<R, RepT> && E == 0)
     constexpr DimQ& operator+=(R const& a_right)
     {
       m_val += RepT(a_right);
@@ -165,13 +163,11 @@ namespace DimTypes
       return *this;
     }
 
-    template<typename R>
-    requires(IsValidDimQRepT<R> && E == 0)
-    constexpr DimQ operator-(R const& a_right) const
+    template<typename R>     requires(DimQRepConv<R, RepT> && E == 0)
+    constexpr DimQ operator- (R const& a_right) const
     { return  DimQ(m_val - RepT(a_right)); }
 
-    template<typename R>
-    requires(IsValidDimQRepT<R> && E == 0)
+    template<typename R>     requires(DimQRepConv<R, RepT> && E == 0)
     constexpr DimQ& operator-=(R const& a_right)
     {
       m_val -= RepT(a_right);
@@ -187,12 +183,12 @@ namespace DimTypes
     // impact of that should be negligible:
     //
     // Multiplication:
-    template<typename R> requires(IsValidDimQRepT<R>)
-    constexpr  DimQ operator*    (R const& a_right) const
+    template<typename R>  requires(DimQRepConv<R, RepT>)
+    constexpr  DimQ operator*     (R const& a_right) const
       { return DimQ(m_val   * RepT(a_right)); }
 
-    template<typename R> requires(IsValidDimQRepT<R>)
-    constexpr  DimQ& operator*=  (R const& a_right)
+    template<typename R>  requires(DimQRepConv<R, RepT>)
+    constexpr  DimQ& operator*=   (R const& a_right)
     {
       m_val *= RepT(a_right);
       return  *this;
@@ -203,12 +199,12 @@ namespace DimTypes
       { return DimQ(- m_val); }
 
     // Division by "R":
-    template<typename R> requires(IsValidDimQRepT<R>)
-    constexpr  DimQ operator/    (R const& a_right) const
+    template<typename R>  requires(DimQRepConv<R, RepT>)
+    constexpr  DimQ operator/     (R const& a_right) const
       { return DimQ(m_val   / RepT(a_right)); }
 
-    template<typename R> requires(IsValidDimQRepT<R>)
-    constexpr  DimQ& operator/=  (R const& a_right)
+    template<typename R>  requires(DimQRepConv<R, RepT>)
+    constexpr  DimQ& operator/=   (R const& a_right)
     {
       m_val /= RepT(a_right);
       return *this;
@@ -315,6 +311,7 @@ namespace DimTypes
   //-------------------------------------------------------------------------//
   template<typename ToR,   // "ToR" must be explicit, other params are inferred
            uint64_t E, uint64_t U, typename RepT, unsigned MaxDims>
+  requires DimQRepConv<RepT,   ToR>
   constexpr
      DimQ<E, U, ToR,  MaxDims> ToNewRepT
     (DimQ<E, U, RepT, MaxDims> const& a_right)
@@ -328,38 +325,53 @@ namespace DimTypes
   }
 
   //-------------------------------------------------------------------------//
-  // "Abs", "UniformNorm", "Floor", "Ceil", "Round", "Sign", "Rem":          //
+  // "Abs", "UniformNorm", "Floor", "Ceil", "Round", "Sign", "FMod", "Rem":  //
   //-------------------------------------------------------------------------//
-  // NB: All functions except "Rem" are DimQ -> DimQ;
+  // NB: All functions except "FMod" and "Rem" are DimQ -> DimQ;
   //     "UniformNorm" is the same as "Abs";
-  //     "Rem"         is (DimQ, DimQ) -> DimQ:
+  //     "FMod" and "Rem" are (DimQ, DimQ) -> DimQ:
   //
-# ifdef  DIMQ_ROUND_FUNC
-# undef  DIMQ_ROUND_FUNC
+# ifdef  DIMQ_ROUND_FUNC1
+# undef  DIMQ_ROUND_FUNC1
 # endif
-# define DIMQ_ROUND_FUNC(FuncName)     \
+# define DIMQ_ROUND_FUNC1(FuncName)     \
   /* Bring in CMaths::FuncName (though FuncName may be overloaded): */  \
   using CEMaths::FuncName;             \
+  \
   template<uint64_t E,  uint64_t  U, typename RepT, unsigned MaxDims>   \
+  requires(!IsComplex<RepT>) \
   constexpr DimQ<E, U,  RepT, MaxDims> \
   FuncName( DimQ<E, U,  RepT, MaxDims> const& a_right) \
-  requires(!IsComplex<RepT>) \
     { return DimQ<E, U, RepT, MaxDims>(FuncName(a_right.Magnitude()));  }
 
-  DIMQ_ROUND_FUNC(Abs)
-  DIMQ_ROUND_FUNC(UniformNorm)
-  DIMQ_ROUND_FUNC(Floor)
-  DIMQ_ROUND_FUNC(Ceil)
-  DIMQ_ROUND_FUNC(Round)
-  DIMQ_ROUND_FUNC(Sign)
-# undef  DIMQ_ROUND_FUNC
+  DIMQ_ROUND_FUNC1(Abs)
+  DIMQ_ROUND_FUNC1(UniformNorm)
+  DIMQ_ROUND_FUNC1(Floor)
+  DIMQ_ROUND_FUNC1(Ceil)
+  DIMQ_ROUND_FUNC1(Round)
+  DIMQ_ROUND_FUNC1(Sign)
+# undef  DIMQ_ROUND_FUNC1
 
-  using CEMaths::Rem;
-  template<uint64_t E, uint64_t  U, typename RepT, unsigned MaxDims>
-  constexpr DimQ<E, U, RepT, MaxDims>
-  Rem(DimQ<E, U, RepT, MaxDims> const& a_x,
-      DimQ<E, U, RepT, MaxDims> const& a_y)
-    { return DimQ<E, U, RepT, MaxDims>(Rem(a_x.Magnitude(), a_y.Magnitude())); }
+# ifdef  DIMQ_ROUND_FUNC2
+# undef  DIMQ_ROUND_FUNC2
+# endif
+# define DIMQ_ROUND_FUNC2(FuncName)    \
+  /* Bring in CMaths::FuncName (though FuncName may be overloaded): */  \
+  using CEMaths::FuncName;             \
+  \
+  template<uint64_t E, uint64_t  U, typename RepT, unsigned MaxDims>    \
+  requires(!IsComplex<RepT>) \
+  constexpr DimQ<E, U, RepT, MaxDims>  \
+  FuncName( DimQ<E, U, RepT, MaxDims> const& a_x,   \
+            DimQ<E, U, RepT, MaxDims> const& a_y)   \
+  { \
+    return DimQ<E, U, RepT, MaxDims>   \
+      (FuncName(a_x.Magnitude(), a_y.Magnitude())); \
+  }
+
+  DIMQ_ROUND_FUNC2(FMod)
+  DIMQ_ROUND_FUNC2(Rem)
+# undef  DIMQ_ROUND_FUNC2
 
   //-------------------------------------------------------------------------//
   // "ApproxEqual" (w/o "s", as in "CEMaths"):                               //
@@ -380,8 +392,8 @@ namespace DimTypes
   // XXX: For "a_right", E==0 is required; U != 0 is allowed:
   //
   template<uint64_t U, typename R, typename RepT, unsigned MaxDims>
-  requires(IsValidDimQRepT<R>)
-  constexpr DimQ<0, U, RepT, MaxDims>
+  requires(DimQRepConv<R, RepT>)
+  constexpr DimQ<0, U, RepT,  MaxDims>
   operator+
   (
     R const&                           a_left,
@@ -390,8 +402,8 @@ namespace DimTypes
   { return a_right + a_left; }
 
   template<uint64_t U, typename R, typename RepT, unsigned MaxDims>
-  requires(IsValidDimQRepT<R>)
-  constexpr DimQ<0, U, RepT, MaxDims>
+  requires(DimQRepConv<R, RepT>)
+  constexpr DimQ<0, U, RepT,  MaxDims>
   operator-
   (
     R const&                           a_left,
@@ -406,14 +418,14 @@ namespace DimTypes
   // Multiplication, Division:                                               //
   //-------------------------------------------------------------------------//
   template<typename R, uint64_t E, uint64_t U, typename RepT, unsigned MaxDims>
-  requires(IsValidDimQRepT<R>)
+  requires(DimQRepConv<R, RepT>)
   constexpr
   DimQ<E, U, RepT, MaxDims> operator*
     (R const& a_left, DimQ<E, U, RepT, MaxDims> const& a_right)
     { return DimQ<E, U, RepT, MaxDims>(RepT(a_left)  * a_right.Magnitude()); }
 
   template<typename R, uint64_t E, uint64_t U, typename RepT, unsigned MaxDims>
-  requires(IsValidDimQRepT<R>)
+  requires(DimQRepConv<R, RepT>)
   constexpr auto    // Using "auto" here for brievity
   operator/ (R const& a_left, DimQ<E, U,  RepT, MaxDims> const& a_right)
   {
@@ -507,34 +519,34 @@ namespace DimTypes
 # ifdef  DIMLESS_UNARY_FUNC
 # undef  DIMLESS_UNARY_FUNC
 # endif
-# define DIMLESS_UNARY_FUNC(FuncName)    \
+# define DIMLESS_UNARY_FUNC(FuncName, Requires)        \
   /* Bring in CEMaths::FuncName (though it may be overloaded): */      \
-  using CEMaths::FuncName; \
+  using CEMaths::FuncName;   \
   \
   /* We must have E == 0, but U != 0 is allowed as above:      */      \
-  template<uint64_t U, typename RepT, unsigned MaxDims>    \
+  template<uint64_t U, typename RepT, unsigned MaxDims>   Requires     \
   constexpr RepT FuncName(DimQ<0, U, RepT, MaxDims> const& a_right)    \
   { \
     /* NB: The following call to "FuncName" MAY OR MAY NOT BE from */  \
     /* "CEMaths"! */ \
     return FuncName(a_right.Magnitude()); \
   }
-  DIMLESS_UNARY_FUNC(Exp)
-  DIMLESS_UNARY_FUNC(Log)
-  DIMLESS_UNARY_FUNC(Log2)
-  DIMLESS_UNARY_FUNC(Log10)
-  DIMLESS_UNARY_FUNC(Cos)
-  DIMLESS_UNARY_FUNC(Sin)
-  DIMLESS_UNARY_FUNC(Tan)
-  DIMLESS_UNARY_FUNC(ATan)
-  DIMLESS_UNARY_FUNC(ASin)
-  DIMLESS_UNARY_FUNC(ACos)
-  DIMLESS_UNARY_FUNC(CosH)
-  DIMLESS_UNARY_FUNC(SinH)
-  DIMLESS_UNARY_FUNC(TanH)
-  DIMLESS_UNARY_FUNC(ACosH)
-  DIMLESS_UNARY_FUNC(ASinH)
-  DIMLESS_UNARY_FUNC(ATanH)
+  DIMLESS_UNARY_FUNC(Exp,)
+  DIMLESS_UNARY_FUNC(Log,    requires(!IsComplex<RepT>))
+  DIMLESS_UNARY_FUNC(Log2,   requires(!IsComplex<RepT>))
+  DIMLESS_UNARY_FUNC(Log10,  requires(!IsComplex<RepT>))
+  DIMLESS_UNARY_FUNC(Cos,)
+  DIMLESS_UNARY_FUNC(Sin,)
+  DIMLESS_UNARY_FUNC(Tan,)
+  DIMLESS_UNARY_FUNC(ATan,   requires(!IsComplex<RepT>))
+  DIMLESS_UNARY_FUNC(ASin,   requires(!IsComplex<RepT>))
+  DIMLESS_UNARY_FUNC(ACos,   requires(!IsComplex<RepT>))
+  DIMLESS_UNARY_FUNC(CosH,   requires(!IsComplex<RepT>))
+  DIMLESS_UNARY_FUNC(SinH,   requires(!IsComplex<RepT>))
+  DIMLESS_UNARY_FUNC(TanH,   requires(!IsComplex<RepT>))
+  DIMLESS_UNARY_FUNC(ACosH,  requires(!IsComplex<RepT>))
+  DIMLESS_UNARY_FUNC(ASinH,  requires(!IsComplex<RepT>))
+  DIMLESS_UNARY_FUNC(ATanH,  requires(!IsComplex<RepT>))
 # undef DIMLESS_UNARY_FUNC
 
   //-------------------------------------------------------------------------//
@@ -548,8 +560,8 @@ namespace DimTypes
   using CEMaths::Pred; \
   \
   template<uint64_t E, uint64_t U, typename RepT, unsigned MaxDims> \
+  requires(!IsComplex<RepT>)    \
   constexpr bool Pred(DimQ<E, U, RepT, MaxDims>   const& a_right)   \
-  requires(!IsComplex<RepT>) \
   { return Pred(a_right.Magnitude()); }
 
   DIMQ_PRED(IsZero)
@@ -567,11 +579,10 @@ namespace DimTypes
 
   template<uint64_t E, uint64_t U, uint64_t V, typename RepT,
            unsigned MaxDims>
-  requires(Bits::Encodings<RepT,MaxDims>::UnitsOK(E,U,V))
+  requires(Bits::Encodings<RepT,MaxDims>::UnitsOK(E,U,V) && !IsComplex<RepT>)
   constexpr  RepT   ATan2
     (DimQ<E, U, RepT, MaxDims> const& a_y,
      DimQ<E, V, RepT, MaxDims> const& a_x)
-  requires(!IsComplex<RepT>)
   { return ATan2(a_y.Magnitude(), a_x.Magnitude()); }
 }
 // End namespace DimTypes
@@ -588,6 +599,7 @@ namespace DimTypes
   using DimTypes::Floor;                \
   using DimTypes::Ceil;                 \
   using DimTypes::Round;                \
+  using DimTypes::FMod;                 \
   using DimTypes::Rem;                  \
   using DimTypes::Sign;                 \
   using DimTypes::ApproxEqual;          \
