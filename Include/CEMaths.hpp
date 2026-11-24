@@ -2024,6 +2024,12 @@ namespace DimTypes::CEMaths
   template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F ATanH(F a_x)
   {
+    // Checks:
+    if (a_x == F( 1.0))
+      return  Inf<F>;
+    if (a_x == F(-1.0))
+      return -Inf<F>;
+
     F const u = Abs(a_x);
     if (!(u < F(1.0)))
       return NaN<F>;
