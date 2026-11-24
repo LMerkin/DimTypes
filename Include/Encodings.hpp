@@ -277,33 +277,25 @@ namespace DimTypes::Bits
     //=======================================================================//
     // Extraction of Numer and Denom from Zp-Encodings:                      //
     //=======================================================================//
-    // Find the Numer and Denom of the minimal total height  corresponding  to
-    // the given Zp representation. XXX: Currently this is done just by direct
-    // search:
+    // Find the Numer ("m" in Z) and Denom ("n" in N)  of the minimal  total
+    // height not exceeding "MaxHeight", corresponding to the given Zp "rep":
     //
     constexpr static std::pair<int, unsigned> GetNumerAndDenom(uint64_t rep)
     {
-      // Numer is +-(height - denom):
-      if (rep == 0)
-        return  {0, 1};
-
-      // Generic case: Traverse all heights. Typically, the result is nearby:
-      // height == |numer| + denom, where denom >= 1 and numer != 0:
-      for (int height = 2; height <= int(MaxHeight); ++height)
+      if (rep < PMod)
       {
-        for (int denom = 1; denom <  height; ++denom)
+        // Since (m = rep * n) mod PMod, it is sufficient just to search over
+        // the feasible "n" vals:
+        //
+        for (unsigned n = 1; n < MaxHeight; ++n)
         {
-          unsigned invDenom = InverseModP(denom);
-          int      numerP   = height - denom;  // Positive numer
-          int      numerC   = IPMod  - numerP; // Complement of Negative numer
+          int m = int((rep * n) % PMod);
+          if (m > IPMod / 2)
+            m -= IPMod;      // For negative "m" vals
 
-          if (!(numerP > 0 && numerC > 0))
-            throw "DimTypes::Bits::Encodings::GetNumerAndDenom: LOGIC ERROR";
-
-          if ((unsigned(numerP) * invDenom) % PMod == rep)
-            return { numerP,  unsigned(denom)};
-          if ((unsigned(numerC) * invDenom) % PMod == rep)
-            return {-numerP,  unsigned(denom)};
+          int const limit = int(MaxHeight - n);
+          if (-limit <= m && m <= limit)
+            return {m, n};
         }
       }
       // XXX: Can we get here without a success. Throwing an exception will

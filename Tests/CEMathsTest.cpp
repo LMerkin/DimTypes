@@ -60,8 +60,11 @@ namespace
     ErrAccum<F> sinErrs;
     ErrAccum<F> tanErrs;
     ErrAccum<F> atanErrs;
+    ErrAccum<F> tanOfATanErrs;
     ErrAccum<F> asinErrs;
+    ErrAccum<F> sinOfASinErrs;
     ErrAccum<F> acosErrs;
+    ErrAccum<F> cosOfACosErrs;
     ErrAccum<F> atan2Errs;
 
     for (F x = F(-80.0); x <= F(80.0); x += F(0.03125))
@@ -69,7 +72,7 @@ namespace
       // Exp:
       F expX = Exp<F>(x);
       expErrs .Update(x, expX,    std::exp(x));
-      
+
       // Log  of the previously-computed Exp:
       F logEX = Log<F>(expX);
       logErrs .Update(expX, logEX, std::log(expX));
@@ -105,7 +108,7 @@ namespace
 
       // Tan(ATan):
       F backX = Tan<F>(atanX);
-      atanErrs.Update(atanX, backX, x);
+      tanOfATanErrs.Update(x, backX, x);
 
       // ASin:
       if (Abs(x) <= F(1.0))
@@ -115,7 +118,7 @@ namespace
 
         // Sin(ASin):
         F bsX = Sin<F>(asinX);
-        asinErrs.Update(asinX, bsX, x);
+        sinOfASinErrs.Update(x, bsX, x);
       }
 
       // ACos:
@@ -126,7 +129,7 @@ namespace
 
         // Cos(ACos):
         F bcX = Cos<F>(acosX);
-        acosErrs.Update(acosX, bcX, x);
+        cosOfACosErrs.Update(x, bcX, x);
       }
 
       // ATan2:
@@ -138,28 +141,37 @@ namespace
       }
     }
     // Results:
-    std::cout << "Exp  : MaxErr=[" << expErrs  .GetMaxErr() / Eps<F>
-              << "*Eps]\t@ x="     << expErrs  .GetArgMaxErr() << std::endl;
-    std::cout << "Log  : MaxErr=[" << logErrs  .GetMaxErr() / Eps<F>
-              << "*Eps]\t@ x="     << logErrs  .GetArgMaxErr() << std::endl;
-    std::cout << "SqRt : MaxErr=[" << sqrtErrs .GetMaxErr() / Eps<F>
-              << "*Eps]\t@ x="     << sqrtErrs .GetArgMaxErr() << std::endl;
-    std::cout << "CbRt : MaxErr=[" << cbrtErrs .GetMaxErr() / Eps<F>
-              << "*Eps]\t@ x="     << cbrtErrs .GetArgMaxErr() << std::endl;
-    std::cout << "Cos  : MaxErr=[" << cosErrs  .GetMaxErr() / Eps<F>
-              << "*Eps]\t@ x="     << cosErrs  .GetArgMaxErr() << std::endl;
-    std::cout << "Sin  : MaxErr=[" << sinErrs  .GetMaxErr() / Eps<F>
-              << "*Eps]\t@ x="     << sinErrs  .GetArgMaxErr() << std::endl;
-    std::cout << "Tan  : MaxErr=[" << tanErrs  .GetMaxErr() / Eps<F>
-              << "*Eps]\t@ x="     << tanErrs  .GetArgMaxErr() << std::endl;
-    std::cout << "ATan : MaxErr=[" << atanErrs .GetMaxErr() / Eps<F>
-              << "*Eps]\t@ x="     << atanErrs .GetArgMaxErr() << std::endl;
-    std::cout << "ASin : MaxErr=[" << asinErrs .GetMaxErr() / Eps<F>
-              << "*Eps]\t@ x="     << asinErrs .GetArgMaxErr() << std::endl;
-    std::cout << "ACos : MaxErr=[" << acosErrs .GetMaxErr() / Eps<F>
-              << "*Eps]\t@ x="     << acosErrs .GetArgMaxErr() << std::endl;
-    std::cout << "ATan2: MaxErr=[" << atan2Errs.GetMaxErr() / Eps<F>
-              << "*Eps]\t@ x="     << atan2Errs.GetArgMaxErr() << std::endl;
+    std::cout << "Exp      : MaxErr=[" << expErrs  .GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="         << expErrs  .GetArgMaxErr() << std::endl;
+    std::cout << "Log      : MaxErr=[" << logErrs  .GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="         << logErrs  .GetArgMaxErr() << std::endl;
+    std::cout << "SqRt     : MaxErr=[" << sqrtErrs .GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="         << sqrtErrs .GetArgMaxErr() << std::endl;
+    std::cout << "CbRt     : MaxErr=[" << cbrtErrs .GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="         << cbrtErrs .GetArgMaxErr() << std::endl;
+    std::cout << "Cos      : MaxErr=[" << cosErrs  .GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="         << cosErrs  .GetArgMaxErr() << std::endl;
+    std::cout << "Sin      : MaxErr=[" << sinErrs  .GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="         << sinErrs  .GetArgMaxErr() << std::endl;
+    std::cout << "Tan      : MaxErr=[" << tanErrs  .GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="         << tanErrs  .GetArgMaxErr() << std::endl;
+    std::cout << "ATan     : MaxErr=[" << atanErrs .GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="         << atanErrs .GetArgMaxErr() << std::endl;
+    std::cout << "Tan(ATan): MaxErr=[" << tanOfATanErrs.GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="         << tanOfATanErrs.GetArgMaxErr()
+              << std::endl;
+    std::cout << "ASin     : MaxErr=[" << asinErrs .GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="         << asinErrs .GetArgMaxErr() << std::endl;
+    std::cout << "Sin(ASin): MaxErr=[" << sinOfASinErrs.GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="         << sinOfASinErrs.GetArgMaxErr()
+              << std::endl;
+    std::cout << "ACos     : MaxErr=[" << acosErrs .GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="         << acosErrs .GetArgMaxErr() << std::endl;
+    std::cout << "Cos(ACos): MaxErr=[" << cosOfACosErrs.GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="         << cosOfACosErrs.GetArgMaxErr()
+                                       << std::endl;
+    std::cout << "ATan2    : MaxErr=[" << atan2Errs.GetMaxErr() / Eps<F>
+              << "*Eps]\t@ x="         << atan2Errs.GetArgMaxErr() << std::endl;
   }
 }
 

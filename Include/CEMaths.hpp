@@ -46,6 +46,24 @@ namespace DimTypes::CEMaths
   template<typename F> constexpr inline F Pi_2    = F(M_PI_2l);      // Pi/2
   template<typename F> constexpr inline F Pi_4    = F(M_PI_4l);      // Pi/4
 
+  // Pi_2Lo:
+  // This is the rounded value of Mathematical Pi/2 minus the above Pi_2<F>,
+  // used for correction of rounding errors:
+  template<typename F> constexpr inline F Pi_2Lo;
+  template<> constexpr inline float       Pi_2Lo<float>       =
+    -0xb.bbd2ep-28f;
+  template<> constexpr inline double      Pi_2Lo<double>      =
+    0x8.d313198a2e038p-57;
+  template<> constexpr inline long double Pi_2Lo<long double> =
+#   if LDBL_MANT_DIG == DBL_MANT_DIG
+    // If "long double" is actually a "double":
+    Pi_2Lo<double>;
+#   elif LDBL_MANT_DIG == 113
+    0x3.9a252049c1114cf98e804177d4c8p-116L;
+#   else
+    -0xe.ce675d1fc8f8cbbp-69L;
+#   endif
+
   // "Technical" Consts:
   template<typename F> constexpr inline F SqRt2   = F(M_SQRT2l);     // SqRt(2)
   template<typename F> constexpr inline F SqRt1_2 = F(M_SQRT1_2l);   // .../2
@@ -244,6 +262,21 @@ namespace DimTypes::CEMaths
   }
 
   //-------------------------------------------------------------------------//
+  // "FMA":                                                                  //
+  //-------------------------------------------------------------------------//
+  // "Fused" computation of (x * y + z):
+  //
+  template<typename F> requires(std::is_floating_point_v<F>)
+  constexpr F FMA  (F a_x, F a_y, F a_z)
+  {
+#   if defined(__clang__)
+    return __builtin_elementwise_fma(a_x, a_y, a_z);
+#   else
+    return std::fma                 (a_x, a_y, a_z);
+#   endif
+  }
+
+  //-------------------------------------------------------------------------//
   // "FMod":                                                                 //
   //-------------------------------------------------------------------------//
   // Again, in CLang <= 23, "std::fmod" is not "constexpr", so our own (PARTIAL)
@@ -270,11 +303,7 @@ namespace DimTypes::CEMaths
     F const q0  = F(static_cast<long long>(q));
 
     // The remainder: Use "fma" to prevent rounding errors:
-#   if defined(__clang__)
-    F res = __builtin_elementwise_fma(-q0, a_y, a_x);
-#   else
-    F res = std::fma(-q0, a_y, a_x);
-#   endif
+    F res = FMA(-q0, a_y, a_x);
 
     // Check the sign of "res"; it may be wrong due to rounding errors:
     // XXX:  The following may be insufficinet to correct the wrong sign,
@@ -349,11 +378,7 @@ namespace DimTypes::CEMaths
 
     // The remainder (unlike "FMod", it can be of any sign):
     // XXX: Use "fma", not just (a_x - qn * a_y), for correct rounding:
-#   if defined(__clang__)
-    F res = __builtin_elementwise_fma(-qn, a_y, a_x);
-#   else
-    F res = std::fma(-qn, a_y, a_x);
-#   endif
+    F res = FMA(-qn, a_y, a_x);
 
     // Mathematically, we must have  |res| <= 0.5 * a_y,
     // but this may break due to rounding errors,  so fix it:
@@ -665,6 +690,7 @@ namespace DimTypes::CEMaths
   // (b) those centered at x=Pi/8 with "dense" polynomials  and  quite complex
   //     coeffs, but of slighly lower degree;
   // from the computational efficiency point of view, method (a) is better!
+  // XXX: For "Cos", Taylor Series expansion may actually be more advantageous:
   //
   template<typename   F>
   constexpr F CosPade(F a_x);
@@ -749,6 +775,7 @@ namespace DimTypes::CEMaths
   //=========================================================================//
   // The arg is assumed to be in [0 .. Pi/4], centered at x=0 (same considera-
   // tions apply as for "CosPade"):
+  // XXX: For "Sin", Taylor Series expansion may actually be more advantageous:
   //
   template<typename   F>
   constexpr F SinPade(F a_x);
@@ -1371,6 +1398,64 @@ namespace DimTypes::CEMaths
   }
 
   //-------------------------------------------------------------------------//
+  // "ReduceModPi2": Helper for all Trigonomeric Functions:                  //
+  //-------------------------------------------------------------------------//
+  // Returns (SignedResidual, IntQuotient):
+  // XXX: TODO: Implement the Payne–Hanek Reduction which is more precise:
+  //
+  template<typename F> requires(std::is_floating_point_v<F>)
+  constexpr std::pair<F, int> ReduceModPi2(F a_x)
+  {
+    assert(IsFinite(a_x));
+
+    if (Abs(a_x) > F(65536.0))
+      throw std::domain_error("ReduceModPi12: The arg is Too Large");
+
+    // Use "long double" for intermediate computations. Reducing |a_x|:
+    long double const ax = static_cast<long double>(Abs(a_x));
+    auto const  reduce   =
+      [ax](int a_k) constexpr
+      {
+        constexpr long double pi2Hi  = 0x1.921fb54442p+0L;
+        constexpr long double pi2Mid = 0x1.a308d31319p-41L;
+        constexpr long double pi2Lo  = 0x1.145c06e0e68948127044533e63a0p-82L;
+
+#       if LDBL_MANT_DIG == DBL_MANT_DIG
+        // XXX: A Portability Hack: Only required when "long double" is actually
+        // the same  as "double":
+        double const nk  = - static_cast<double>(a_k);
+        auto const   sub =
+          [nk](double part, double residual) constexpr
+            { return FMA(nk, part, residual); };
+
+        double const r1 =
+          sub(static_cast<double>(pi2Hi),  static_cast<double>(ax));
+        double const r2 =
+          sub(static_cast<double>(pi2Mid), r1);
+
+        return static_cast<long double>(sub(static_cast<double>(pi2Lo), r2));
+#       else
+        // Generic Case:
+        return ((ax - a_k * pi2Hi) - a_k * pi2Mid) - a_k * pi2Lo;
+#       endif
+      };
+
+    int         k = int(ax / Pi_2<long double> + 0.5L);
+    long double r = reduce(k);
+
+    if (Abs(r) > Pi_4<long double>)
+    {
+      k += IsPos (r) ? 1 : -1;
+      r  = reduce(k);
+    }
+    assert(Abs(r) <= Pi_4<long double> && k >= 0);
+
+    // NB: Eg the result is {r=0, k=0} NOT when (a_x == Pi_2<F>) (over "F"),
+    // but when "a_x" reduces to Pi_2 exactly over "long double"!
+    return {static_cast<F>(r), k % 4};
+  }
+
+  //-------------------------------------------------------------------------//
   // "Cos" for an arbitrary real arg:                                        //
   //-------------------------------------------------------------------------//
   // XXX: Complex "Cos" has a separate specific implementation:
@@ -1381,31 +1466,27 @@ namespace DimTypes::CEMaths
     if (!IsFinite(a_x))
       return NaN<F>;
 
-    // First, normalise the arg to the interval [0; +oo):
-    a_x = Abs(a_x);
+    // Normalise the arg to (roughly) [-Pi/4 .. Pi/4] and pass its Abs to the
+    // Pade Kernel:
+    auto const [r, k] = ReduceModPi2(a_x);
+    assert(0 <= k && k <= 3);
+    F    const ar     = Abs(r);
+    F    const cs     =
+      (k == 0 || k == 2)
+      ? CosPade<F>(ar)
+      : SinPade<F>(ar);
 
-    // Then normalise it to the interval [0..2*Pi) (full period):
-    a_x = FMod(a_x, TwoPi<F>);
+    // Flag for Sign Keeping:
+    bool const R = !IsNeg(r);
 
-    // Then to the interval [0..Pi]:
-    bool chSgn = (a_x > Pi<F>);
-    if  (chSgn)
-      a_x -= Pi<F>;
-
-    // Then to the interval [0..Pi/2]:
-    if (a_x > Pi_2<F>)
-    {
-      a_x   = Pi<F> - a_x;
-      chSgn = !chSgn;
-    }
-    // Finally, to the interval [0..Pi/4], and compute the function:
-    F res = (a_x <= Pi_4<F>) ? CosPade<F>(a_x) : SinPade<F>(Pi_2<F> - a_x);
-
-    // Don't forget the sign:
-    if (chSgn)
-      res = - res;
-    assert(Abs(res) < F(1.0) + Eps<F>);
-    return res;
+    return
+      (k == 0)
+      ? cs :
+      (k == 1)
+      ? (R ?  -cs :  cs) :
+      (k == 2)
+      ? -cs
+      : (R ?   cs : -cs);
 # else
     // GCC, and NOT forcing the Pade approximants method:
     return std::cos(a_x);
@@ -1423,32 +1504,28 @@ namespace DimTypes::CEMaths
     if (!IsFinite(a_x))
       return NaN<F>;
 
-    // First, normalise the arg to the interval [0; +oo):
-    bool chSgn = IsNeg(a_x);
-    if  (chSgn)
-      a_x = - a_x;
+    // Normalise the arg to (roughly) [-Pi/4 .. Pi/4] and pass its Abs to the
+    // Pade Kernel:
+    auto const [r, k] = ReduceModPi2(a_x);
+    assert(0 <= k && k <= 3);
+    F    const ar     = Abs(r);
+    F    const cs     =
+      (k == 0 || k == 2)
+      ? SinPade<F>(ar)
+      : CosPade<F>(ar);
 
-    // Then normalise it to the interval [0..2*Pi) (full period):
-    a_x = FMod(a_x, TwoPi<F>);
+    // Flags for Sign Keeping:
+    bool const X  = !IsNeg(a_x);
+    bool const R  = !IsNeg(r);
+    return
+      (k == 0)
+      ? ((X == R) ?  cs : -cs) :
+      (k == 1)
+      ? (X        ?  cs : -cs) :
+      (k == 2)
+      ? ((X == R) ? -cs :  cs)
+      : (X        ? -cs :  cs);
 
-    // Then to the interval [0..Pi]:
-    if (a_x > Pi<F>)
-    {
-      a_x  -= Pi<F>;
-      chSgn = !chSgn;
-    }
-    // Then to the interval [0..Pi/2] (same sign):
-    if (a_x > Pi_2<F>)
-      a_x = Pi<F> - a_x;
-
-    // Finally, to the interval [0..Pi/4], and compute the function:
-    F res = (a_x <= Pi_4<F>) ? SinPade<F>(a_x) : CosPade<F>(Pi_2<F> - a_x);
-
-    // Don't forget the sign:
-    if (chSgn)
-      res = - res;
-    assert(Abs(res) < F(1.0) + Eps<F>);
-    return res;
 # else
     // GCC, and NOT forcing the Pade approximants method:
     return std::sin(a_x);
@@ -1466,43 +1543,26 @@ namespace DimTypes::CEMaths
     if (!IsFinite(a_x))
       return NaN<F>;
 
-    // First, normalise the arg to the interval [0; +oo):
-    bool chSgn = IsNeg(a_x);
-    if  (chSgn)
-      a_x = - a_x;
+    // Normalise the arg to (roughly) [-Pi/4 .. Pi/4] and pass its Abs to the
+    // Pade Kernel:
+    auto const [r, k] = ReduceModPi2(a_x);
+    assert(0 <= k && k <= 3);
 
-    // Then normalise it to the interval [0..Pi) (full period):
-    a_x   = FMod(a_x, Pi<F>);
+    // Flags for Sign Keeping:
+    bool const X  = !IsNeg(a_x);
+    bool const R  = !IsNeg(r);
 
-    // Then to the interval [0..Pi/2):
-    if (a_x > Pi_2<F>)
-    {
-      a_x   = Pi<F> - a_x;
-      chSgn = !chSgn;
-    }
+    if (IsZero(r) && (k & 1))
+      // We are notionally @ a Pole; the sign of Inf is a convention:
+      return X ? Inf<F> : -Inf<F>;
 
-    // Finally, to the interval [0..Pi/4], and compute the function:
-    F res = NaN<F>;
-    if (a_x <= Pi_4<F>)
-    {
-      // XXX: For the moment, we do not have a separate Pade Approximant for
-      // Tan, so use the ratio. This may result in a larger error, but anyway,
-      // the error may be unbounded as x -> Pi/2:
-      F const sx = SinPade<F>(a_x);
-      F const cx = CosPade<F>(a_x);
-      assert(!IsZero(cx));
-      res  =  sx / cx;
-    }
-    else
-    {
-      F const y  = Pi_2<F> - a_x;
-      F const cy = CosPade<F>(y);
-      F const sy = SinPade<F>(y);
+    F    const ar = Abs(r);
+    F    const c  = CosPade<F>(ar);
+    F    const s  = SinPade<F>(ar);
+    F    const t  = (k & 1) ? c/s : s/c;
+    assert(IsFinite(t));    // XXX: This requires a rigirous proof...
 
-      // Tan(x) = CoTan(y)  = c / s; and "y" can in this case be close to 0:
-      res = IsZero(sy) ? Inf<F> : (cy / sy);
-    }
-    return chSgn ? (-res) : res;
+    return ((!(k & 1)) == (X == R)) ? t : -t;
 # else
     // Use the standard impl:
     return std::tan(a_x);
@@ -1516,7 +1576,7 @@ namespace DimTypes::CEMaths
   // XXX: Complex "ATan" is not implemented yet:
   template<typename F> requires(std::is_floating_point_v<F>)
   constexpr F ATan (F a_x)
-  { 
+  {
 # if (defined(__clang__) || DIMTYPES_FORCE_OWN_ELEM_FUNCS_IMPL)
     if (IsNaN(a_x) || IsZero(a_x))
       return  a_x;
@@ -1541,7 +1601,9 @@ namespace DimTypes::CEMaths
     F res = ATanPade<F>(a_x);
 
     if (inv)
-      res = Pi_2<F> - res;
+      // A trick to reduce rounding errors:
+      res = Pi_2<F> - (res - Pi_2Lo<F>);
+
     if (chSgn)
       res = - res;
     return res;

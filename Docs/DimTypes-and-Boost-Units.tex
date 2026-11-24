@@ -1,0 +1,196 @@
+% Standalone article. Compile twice with pdflatex.
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,amsmath,amssymb,booktabs,microtype}
+\usepackage[a4paper,top=22mm,bottom=22mm,left=25mm,right=25mm]{geometry}
+\usepackage[hidelinks]{hyperref}
+\hypersetup{pdftitle={DimTypes and Boost.Units for orbital mechanics}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt plus 1pt minus 1pt}
+\setlength{\emergencystretch}{1.3em}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\Fp}{\mathbb{F}_p}
+\newcommand{\heading}[1]{\par\medskip{\large\bfseries #1}\par\nobreak}
+\begin{document}
+
+{\LARGE\bfseries DimTypes and Boost.Units for orbital mechanics\par}
+\smallskip
+{\large Finite-field exponents, unit conversion, and numerical functions\par}
+\medskip
+
+\textbf{Abstract.}
+An ephemeris may supply a gravitational parameter in
+$\mathrm{AU}^3/\mathrm{day}^2$ while an orbit integrator works in kilometres
+and seconds. Both DimTypes and Boost.Units can check the dimensions of the
+calculation. They differ in which unit expressions they admit and how they
+represent exponents. DimTypes fits SpaceBallistics because one declaration
+defines the project's unit vocabulary, conversions are visible in the
+equations, and the same quantity types reach into the numerical code.
+Boost.Units has the stronger model when independently defined systems,
+mixed-unit products, or exact distinctions among many rational powers matter.
+
+\heading{1\quad Two algebras for the same physical equation}
+For an elliptic orbit with semimajor axis $a$ and gravitational parameter
+$\mu$, the characteristic time is $\tau=\sqrt{a^3/\mu}$. Since
+$[a]=L$ and $[\mu]=L^3T^{-2}$, the type of $\tau$ should be a time.
+Writing $\sqrt{a^2/\mu}$ leaves an unwanted $L^{-1/2}$.
+Either library can expose this error when the result is assigned to a time.
+Omitting the factor $2\pi$ in the period $P=2\pi\tau$ is a physics error
+that passes either dimensional check.
+
+Boost.Units represents a dimension as a canonical list of base-dimension
+types and reduced \code{static\_rational} exponents. A unit pairs a dimension
+with a system, and a \code{quantity<Unit,Y>} carries the value of type
+\code{Y}. Algebraically equivalent expressions reduce to the same dimension.
+Distinct rational powers stay distinct within the range of the library's
+integer arithmetic~\cite{boostdim,boostunits}.
+
+DimTypes represents a quantity as \code{DimQ<E,U,RepT,MaxDims>}. The two
+64-bit template arguments pack the exponent vector $E$ and the unit identifiers
+$U$ into fixed-width fields. Only the magnitude of type \code{RepT} is stored
+in the object. Unit identifiers are ordinary indices. Each \emph{exponent} is
+a residue in the prime field $\Fp=\mathbb{Z}/p\mathbb{Z}$. For $p\nmid b$,
+the encoding is
+\[
+  \rho(a/b)=(a\bmod p)\,(b\bmod p)^{-1}\pmod p .
+\]
+Multiplication adds exponent fields, division subtracts them, and taking a
+square root multiplies each field by $2^{-1}$. With the default $p=251$,
+$2^{-1}=126$. Squaring a square root restores the original exponent because
+$2\cdot126\equiv1\pmod{251}$. The magnitude still uses ordinary numerical
+arithmetic~\cite{dimtypes}.
+
+\heading{2\quad What fits in one exponent field?}
+Two reduced fractions $a/b$ and $c/d$ have the same residue precisely when
+$p$ divides $ad-bc$, assuming both denominators are invertible. Thus
+$L^{126}$ and $L^{1/2}$ have the same encoded dimension at $p=251$.
+The implementation computes the largest $H$ for which all reduced fractions
+of height $|a|+b\leq H$ ($b>0$) are distinguishable. The table gives the
+computed \code{MaxHeight} values. Unit conversion and formatting recover a
+fraction by searching this range. Arithmetic itself works on residues, so an
+out-of-range exponent can silently acquire another exponent's type or fail
+when decoding is required~\cite{dimtypes}.
+
+\begin{center}\small
+\begin{tabular}{@{}lrrr@{}}\toprule
+Maximum base dimensions & 7 & 8 (default) & 9\\
+Bits per exponent & 9 & 8 & 7\\
+Prime modulus $p$ & 509 & 251 & 127\\
+Collision-free height $H$ & 24 & 18 & 13\\
+\bottomrule\end{tabular}
+\end{center}
+
+\newpage
+\heading{3\quad Declaring the units and using them}
+The following DimTypes vocabulary suffices for a two-body calculation.
+Each row names a dimension, its fundamental unit, and additional units with
+their scales in that fundamental unit. The declaration and calculation below
+belong in the same application namespace~\cite{dimtypes}.
+
+\begin{verbatim}
+DECLARE_DIMS(double, 8,
+  (Len,  m,   (km, 1000.0), (AU, 149597870700.0)),
+  (Time, sec, (day, 86400.0)))
+
+auto mu_eph = 2.959122e-4 * Cube(1.0_AU) / Sqr(1.0_day);
+auto mu     = To_Time_sec(To_Len_km(mu_eph));
+auto a      = 149597870.7_km;
+auto tau    = SqRt(Cube(a) / mu);
+static_assert(std::is_same_v<decltype(tau), Time_sec>);
+\end{verbatim}
+
+The solar parameter is rounded for this example. The macro generates the
+aliases (including \code{Len\_km} and the representation-polymorphic
+\code{Len\_km\_T<R>}), literal suffixes, unit names and scales, conversion
+functions, and output support. The two conversions of $\mu$ operate on a
+\emph{derived} quantity. The length conversion cubes the AU-to-km scale,
+and the time conversion divides by $86400^2$. The result is about
+$1.32712\times10^{11}\,\mathrm{km}^3/\mathrm{s}^2$, giving
+$\tau\approx5.02264\times10^6\,\mathrm{s}$. A maintainer can read the
+unit policy at the point where ephemeris data enter the calculation.
+
+The equivalent form $1/\tau=\sqrt{\mu}/a^{3/2}$ carries a
+length exponent $3/2$ of height five until it cancels. Ordinary \code{constexpr} integer functions
+compute the result types. For symbolic manipulations that can generate large
+intermediate powers even when the answer is simple, Boost's rational
+representation gives a stronger guarantee. Neither design needs to store the
+exponent vector in each numerical value. The choice alone establishes no
+runtime or compilation-speed advantage.
+
+For a calculation already written in a supplied system, Boost can require
+less setup. The equivalent of the example's square root is
+\code{root<2>(pow<3>(a) / mu)} for compatible Boost quantities.
+In SpaceBallistics the same small vocabulary appears in declarations,
+constants, diagnostics, and conversion sites. Generating those from one list
+saves the work of maintaining corresponding application aliases and helpers.
+
+There is a cost to the declaration's brevity. The macro assigns dimension
+and unit slots by declaration order. The application namespace owns the
+generated names, but its identity is absent from \code{DimQ}'s four template
+arguments. Independent declarations that assign different meanings to the
+same slots can therefore produce identical C++ types. SpaceBallistics benefits
+from sharing one declaration across components. Boost's named base-dimension
+and base-unit types are better suited to separately authored vocabularies.
+
+\newpage
+\heading{4\quad Mixed units, numerical functions, and application fit}
+In DimTypes, \code{1.0\_m + 1.0\_km} requires an explicit conversion.
+So does \code{1.0\_m * 1.0\_km}. Both operands occupy the length slot,
+which can hold just one unit. The compound $\mathrm{km}/\mathrm{s}$ uses
+two different slots and is directly representable. Boost supports
+\emph{heterogeneous} products. Its documentation constructs an area from
+metres times centimetres and converts the result to square metres. It also
+supplies SI and CGS systems and distinguishes absolute temperatures from
+temperature differences, including offset conversions. A DimTypes
+\code{DECLARE\_DIMS} scale is multiplicative and cannot by itself express a
+Celsius origin~\cite{boostunits,boostexamples,dimtypes}.
+
+\textbf{Where CEMaths matters.}
+The type check on $\sqrt{a^3/\mu}$ determines a result dimension.
+Computing its magnitude is a separate numerical problem. The distinction
+matters elsewhere in an orbit solver too. The quantity overload for
+\code{ATan2(y,x)} accepts two real coordinates with matching dimensions and
+compatible units, then calls the scalar two-argument function. The quantity
+overload for \code{Exp} admits a dimensionless argument. DimTypes couples
+the quantity overloads to CEMaths and allows registered scalar
+representations, including an application-supplied automatic-differentiation
+type with the requisite operations. Boost also supports custom value types
+and quantity-aware mathematical functions. DimTypes gives the project control
+over the scalar algorithms and their exceptional cases. For example, its
+custom \code{Exp} computes the reduced argument using a split $\ln 2$.
+For double-precision $x=650$, that change reduced the measured relative error
+from about $204$ to $0.67$ machine epsilons. Such control entails testing
+accuracy, special values, and toolchain-dependent constant evaluation. On
+the tested Clang~23 build, \code{std::round} and \code{std::ldexp} prevent
+constant evaluation of the general \code{Exp} path~\cite{dimtypes,boostexamples}.
+
+\textbf{Choice for SpaceBallistics.}
+DimTypes fits the existing orbit code because its exponents are small, its
+conversions identify where unit conventions change, and its scalar functions
+are already shared with the numerical code. Coordinate frame, body identity,
+and time scale are additional distinctions supplied by SpaceBallistics above
+the scalar layer. A length in an Earth-fixed frame has the same scalar
+dimension as a length in an inertial frame~\cite{merkin}. Boost.Units is the
+more natural choice when interfaces must preserve heterogeneous units or
+combine independent unit systems, or when a finite-field collision would
+invalidate the intended dimensional guarantee.
+
+\begingroup\small
+\begin{thebibliography}{5}\setlength{\itemsep}{1pt}\setlength{\parskip}{0pt}
+\bibitem{dimtypes} L.~Merkin. \href{https://github.com/LMerkin/DimTypes/tree/233c44e95650cc575bd5f9fe99b2256281aa3965}{\emph{DimTypes}, revision \texttt{233c44e}}.
+See \code{Encodings.hpp}, \code{DeclareDims.h}, \code{DimTypes.hpp},
+\code{CEMaths.hpp}, and \code{Tests/DimTest.cpp}.
+\bibitem{boostdim} M.~C.~Schabel and S.~Watanabe. \emph{Boost.Units},
+\href{https://www.boost.org/doc/libs/latest/doc/html/boost_units/Dimensional_Analysis.html}{Dimensional Analysis}.
+\bibitem{boostunits} M.~C.~Schabel and S.~Watanabe. \emph{Boost.Units},
+\href{https://www.boost.org/doc/libs/latest/doc/html/boost_units/Units.html}{Units} and
+\href{https://www.boost.org/doc/libs/latest/doc/html/boost_units/Quantities.html}{Quantities}.
+\bibitem{boostexamples} M.~C.~Schabel and S.~Watanabe. \emph{Boost.Units},
+\href{https://www.boost.org/doc/libs/latest/doc/html/boost_units/Examples.html}{Examples} and
+\href{https://www.boost.org/doc/libs/latest/doc/html/boost_units/Reference.html}{Library Reference}.
+\bibitem{merkin} L.~Merkin.
+\href{https://meetups.yadro.com/static/documents/template_metaprogramming_in_modern_cpp_for_space_ballistics_problems_merkin.pdf}{\emph{Template metaprogramming in modern C++ for space ballistics}}.
+Presentation slides (in Russian).
+\end{thebibliography}
+\endgroup
+\end{document}
